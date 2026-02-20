@@ -5,6 +5,7 @@ import mongoose from "mongoose";
 
 import authRoutes from "./routes/authRoutes";
 import { protect, allowRoles } from "./middleware/authMiddleware";
+import problemRoutes from "./routes/problemRoutes";
 
 dotenv.config();
 
@@ -16,7 +17,7 @@ app.use(express.json());
 
 // Routes
 app.use("/api/auth", authRoutes);
-
+app.use("/api/problems", problemRoutes);
 app.get("/", (req, res) => {
   res.send("InterviewSphere API is running 🚀");
 });
@@ -29,7 +30,7 @@ app.get("/api/test/protected", protect, (req: any, res) => {
   });
 });
 
-// 🔒 Admin only
+// Admin only
 app.get(
   "/api/test/admin",
   protect,
@@ -41,7 +42,7 @@ app.get(
   }
 );
 
-// 🔒 Recruiter only
+// Recruiter only
 app.get(
   "/api/test/recruiter",
   protect,
