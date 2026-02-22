@@ -1,24 +1,30 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import axios from "axios";
 import Submission from "../models/Submission";
 import Problem from "../models/Problem";
+import { asyncHandler } from "../utils/asyncHandler";
+import { AppError } from "../utils/AppError";
 
-export const submitSolution = async (req: any, res: Response) => {
-  try {
+/* ============================= */
+/* SUBMIT SOLUTION */
+/* ============================= */
+export const submitSolution = asyncHandler(
+  async (req: any, res: Response, next: NextFunction) => {
     const { problemId, code, language } = req.body;
 
     if (!problemId || !code || !language) {
-      return res.status(400).json({
-        message: "Problem ID, code, and language are required",
-      });
+      return next(
+        new AppError(
+          "Problem ID, code, and language are required",
+          400
+        )
+      );
     }
 
     const problem = await Problem.findById(problemId);
 
     if (!problem) {
-      return res.status(404).json({
-        message: "Problem not found",
-      });
+      return next(new AppError("Problem not found", 404));
     }
 
     const privateCases = problem.privateTestCases;
@@ -26,7 +32,6 @@ export const submitSolution = async (req: any, res: Response) => {
 
     let passedCount = 0;
     let totalRuntime = 0;
-
     let finalStatus:
       | "accepted"
       | "wrong_answer"
@@ -36,18 +41,17 @@ export const submitSolution = async (req: any, res: Response) => {
 
     const totalCases = privateCases.length;
 
-    /* ============================= */
-    /* PRIVATE TEST CASE EVALUATION */
-    /* ============================= */
-
     for (const testCase of privateCases) {
       const startTime = Date.now();
 
-      const response = await axios.post("http://localhost:5001/execute", {
-        code,
-        language,
-        input: testCase.input,
-      });
+      const response = await axios.post(
+        "http://localhost:5001/execute",
+        {
+          code,
+          language,
+          input: testCase.input,
+        }
+      );
 
       const endTime = Date.now();
       const runtime = endTime - startTime;
@@ -61,7 +65,8 @@ export const submitSolution = async (req: any, res: Response) => {
       }
 
       const isPassed =
-        result.stdout.trim() === testCase.expectedOutput.trim();
+        result.stdout.trim() ===
+        testCase.expectedOutput.trim();
 
       if (!isPassed) {
         finalStatus = "wrong_answer";
@@ -69,15 +74,10 @@ export const submitSolution = async (req: any, res: Response) => {
         passedCount++;
       }
 
-      // In strict mode, stop immediately on failure
       if (evaluationType === "strict" && !isPassed) {
         break;
       }
     }
-
-    /* ============================= */
-    /* FINAL STATUS LOGIC */
-    /* ============================= */
 
     if (evaluationType === "partial") {
       if (passedCount === totalCases) {
@@ -88,14 +88,17 @@ export const submitSolution = async (req: any, res: Response) => {
         finalStatus = "wrong_answer";
       }
     } else {
-      // strict
       finalStatus =
-        passedCount === totalCases ? "accepted" : finalStatus;
+        passedCount === totalCases
+          ? "accepted"
+          : finalStatus;
     }
 
-    const score = Math.floor((passedCount / totalCases) * 100);
+    const score = Math.floor(
+      (passedCount / totalCases) * 100
+    );
 
-    const submission = new Submission({
+    const submission = await Submission.create({
       user: req.user.userId,
       problem: problemId,
       code,
@@ -105,44 +108,40 @@ export const submitSolution = async (req: any, res: Response) => {
       totalTestCases: totalCases,
       passedTestCases: passedCount,
       runtime: totalRuntime,
-      publicResults: [], // public cases not used in grading (Phase 6 clean)
+      publicResults: [],
     });
 
-    await submission.save();
-
-    return res.status(201).json({
+    res.status(201).json({
+      success: true,
       message: "Submission evaluated",
-      verdict: finalStatus,
-      score,
-      passed: passedCount,
-      total: totalCases,
-      runtime: totalRuntime,
-    });
-  } catch (error: any) {
-    console.error("Submit solution error:", error);
-
-    return res.status(500).json({
-      message: "Server error",
+      data: {
+        verdict: finalStatus,
+        score,
+        passed: passedCount,
+        total: totalCases,
+        runtime: totalRuntime,
+      },
     });
   }
-};
+);
 
-export const getMySubmissions = async (req: any, res: Response) => {
-  try {
+/* ============================= */
+/* GET MY SUBMISSIONS */
+/* ============================= */
+export const getMySubmissions = asyncHandler(
+  async (req: any, res: Response) => {
     const submissions = await Submission.find({
       user: req.user.userId,
     })
       .populate("problem", "title difficulty")
       .sort({ createdAt: -1 });
 
-    return res.status(200).json({
-      count: submissions.length,
-      submissions,
-    });
-  } catch (error) {
-    console.error("Get submissions error:", error);
-    return res.status(500).json({
-      message: "Server error",
+    res.status(200).json({
+      success: true,
+      data: {
+        count: submissions.length,
+        submissions,
+      },
     });
   }
-};
+);

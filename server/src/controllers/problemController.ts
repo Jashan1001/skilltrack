@@ -1,11 +1,13 @@
-import { Request, Response } from "express";
+import { Request, Response, NextFunction } from "express";
 import Problem from "../models/Problem";
+import { asyncHandler } from "../utils/asyncHandler";
+import { AppError } from "../utils/AppError";
 
 /* ============================= */
 /* CREATE PROBLEM */
 /* ============================= */
-export const createProblem = async (req: any, res: Response) => {
-  try {
+export const createProblem = asyncHandler(
+  async (req: any, res: Response, next: NextFunction) => {
     const {
       title,
       description,
@@ -17,15 +19,15 @@ export const createProblem = async (req: any, res: Response) => {
     } = req.body;
 
     if (!publicTestCases || publicTestCases.length === 0) {
-      return res.status(400).json({
-        message: "At least one public test case required",
-      });
+      return next(
+        new AppError("At least one public test case required", 400)
+      );
     }
 
     if (!privateTestCases || privateTestCases.length === 0) {
-      return res.status(400).json({
-        message: "At least one private test case required",
-      });
+      return next(
+        new AppError("At least one private test case required", 400)
+      );
     }
 
     const problem = await Problem.create({
@@ -39,25 +41,22 @@ export const createProblem = async (req: any, res: Response) => {
       createdBy: req.user.userId,
     });
 
-    const { privateTestCases: _, ...safeProblem } = problem.toObject();
+    const { privateTestCases: _, ...safeProblem } =
+      problem.toObject();
 
-    return res.status(201).json({
+    res.status(201).json({
+      success: true,
       message: "Problem created successfully",
-      problem: safeProblem,
-    });
-  } catch (error) {
-    console.error("Create problem error:", error);
-    return res.status(500).json({
-      message: "Server error",
+      data: safeProblem,
     });
   }
-};
+);
 
 /* ============================= */
 /* GET ALL PROBLEMS */
 /* ============================= */
-export const getAllProblems = async (req: Request, res: Response) => {
-  try {
+export const getAllProblems = asyncHandler(
+  async (req: Request, res: Response) => {
     const { difficulty, page = "1", limit = "10" } = req.query;
 
     const filter: any = {};
@@ -75,25 +74,23 @@ export const getAllProblems = async (req: Request, res: Response) => {
 
     const total = await Problem.countDocuments(filter);
 
-    return res.status(200).json({
-      total,
-      page: pageNumber,
-      totalPages: Math.ceil(total / limitNumber),
-      problems,
-    });
-  } catch (error) {
-    console.error("Get problems error:", error);
-    return res.status(500).json({
-      message: "Server error",
+    res.status(200).json({
+      success: true,
+      data: {
+        total,
+        page: pageNumber,
+        totalPages: Math.ceil(total / limitNumber),
+        problems,
+      },
     });
   }
-};
+);
 
 /* ============================= */
 /* GET PROBLEM BY ID */
 /* ============================= */
-export const getProblemById = async (req: any, res: Response) => {
-  try {
+export const getProblemById = asyncHandler(
+  async (req: any, res: Response, next: NextFunction) => {
     const { id } = req.params;
 
     let query = Problem.findById(id).populate(
@@ -108,43 +105,40 @@ export const getProblemById = async (req: any, res: Response) => {
     const problem = await query;
 
     if (!problem) {
-      return res.status(404).json({
-        message: "Problem not found",
-      });
+      return next(new AppError("Problem not found", 404));
     }
 
-    return res.status(200).json(problem);
-  } catch (error) {
-    console.error("Get problem by ID error:", error);
-    return res.status(500).json({
-      message: "Server error",
+    res.status(200).json({
+      success: true,
+      data: problem,
     });
   }
-};
+);
 
 /* ============================= */
 /* UPDATE PROBLEM */
 /* ============================= */
-export const updateProblem = async (req: any, res: Response) => {
-  try {
+export const updateProblem = asyncHandler(
+  async (req: any, res: Response, next: NextFunction) => {
     const { id } = req.params;
 
     const problem = await Problem.findById(id);
 
     if (!problem) {
-      return res.status(404).json({
-        message: "Problem not found",
-      });
+      return next(new AppError("Problem not found", 404));
     }
 
-    // 🔐 Authorization
+    // Authorization
     if (
       req.user.role !== "admin" &&
       problem.createdBy.toString() !== req.user.userId
     ) {
-      return res.status(403).json({
-        message: "You can only edit your own problems",
-      });
+      return next(
+        new AppError(
+          "You can only edit your own problems",
+          403
+        )
+      );
     }
 
     const {
@@ -164,63 +158,54 @@ export const updateProblem = async (req: any, res: Response) => {
 
     if (publicTestCases) problem.publicTestCases = publicTestCases;
 
-    // 🔒 Only admin can modify private test cases
     if (privateTestCases && req.user.role === "admin") {
       problem.privateTestCases = privateTestCases;
     }
 
-    // 🔒 Only admin can modify evaluation type
     if (evaluationType && req.user.role === "admin") {
       problem.evaluationType = evaluationType;
     }
 
     await problem.save();
 
-    return res.status(200).json({
+    res.status(200).json({
+      success: true,
       message: "Problem updated successfully",
-      problem,
-    });
-  } catch (error) {
-    console.error("Update problem error:", error);
-    return res.status(500).json({
-      message: "Server error",
+      data: problem,
     });
   }
-};
+);
 
 /* ============================= */
 /* DELETE PROBLEM */
 /* ============================= */
-export const deleteProblem = async (req: any, res: Response) => {
-  try {
+export const deleteProblem = asyncHandler(
+  async (req: any, res: Response, next: NextFunction) => {
     const { id } = req.params;
 
     const problem = await Problem.findById(id);
 
     if (!problem) {
-      return res.status(404).json({
-        message: "Problem not found",
-      });
+      return next(new AppError("Problem not found", 404));
     }
 
     if (
       req.user.role !== "admin" &&
       problem.createdBy.toString() !== req.user.userId
     ) {
-      return res.status(403).json({
-        message: "You can only delete your own problems",
-      });
+      return next(
+        new AppError(
+          "You can only delete your own problems",
+          403
+        )
+      );
     }
 
     await problem.deleteOne();
 
-    return res.status(200).json({
+    res.status(200).json({
+      success: true,
       message: "Problem deleted successfully",
     });
-  } catch (error) {
-    console.error("Delete problem error:", error);
-    return res.status(500).json({
-      message: "Server error",
-    });
   }
-};
+);
