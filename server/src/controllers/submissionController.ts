@@ -21,25 +21,41 @@ export const submitSolution = async (req: any, res: Response) => {
       });
     }
 
-    const testCases = problem.testCases;
+    const publicCases = problem.publicTestCases;
+    const privateCases = problem.privateTestCases;
+    const evaluationType = problem.evaluationType;
 
+    let publicResults: any[] = [];
+    let passedCount = 0;
+    let totalRuntime = 0;
     let finalStatus:
       | "accepted"
       | "wrong_answer"
+      | "partially_accepted"
       | "runtime_error"
       | "time_limit_exceeded" = "accepted";
 
-    let passedCount = 0;
+    const allCases = [...publicCases, ...privateCases];
+    const totalCases = allCases.length;
 
-    // 🔥 Evaluate Test Cases
-    for (const testCase of testCases) {
-      const response = await axios.post(
-        "http://localhost:5001/execute",
-        {
-          code,
-          input: testCase.input,
-        }
-      );
+    /* ============================= */
+    /* EVALUATION LOOP */
+    /* ============================= */
+
+    for (let i = 0; i < allCases.length; i++) {
+      const testCase = allCases[i];
+
+      const startTime = Date.now();
+
+      const response = await axios.post("http://localhost:5001/execute", {
+        code,
+        language,
+        input: testCase.input,
+      });
+
+      const endTime = Date.now();
+      const runtime = endTime - startTime;
+      totalRuntime += runtime;
 
       const result = response.data;
 
@@ -48,18 +64,51 @@ export const submitSolution = async (req: any, res: Response) => {
         break;
       }
 
-      // Compare output (trim to avoid newline issues)
-      if (result.stdout.trim() !== testCase.expectedOutput.trim()) {
+      const isPassed =
+        result.stdout.trim() === testCase.expectedOutput.trim();
+
+      if (!isPassed) {
         finalStatus = "wrong_answer";
-        break;
       }
 
-      passedCount++;
+      if (isPassed) passedCount++;
+
+      /* Store ONLY public case details */
+      if (i < publicCases.length) {
+        publicResults.push({
+          input: testCase.input,
+          expectedOutput: testCase.expectedOutput,
+          actualOutput: result.stdout,
+          passed: isPassed,
+          runtime,
+        });
+      }
+
+      /* STRICT LOGIC: stop immediately */
+      if (evaluationType === "strict" && !isPassed) {
+        break;
+      }
     }
 
-    const score = Math.floor(
-      (passedCount / testCases.length) * 100
-    );
+    /* ============================= */
+    /* FINAL STATUS LOGIC */
+    /* ============================= */
+
+    if (evaluationType === "partial") {
+      if (passedCount === totalCases) {
+        finalStatus = "accepted";
+      } else if (passedCount > 0) {
+        finalStatus = "partially_accepted";
+      } else {
+        finalStatus = "wrong_answer";
+      }
+    } else {
+      // strict
+      finalStatus =
+        passedCount === totalCases ? "accepted" : finalStatus;
+    }
+
+    const score = Math.floor((passedCount / totalCases) * 100);
 
     const submission = new Submission({
       user: req.user.userId,
@@ -68,6 +117,10 @@ export const submitSolution = async (req: any, res: Response) => {
       language,
       status: finalStatus,
       score,
+      totalTestCases: totalCases,
+      passedTestCases: passedCount,
+      publicResults,
+      runtime: totalRuntime,
     });
 
     await submission.save();
@@ -77,10 +130,13 @@ export const submitSolution = async (req: any, res: Response) => {
       verdict: finalStatus,
       score,
       passed: passedCount,
-      total: testCases.length,
+      total: totalCases,
+      runtime: totalRuntime,
+      publicResults,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Submit solution error:", error);
+
     return res.status(500).json({
       message: "Server error",
     });
@@ -89,7 +145,9 @@ export const submitSolution = async (req: any, res: Response) => {
 
 export const getMySubmissions = async (req: any, res: Response) => {
   try {
-    const submissions = await Submission.find({ user: req.user.userId })
+    const submissions = await Submission.find({
+      user: req.user.userId,
+    })
       .populate("problem", "title difficulty")
       .sort({ createdAt: -1 });
 

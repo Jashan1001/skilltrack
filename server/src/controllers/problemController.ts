@@ -1,12 +1,31 @@
 import { Request, Response } from "express";
 import Problem from "../models/Problem";
 
-export const createProblem = async (req: Request, res: Response) => {
+/* ============================= */
+/* CREATE PROBLEM */
+/* ============================= */
+export const createProblem = async (req: any, res: Response) => {
   try {
-    const { title, description, difficulty, tags, testCases } = req.body;
+    const {
+      title,
+      description,
+      difficulty,
+      tags,
+      publicTestCases,
+      privateTestCases,
+      evaluationType,
+    } = req.body;
 
-    if (!testCases || testCases.length === 0) {
-      return res.status(400).json({ message: "At least one test case required" });
+    if (!publicTestCases || publicTestCases.length === 0) {
+      return res.status(400).json({
+        message: "At least one public test case required",
+      });
+    }
+
+    if (!privateTestCases || privateTestCases.length === 0) {
+      return res.status(400).json({
+        message: "At least one private test case required",
+      });
     }
 
     const problem = await Problem.create({
@@ -14,29 +33,39 @@ export const createProblem = async (req: Request, res: Response) => {
       description,
       difficulty,
       tags,
-      testCases,
-      createdBy: req.user!.userId
+      publicTestCases,
+      privateTestCases,
+      evaluationType: evaluationType || "strict", // Safe default
+      createdBy: req.user.userId,
     });
 
-    res.status(201).json(problem);
+    return res.status(201).json({
+      message: "Problem created successfully",
+      problem,
+    });
   } catch (error) {
-    res.status(500).json({ message: "Failed to create problem" });
+    console.error("Create problem error:", error);
+    return res.status(500).json({
+      message: "Server error",
+    });
   }
 };
+
+/* ============================= */
+/* GET ALL PROBLEMS */
+/* ============================= */
 export const getAllProblems = async (req: Request, res: Response) => {
   try {
     const { difficulty, page = "1", limit = "10" } = req.query;
 
     const filter: any = {};
-
-    if (difficulty) {
-      filter.difficulty = difficulty;
-    }
+    if (difficulty) filter.difficulty = difficulty;
 
     const pageNumber = parseInt(page as string);
     const limitNumber = parseInt(limit as string);
 
     const problems = await Problem.find(filter)
+      .select("-privateTestCases")
       .populate("createdBy", "name email")
       .sort({ createdAt: -1 })
       .skip((pageNumber - 1) * limitNumber)
@@ -50,7 +79,6 @@ export const getAllProblems = async (req: Request, res: Response) => {
       totalPages: Math.ceil(total / limitNumber),
       problems,
     });
-
   } catch (error) {
     console.error("Get problems error:", error);
     return res.status(500).json({
@@ -58,12 +86,24 @@ export const getAllProblems = async (req: Request, res: Response) => {
     });
   }
 };
-export const getProblemById = async (req: Request, res: Response) => {
+
+/* ============================= */
+/* GET PROBLEM BY ID */
+/* ============================= */
+export const getProblemById = async (req: any, res: Response) => {
   try {
     const { id } = req.params;
 
-    const problem = await Problem.findById(id)
-      .populate("createdBy", "name email");
+    let query = Problem.findById(id).populate(
+      "createdBy",
+      "name email"
+    );
+
+    if (req.user.role !== "admin") {
+      query = query.select("-privateTestCases");
+    }
+
+    const problem = await query;
 
     if (!problem) {
       return res.status(404).json({
@@ -72,7 +112,6 @@ export const getProblemById = async (req: Request, res: Response) => {
     }
 
     return res.status(200).json(problem);
-
   } catch (error) {
     console.error("Get problem by ID error:", error);
     return res.status(500).json({
@@ -80,6 +119,10 @@ export const getProblemById = async (req: Request, res: Response) => {
     });
   }
 };
+
+/* ============================= */
+/* UPDATE PROBLEM */
+/* ============================= */
 export const updateProblem = async (req: any, res: Response) => {
   try {
     const { id } = req.params;
@@ -92,7 +135,7 @@ export const updateProblem = async (req: any, res: Response) => {
       });
     }
 
-    // 🔐 Authorization logic
+    // 🔐 Authorization
     if (
       req.user.role !== "admin" &&
       problem.createdBy.toString() !== req.user.userId
@@ -102,12 +145,32 @@ export const updateProblem = async (req: any, res: Response) => {
       });
     }
 
-    const { title, description, difficulty, tags } = req.body;
+    const {
+      title,
+      description,
+      difficulty,
+      tags,
+      publicTestCases,
+      privateTestCases,
+      evaluationType,
+    } = req.body;
 
     if (title) problem.title = title;
     if (description) problem.description = description;
     if (difficulty) problem.difficulty = difficulty;
     if (tags) problem.tags = tags;
+
+    if (publicTestCases) problem.publicTestCases = publicTestCases;
+
+    // 🔒 Only admin can modify private test cases
+    if (privateTestCases && req.user.role === "admin") {
+      problem.privateTestCases = privateTestCases;
+    }
+
+    // 🔒 Only admin can modify evaluation type
+    if (evaluationType && req.user.role === "admin") {
+      problem.evaluationType = evaluationType;
+    }
 
     await problem.save();
 
@@ -115,7 +178,6 @@ export const updateProblem = async (req: any, res: Response) => {
       message: "Problem updated successfully",
       problem,
     });
-
   } catch (error) {
     console.error("Update problem error:", error);
     return res.status(500).json({
@@ -123,6 +185,10 @@ export const updateProblem = async (req: any, res: Response) => {
     });
   }
 };
+
+/* ============================= */
+/* DELETE PROBLEM */
+/* ============================= */
 export const deleteProblem = async (req: any, res: Response) => {
   try {
     const { id } = req.params;
@@ -135,7 +201,6 @@ export const deleteProblem = async (req: any, res: Response) => {
       });
     }
 
-    // 🔐 Authorization logic
     if (
       req.user.role !== "admin" &&
       problem.createdBy.toString() !== req.user.userId
@@ -150,7 +215,6 @@ export const deleteProblem = async (req: any, res: Response) => {
     return res.status(200).json({
       message: "Problem deleted successfully",
     });
-
   } catch (error) {
     console.error("Delete problem error:", error);
     return res.status(500).json({
