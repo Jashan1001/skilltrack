@@ -21,13 +21,12 @@ export const submitSolution = async (req: any, res: Response) => {
       });
     }
 
-    const publicCases = problem.publicTestCases;
     const privateCases = problem.privateTestCases;
     const evaluationType = problem.evaluationType;
 
-    let publicResults: any[] = [];
     let passedCount = 0;
     let totalRuntime = 0;
+
     let finalStatus:
       | "accepted"
       | "wrong_answer"
@@ -35,16 +34,13 @@ export const submitSolution = async (req: any, res: Response) => {
       | "runtime_error"
       | "time_limit_exceeded" = "accepted";
 
-    const allCases = [...publicCases, ...privateCases];
-    const totalCases = allCases.length;
+    const totalCases = privateCases.length;
 
     /* ============================= */
-    /* EVALUATION LOOP */
+    /* PRIVATE TEST CASE EVALUATION */
     /* ============================= */
 
-    for (let i = 0; i < allCases.length; i++) {
-      const testCase = allCases[i];
-
+    for (const testCase of privateCases) {
       const startTime = Date.now();
 
       const response = await axios.post("http://localhost:5001/execute", {
@@ -69,22 +65,11 @@ export const submitSolution = async (req: any, res: Response) => {
 
       if (!isPassed) {
         finalStatus = "wrong_answer";
+      } else {
+        passedCount++;
       }
 
-      if (isPassed) passedCount++;
-
-      /* Store ONLY public case details */
-      if (i < publicCases.length) {
-        publicResults.push({
-          input: testCase.input,
-          expectedOutput: testCase.expectedOutput,
-          actualOutput: result.stdout,
-          passed: isPassed,
-          runtime,
-        });
-      }
-
-      /* STRICT LOGIC: stop immediately */
+      // In strict mode, stop immediately on failure
       if (evaluationType === "strict" && !isPassed) {
         break;
       }
@@ -119,8 +104,8 @@ export const submitSolution = async (req: any, res: Response) => {
       score,
       totalTestCases: totalCases,
       passedTestCases: passedCount,
-      publicResults,
       runtime: totalRuntime,
+      publicResults: [], // public cases not used in grading (Phase 6 clean)
     });
 
     await submission.save();
@@ -132,7 +117,6 @@ export const submitSolution = async (req: any, res: Response) => {
       passed: passedCount,
       total: totalCases,
       runtime: totalRuntime,
-      publicResults,
     });
   } catch (error: any) {
     console.error("Submit solution error:", error);

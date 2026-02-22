@@ -35,13 +35,15 @@ export const createProblem = async (req: any, res: Response) => {
       tags,
       publicTestCases,
       privateTestCases,
-      evaluationType: evaluationType || "strict", // Safe default
+      evaluationType: evaluationType || "strict",
       createdBy: req.user.userId,
     });
 
+    const { privateTestCases: _, ...safeProblem } = problem.toObject();
+
     return res.status(201).json({
       message: "Problem created successfully",
-      problem,
+      problem: safeProblem,
     });
   } catch (error) {
     console.error("Create problem error:", error);

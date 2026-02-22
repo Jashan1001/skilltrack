@@ -9,7 +9,7 @@ const router = express.Router();
 router.post(
   "/",
   protect,
-  allowRoles("student"),
+  allowRoles("student","admin"),
   submissionLimiter,
   submitSolution
 );
@@ -18,7 +18,7 @@ router.post(
 router.get(
   "/me",
   protect,
-  allowRoles("student"),
+  allowRoles("student","admin"),
   getMySubmissions
 );
 
