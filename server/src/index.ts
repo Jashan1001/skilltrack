@@ -6,6 +6,7 @@ import mongoose from "mongoose";
 import authRoutes from "./routes/authRoutes";
 import { protect, allowRoles } from "./middleware/authMiddleware";
 import problemRoutes from "./routes/problemRoutes";
+import submissionRoutes from "./routes/submissionRoutes";
 
 dotenv.config();
 
@@ -18,6 +19,8 @@ app.use(express.json());
 // Routes
 app.use("/api/auth", authRoutes);
 app.use("/api/problems", problemRoutes);
+app.use("/api/submissions", submissionRoutes);
+
 app.get("/", (req, res) => {
   res.send("InterviewSphere API is running 🚀");
 });

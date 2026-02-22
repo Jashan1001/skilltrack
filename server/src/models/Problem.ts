@@ -1,4 +1,9 @@
-import mongoose, { Schema, Document } from "mongoose";
+import mongoose, { Document, Schema } from "mongoose";
+
+interface ITestCase {
+  input: string;
+  expectedOutput: string;
+}
 
 export interface IProblem extends Document {
   title: string;
@@ -6,40 +11,37 @@ export interface IProblem extends Document {
   difficulty: "easy" | "medium" | "hard";
   tags: string[];
   createdBy: mongoose.Types.ObjectId;
-  createdAt: Date;
-  updatedAt: Date;
+  testCases: ITestCase[];
 }
 
-const ProblemSchema: Schema<IProblem> = new Schema(
+const TestCaseSchema = new Schema<ITestCase>(
   {
-    title: {
-      type: String,
-      required: true,
-      trim: true,
-    },
-    description: {
-      type: String,
-      required: true,
-    },
+    input: { type: String, required: true },
+    expectedOutput: { type: String, required: true }
+  },
+  { _id: false }
+);
+
+const ProblemSchema = new Schema<IProblem>(
+  {
+    title: { type: String, required: true },
+    description: { type: String, required: true },
     difficulty: {
       type: String,
       enum: ["easy", "medium", "hard"],
       required: true,
+      index: true
     },
-    tags: {
-      type: [String],
-      default: [],
-    },
-    createdBy: {
-      type: Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
+    tags: [{ type: String }],
+    createdBy: { type: Schema.Types.ObjectId, ref: "User", required: true },
+
+    // 🔹 NEW FIELD
+    testCases: {
+      type: [TestCaseSchema],
+      required: true
+    }
   },
   { timestamps: true }
 );
-
-// Optional: Index for faster filtering by difficulty
-ProblemSchema.index({ difficulty: 1 });
 
 export default mongoose.model<IProblem>("Problem", ProblemSchema);

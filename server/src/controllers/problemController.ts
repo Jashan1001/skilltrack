@@ -1,41 +1,28 @@
 import { Request, Response } from "express";
 import Problem from "../models/Problem";
 
-export const createProblem = async (req: any, res: Response) => {
+export const createProblem = async (req: Request, res: Response) => {
   try {
-    const { title, description, difficulty, tags } = req.body;
+    const { title, description, difficulty, tags, testCases } = req.body;
 
-    // 1️⃣ Validate input
-    if (!title || !description || !difficulty) {
-      return res.status(400).json({
-        message: "Title, description, and difficulty are required",
-      });
+    if (!testCases || testCases.length === 0) {
+      return res.status(400).json({ message: "At least one test case required" });
     }
 
-    // 2️⃣ Create new problem
-    const problem = new Problem({
+    const problem = await Problem.create({
       title,
       description,
       difficulty,
       tags,
-      createdBy: req.user.userId, // from JWT middleware
+      testCases,
+      createdBy: req.user!.userId
     });
 
-    await problem.save();
-
-    return res.status(201).json({
-      message: "Problem created successfully",
-      problem,
-    });
-
+    res.status(201).json(problem);
   } catch (error) {
-    console.error("Create problem error:", error);
-    return res.status(500).json({
-      message: "Server error",
-    });
+    res.status(500).json({ message: "Failed to create problem" });
   }
 };
-
 export const getAllProblems = async (req: Request, res: Response) => {
   try {
     const { difficulty, page = "1", limit = "10" } = req.query;
