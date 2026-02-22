@@ -1,17 +1,18 @@
 import { Router } from "express";
-import { runJavaScript } from "../services/dockerRunner";
+import { runCode } from "../services/dockerRunner";
 
 const router = Router();
 
 router.post("/", async (req, res) => {
-  const { code, input } = req.body;
+  const { language, code, input } = req.body;
 
-  if (!code) {
-    return res.status(400).json({ error: "Code is required" });
+  if (!language || !code) {
+    return res.status(400).json({
+      message: "Language and code are required"
+    });
   }
 
-  const result = await runJavaScript(code, input || "");
-
+  const result = await runCode(language, code, input || "");
   res.json(result);
 });
 
