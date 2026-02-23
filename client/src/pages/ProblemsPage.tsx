@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/authContext";
 import axios from "../api/axios";
@@ -12,10 +12,14 @@ interface Problem {
 
 const ProblemsPage: React.FC = () => {
   const { user } = useAuth();
-  const [problems, setProblems] = useState<Problem[]>([]);
-  const [loading, setLoading] = useState<boolean>(true);
-  const [error, setError] = useState<string>("");
   const navigate = useNavigate();
+
+  const [problems, setProblems] = useState<Problem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+
+  const [selectedDifficulty, setSelectedDifficulty] = useState("all");
+  const [selectedTag, setSelectedTag] = useState("all");
 
   useEffect(() => {
     const fetchProblems = async () => {
@@ -32,47 +36,131 @@ const ProblemsPage: React.FC = () => {
     fetchProblems();
   }, []);
 
+  /* ========================
+     Extract Unique Tags (Case-Insensitive)
+  =========================== */
+  const uniqueTags = useMemo(() => {
+    const tagSet = new Set<string>();
+
+    problems.forEach((p) =>
+      p.tags?.forEach((tag) =>
+        tagSet.add(tag.trim().toLowerCase())
+      )
+    );
+
+    return Array.from(tagSet).sort();
+  }, [problems]);
+
+  /* ========================
+     Filtering Logic (Case-Insensitive)
+  =========================== */
+  const filteredProblems = useMemo(() => {
+    return problems.filter((problem) => {
+      const difficultyMatch =
+        selectedDifficulty === "all" ||
+        problem.difficulty.toLowerCase() ===
+          selectedDifficulty.toLowerCase();
+
+      const tagMatch =
+        selectedTag === "all" ||
+        problem.tags?.some(
+          (tag) =>
+            tag.trim().toLowerCase() ===
+            selectedTag.toLowerCase()
+        );
+
+      return difficultyMatch && tagMatch;
+    });
+  }, [problems, selectedDifficulty, selectedTag]);
+
+  /* ========================
+     Delete Handler
+  =========================== */
   const handleDelete = async (id: string) => {
     const confirmDelete = window.confirm(
       "Are you sure you want to delete this problem?"
     );
-
     if (!confirmDelete) return;
 
     try {
       await axios.delete(`/problems/${id}`);
-      setProblems((prev) => prev.filter((p) => p._id !== id));
+      setProblems((prev) =>
+        prev.filter((p) => p._id !== id)
+      );
     } catch {
       alert("Failed to delete problem");
     }
   };
 
-  if (loading) {
+  if (loading)
     return (
-      <div className="flex justify-center py-20">
-        <span className="text-gray-400">Loading problems...</span>
+      <div className="flex justify-center py-20 text-gray-400">
+        Loading problems...
       </div>
     );
-  }
 
-  if (error) {
+  if (error)
     return (
-      <div className="flex justify-center py-20">
-        <span className="text-red-500">{error}</span>
+      <div className="flex justify-center py-20 text-red-400">
+        {error}
       </div>
     );
-  }
 
   return (
-    <div>
-      <h1 className="text-3xl font-bold mb-10">Problems</h1>
+    <div className="space-y-10">
 
-      {problems.length === 0 ? (
-        <p className="text-gray-400">No problems available.</p>
+      <h1 className="text-3xl font-bold">
+        Problems
+      </h1>
+
+      {/* ========================
+          Filters Section
+      =========================== */}
+      <div className="flex flex-wrap gap-4">
+
+        <select
+          value={selectedDifficulty}
+          onChange={(e) =>
+            setSelectedDifficulty(e.target.value)
+          }
+          className="bg-gray-800 border border-gray-700 px-4 py-2 rounded-lg text-sm"
+        >
+          <option value="all">All Difficulties</option>
+          <option value="easy">Easy</option>
+          <option value="medium">Medium</option>
+          <option value="hard">Hard</option>
+        </select>
+
+        <select
+          value={selectedTag}
+          onChange={(e) =>
+            setSelectedTag(e.target.value)
+          }
+          className="bg-gray-800 border border-gray-700 px-4 py-2 rounded-lg text-sm"
+        >
+          <option value="all">All Topics</option>
+          {uniqueTags.map((tag) => (
+            <option key={tag} value={tag}>
+              {tag.charAt(0).toUpperCase() +
+                tag.slice(1)}
+            </option>
+          ))}
+        </select>
+
+      </div>
+
+      {/* ========================
+          Problems List
+      =========================== */}
+      {filteredProblems.length === 0 ? (
+        <p className="text-gray-400">
+          No problems found.
+        </p>
       ) : (
         <div className="space-y-5">
-          {problems.map((problem) => {
-            const difficulty = problem.difficulty.toLowerCase();
+          {filteredProblems.map((problem) => {
+            const difficulty =
+              problem.difficulty.toLowerCase();
 
             const difficultyStyle =
               difficulty === "easy"
@@ -88,10 +176,14 @@ const ProblemsPage: React.FC = () => {
             return (
               <div
                 key={problem._id}
-                className="bg-gray-800/60 backdrop-blur border border-gray-700 hover:border-gray-600 p-6 rounded-xl transition"
+                className="bg-gray-800/60 border border-gray-700 hover:border-gray-600 p-6 rounded-xl transition"
               >
                 <div
-                  onClick={() => navigate(`/problems/${problem._id}`)}
+                  onClick={() =>
+                    navigate(
+                      `/problems/${problem._id}`
+                    )
+                  }
                   className="cursor-pointer"
                 >
                   <div className="flex justify-between items-center">
@@ -108,25 +200,28 @@ const ProblemsPage: React.FC = () => {
 
                   {problem.tags?.length > 0 && (
                     <div className="mt-4 flex flex-wrap gap-2">
-                      {problem.tags.map((tag, index) => (
-                        <span
-                          key={index}
-                          className="bg-gray-700 text-gray-300 text-xs px-2 py-1 rounded-md"
-                        >
-                          {tag}
-                        </span>
-                      ))}
+                      {problem.tags.map(
+                        (tag, index) => (
+                          <span
+                            key={index}
+                            className="bg-gray-700 text-gray-300 text-xs px-2 py-1 rounded-md"
+                          >
+                            {tag}
+                          </span>
+                        )
+                      )}
                     </div>
                   )}
                 </div>
 
-                {/* Admin Controls */}
                 {user?.role === "admin" && (
                   <div className="mt-5 flex gap-4 text-sm">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        navigate(`/admin/edit/${problem._id}`);
+                        navigate(
+                          `/admin/edit/${problem._id}`
+                        );
                       }}
                       className="text-blue-400 hover:text-blue-300 transition"
                     >
