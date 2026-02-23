@@ -13,7 +13,7 @@ const router = Router();
 // Public route - anyone can view problems
 router.get("/", getAllProblems);
 
-router.get("/:id", getProblemById);
+router.get("/:id",protect, getProblemById);
 
 router.put(
   "/:id",

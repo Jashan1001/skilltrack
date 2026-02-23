@@ -58,7 +58,8 @@ export const submitSolution = asyncHandler(
       totalRuntime += runtime;
 
       const result = response.data;
-
+      console.log("Execution response:", result);
+      
       if (result.status !== "accepted") {
         finalStatus = result.status;
         break;
