@@ -8,13 +8,14 @@ import ProtectedRoute from "./routes/ProtectedRoute";
 import AppLayout from "./layouts/AppLayout";
 import CreateProblemPage from "./pages/CreateProblemPage";
 import SubmissionHistoryPage from "./pages/SubmissionHistoryPage";
+import HomePage from "./pages/HomePage";
 
 function App() {
   return (
     <Routes>
 
       {/* Public Routes */}
-      <Route path="/" element={<Navigate to="/problems" />} />
+      <Route path="/" element={<HomePage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
 
