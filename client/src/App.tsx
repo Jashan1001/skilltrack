@@ -6,6 +6,8 @@ import ProblemDetailPage from "./pages/ProblemDetailPage";
 import LeaderboardPage from "./pages/LeaderboardPage";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import AppLayout from "./layouts/AppLayout";
+import CreateProblemPage from "./pages/CreateProblemPage";
+import SubmissionHistoryPage from "./pages/SubmissionHistoryPage";
 
 function App() {
   return (
@@ -32,6 +34,15 @@ function App() {
             element={<LeaderboardPage />}
           />
 
+        </Route>
+      </Route>
+      <Route element={<ProtectedRoute />}>
+        <Route path="/submissions" element={<SubmissionHistoryPage />} />
+      </Route>
+
+      <Route element={<ProtectedRoute requiredRole="admin" />}>
+        <Route element={<AppLayout />}>
+          <Route path="/admin/create" element={<CreateProblemPage />} />
         </Route>
       </Route>
 
