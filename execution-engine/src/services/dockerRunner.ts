@@ -28,36 +28,162 @@ export const runCode = (
         const jobDir = path.join(__dirname, "..", "..", "jobs", jobId);
         fs.mkdirSync(jobDir, { recursive: true });
 
+        const cleanup = () => {
+          try {
+            fs.rmSync(jobDir, { recursive: true, force: true });
+          } catch {}
+        };
+
+        const resolveOnce = (result: ExecutionResult) => {
+          cleanup();
+          resolveOuter(result);
+          resolveQueue();
+        };
+
         let filename = "";
         let dockerImage = "";
-        let dockerCommand: string[] = [];
 
-        // Language Selection
         if (language === "javascript") {
           filename = "code.js";
           dockerImage = "node:20-alpine";
-          dockerCommand = ["node", filename];
         } else if (language === "python") {
           filename = "code.py";
           dockerImage = "python:3.11-alpine";
-          dockerCommand = ["python3", filename];
         } else if (language === "cpp") {
           filename = "code.cpp";
           dockerImage = "gcc:13";
-          dockerCommand = ["sh", "-c", `g++ ${filename} -o main && ./main`];
         } else {
-          resolveOuter({
+          resolveOnce({
             status: "internal_error",
             stdout: "",
             stderr: "Unsupported language",
-            executionTime: 0
+            executionTime: 0,
           });
-          resolveQueue();
           return;
         }
 
         const filePath = path.join(jobDir, filename);
         fs.writeFileSync(filePath, code);
+
+        /* =============================== */
+        /* CPP FLOW — Compile then Execute */
+        /* =============================== */
+        if (language === "cpp") {
+          const compileArgs = [
+            "run",
+            "--rm",
+            "-v",
+            `${jobDir.replace(/\\/g, "/")}:/app`,
+            "-w",
+            "/app",
+            dockerImage,
+            "g++",
+            filename,
+            "-O2",
+            "-std=c++17",
+            "-o",
+            "main",
+          ];
+
+          const compile = spawn("docker", compileArgs);
+
+          let compileError = "";
+
+          compile.stderr.on("data", (data) => {
+            compileError += data.toString();
+          });
+
+          compile.on("close", (code) => {
+            if (code !== 0) {
+              resolveOnce({
+                status: "runtime_error",
+                stdout: "",
+                stderr: compileError || "Compilation failed",
+                executionTime: 0,
+              });
+              return;
+            }
+
+            // Execution phase
+            const runArgs = [
+              "run",
+              "--rm",
+              "--memory=128m",
+              "--cpus=0.5",
+              "--pids-limit=64",
+              "--network=none",
+              "-i",
+              "-v",
+              `${jobDir.replace(/\\/g, "/")}:/app`,
+              "-w",
+              "/app",
+              dockerImage,
+              "./main",
+            ];
+
+            const child = spawn("docker", runArgs);
+
+            let stdout = "";
+            let stderr = "";
+            let resolved = false;
+            const MAX_OUTPUT = 1024 * 1024;
+            const TIME_LIMIT = 3000;
+            const startTime = Date.now();
+
+            const timeout = setTimeout(() => {
+              child.kill();
+              if (!resolved) {
+                resolved = true;
+                resolveOnce({
+                  status: "time_limit_exceeded",
+                  stdout: "",
+                  stderr: "Execution timed out",
+                  executionTime: Date.now() - startTime,
+                });
+              }
+            }, TIME_LIMIT);
+
+            if (input) {
+              child.stdin.write(input);
+            }
+            child.stdin.end();
+
+            child.stdout.on("data", (data) => {
+              stdout += data.toString();
+              if (stdout.length > MAX_OUTPUT) {
+                child.kill();
+              }
+            });
+
+            child.stderr.on("data", (data) => {
+              stderr += data.toString();
+            });
+
+            child.on("close", () => {
+              clearTimeout(timeout);
+              if (!resolved) {
+                resolved = true;
+                resolveOnce({
+                  status: stderr ? "runtime_error" : "accepted",
+                  stdout,
+                  stderr,
+                  executionTime: Date.now() - startTime,
+                });
+              }
+            });
+          });
+
+          return;
+        }
+
+        /* =============================== */
+        /* JS + PYTHON FLOW */
+        /* =============================== */
+
+        const dockerCommand =
+          language === "javascript"
+            ? ["node", filename]
+            : ["python3", filename];
 
         const dockerArgs = [
           "run",
@@ -72,34 +198,30 @@ export const runCode = (
           "-w",
           "/app",
           dockerImage,
-          ...dockerCommand
+          ...dockerCommand,
         ];
 
-        const startTime = Date.now();
         const child = spawn("docker", dockerArgs);
 
         let stdout = "";
         let stderr = "";
-        let outputSize = 0;
         let resolved = false;
-
         const MAX_OUTPUT = 1024 * 1024;
-        const TIME_LIMIT = 5000;
+        const TIME_LIMIT = 3000;
+        const startTime = Date.now();
 
-        const cleanup = () => {
-          try {
-            fs.rmSync(jobDir, { recursive: true, force: true });
-          } catch {}
-        };
-
-        const resolveOnce = (result: ExecutionResult) => {
+        const timeout = setTimeout(() => {
+          child.kill();
           if (!resolved) {
             resolved = true;
-            cleanup();
-            resolveOuter(result);
-            resolveQueue();
+            resolveOnce({
+              status: "time_limit_exceeded",
+              stdout: "",
+              stderr: "Execution timed out",
+              executionTime: Date.now() - startTime,
+            });
           }
-        };
+        }, TIME_LIMIT);
 
         if (input) {
           child.stdin.write(input);
@@ -107,18 +229,9 @@ export const runCode = (
         child.stdin.end();
 
         child.stdout.on("data", (data) => {
-          outputSize += data.length;
-
-          if (outputSize > MAX_OUTPUT) {
+          stdout += data.toString();
+          if (stdout.length > MAX_OUTPUT) {
             child.kill();
-            resolveOnce({
-              status: "runtime_error",
-              stdout: "",
-              stderr: "Output limit exceeded",
-              executionTime: Date.now() - startTime
-            });
-          } else {
-            stdout += data.toString();
           }
         });
 
@@ -126,37 +239,30 @@ export const runCode = (
           stderr += data.toString();
         });
 
-        const timeout = setTimeout(() => {
-          child.kill();
-          resolveOnce({
-            status: "time_limit_exceeded",
-            stdout: "",
-            stderr: "Execution timed out",
-            executionTime: Date.now() - startTime
-          });
-        }, TIME_LIMIT);
-
         child.on("close", () => {
           clearTimeout(timeout);
-
           if (!resolved) {
+            resolved = true;
             resolveOnce({
               status: stderr ? "runtime_error" : "accepted",
               stdout,
               stderr,
-              executionTime: Date.now() - startTime
+              executionTime: Date.now() - startTime,
             });
           }
         });
 
         child.on("error", () => {
           clearTimeout(timeout);
-          resolveOnce({
-            status: "internal_error",
-            stdout: "",
-            stderr: "Execution failed",
-            executionTime: Date.now() - startTime
-          });
+          if (!resolved) {
+            resolved = true;
+            resolveOnce({
+              status: "internal_error",
+              stdout: "",
+              stderr: "Execution failed",
+              executionTime: Date.now() - startTime,
+            });
+          }
         });
       });
     });
