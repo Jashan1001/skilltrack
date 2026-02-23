@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/authContext";
 import axios from "../api/axios";
 
 interface Problem {
@@ -10,6 +11,7 @@ interface Problem {
 }
 
 const ProblemsPage: React.FC = () => {
+  const { user } = useAuth();
   const [problems, setProblems] = useState<Problem[]>([]);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>("");
@@ -20,7 +22,7 @@ const ProblemsPage: React.FC = () => {
       try {
         const res = await axios.get("/problems");
         setProblems(res.data?.data?.problems || []);
-      } catch (err) {
+      } catch {
         setError("Failed to load problems");
       } finally {
         setLoading(false);
@@ -29,6 +31,21 @@ const ProblemsPage: React.FC = () => {
 
     fetchProblems();
   }, []);
+
+  const handleDelete = async (id: string) => {
+    const confirmDelete = window.confirm(
+      "Are you sure you want to delete this problem?"
+    );
+
+    if (!confirmDelete) return;
+
+    try {
+      await axios.delete(`/problems/${id}`);
+      setProblems((prev) => prev.filter((p) => p._id !== id));
+    } catch {
+      alert("Failed to delete problem");
+    }
+  };
 
   if (loading) {
     return (
@@ -71,31 +88,60 @@ const ProblemsPage: React.FC = () => {
             return (
               <div
                 key={problem._id}
-                onClick={() => navigate(`/problems/${problem._id}`)}
-                className="bg-gray-800/60 backdrop-blur border border-gray-700 hover:border-gray-600 p-6 rounded-xl transition cursor-pointer"
+                className="bg-gray-800/60 backdrop-blur border border-gray-700 hover:border-gray-600 p-6 rounded-xl transition"
               >
-                <div className="flex justify-between items-center">
-                  <h2 className="text-lg font-semibold text-gray-100">
-                    {problem.title}
-                  </h2>
+                <div
+                  onClick={() => navigate(`/problems/${problem._id}`)}
+                  className="cursor-pointer"
+                >
+                  <div className="flex justify-between items-center">
+                    <h2 className="text-lg font-semibold text-gray-100">
+                      {problem.title}
+                    </h2>
 
-                  <span
-                    className={`px-3 py-1 text-xs font-medium rounded-full ${difficultyStyle}`}
-                  >
-                    {formattedDifficulty}
-                  </span>
+                    <span
+                      className={`px-3 py-1 text-xs font-medium rounded-full ${difficultyStyle}`}
+                    >
+                      {formattedDifficulty}
+                    </span>
+                  </div>
+
+                  {problem.tags?.length > 0 && (
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {problem.tags.map((tag, index) => (
+                        <span
+                          key={index}
+                          className="bg-gray-700 text-gray-300 text-xs px-2 py-1 rounded-md"
+                        >
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
 
-                {problem.tags?.length > 0 && (
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {problem.tags.map((tag, index) => (
-                      <span
-                        key={index}
-                        className="bg-gray-700 text-gray-300 text-xs px-2 py-1 rounded-md"
-                      >
-                        {tag}
-                      </span>
-                    ))}
+                {/* Admin Controls */}
+                {user?.role === "admin" && (
+                  <div className="mt-5 flex gap-4 text-sm">
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/admin/edit/${problem._id}`);
+                      }}
+                      className="text-blue-400 hover:text-blue-300 transition"
+                    >
+                      Edit
+                    </button>
+
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(problem._id);
+                      }}
+                      className="text-rose-400 hover:text-rose-300 transition"
+                    >
+                      Delete
+                    </button>
                   </div>
                 )}
               </div>

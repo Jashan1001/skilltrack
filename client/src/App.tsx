@@ -9,6 +9,7 @@ import AppLayout from "./layouts/AppLayout";
 import CreateProblemPage from "./pages/CreateProblemPage";
 import SubmissionHistoryPage from "./pages/SubmissionHistoryPage";
 import HomePage from "./pages/HomePage";
+import EditProblemPage from "./pages/EditProblemPage";
 
 function App() {
   return (
@@ -39,6 +40,10 @@ function App() {
       </Route>
       <Route element={<ProtectedRoute />}>
         <Route path="/submissions" element={<SubmissionHistoryPage />} />
+      </Route>
+
+      <Route element={<ProtectedRoute requiredRole="admin" />}>
+        <Route path="/admin/edit/:id" element={<EditProblemPage />} />
       </Route>
 
       <Route element={<ProtectedRoute requiredRole="admin" />}>
