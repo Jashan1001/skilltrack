@@ -2,12 +2,18 @@ import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import axios from "../api/axios";
 
+interface TestCase {
+  input: string;
+  expectedOutput: string;
+}
+
 interface Problem {
   _id: string;
   title: string;
   description: string;
   difficulty: string;
   tags: string[];
+  publicTestCases: TestCase[];
 }
 
 interface PublicTestCaseResult {
@@ -146,6 +152,36 @@ const ProblemDetailPage: React.FC = () => {
         </p>
       </div>
 
+      {/* Public Test Cases (Display Section) */}
+      {problem.publicTestCases?.length > 0 && (
+        <div className="bg-gray-800/40 border border-gray-700 rounded-xl p-6 space-y-4">
+          <h2 className="text-lg font-medium text-gray-200">
+            Sample Test Cases
+          </h2>
+
+          {problem.publicTestCases.map((tc, index) => (
+            <div
+              key={index}
+              className="bg-gray-900/60 border border-gray-700 rounded-lg p-4 space-y-3"
+            >
+              <div>
+                <p className="text-sm text-gray-400">Input</p>
+                <pre className="bg-gray-800 p-3 rounded text-sm overflow-x-auto">
+                  {tc.input}
+                </pre>
+              </div>
+
+              <div>
+                <p className="text-sm text-gray-400">Expected Output</p>
+                <pre className="bg-gray-800 p-3 rounded text-sm overflow-x-auto">
+                  {tc.expectedOutput}
+                </pre>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
       {/* Submission Section */}
       <div className="bg-gray-800/40 border border-gray-700 rounded-xl p-6 space-y-6">
         <h2 className="text-lg font-medium text-gray-200">
@@ -180,7 +216,6 @@ const ProblemDetailPage: React.FC = () => {
 
         {result && (
           <div className="mt-8 bg-gray-900/60 border border-gray-700 rounded-xl p-6 space-y-6">
-            {/* Verdict */}
             <div className="flex justify-between items-center">
               <span
                 className={`px-4 py-2 text-sm font-medium rounded-full ${verdictStyle}`}
@@ -192,58 +227,6 @@ const ProblemDetailPage: React.FC = () => {
                 Runtime: {result.runtime} ms
               </span>
             </div>
-
-            {/* Stats */}
-            <div className="grid grid-cols-3 gap-4 text-sm">
-              <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700">
-                <p className="text-gray-400">Score</p>
-                <p className="text-lg font-medium">{result.score}</p>
-              </div>
-
-              <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700">
-                <p className="text-gray-400">Passed</p>
-                <p className="text-lg font-medium">
-                  {result.passed} / {result.total}
-                </p>
-              </div>
-
-              <div className="bg-gray-800/50 p-4 rounded-lg border border-gray-700">
-                <p className="text-gray-400">Runtime</p>
-                <p className="text-lg font-medium">
-                  {result.runtime} ms
-                </p>
-              </div>
-            </div>
-
-            {/* Public Test Cases */}
-            {result.publicResults?.length > 0 && (
-              <div className="space-y-3">
-                <h3 className="text-sm font-semibold text-gray-300">
-                  Public Test Cases
-                </h3>
-
-                {result.publicResults.map((tc, index) => (
-                  <div
-                    key={index}
-                    className="flex justify-between items-center bg-gray-800/40 border border-gray-700 rounded-lg p-3 text-sm"
-                  >
-                    <span className="text-gray-300">
-                      Test Case {index + 1}
-                    </span>
-
-                    <span
-                      className={`px-2 py-1 rounded-full text-xs ${
-                        tc.passed
-                          ? "bg-emerald-400/20 text-emerald-300"
-                          : "bg-rose-400/20 text-rose-300"
-                      }`}
-                    >
-                      {tc.passed ? "Passed" : "Failed"}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
           </div>
         )}
       </div>

@@ -1,60 +1,47 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Routes, Route } from "react-router-dom";
+
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
+import HomePage from "./pages/HomePage";
+
 import ProblemsPage from "./pages/ProblemsPage";
 import ProblemDetailPage from "./pages/ProblemDetailPage";
 import LeaderboardPage from "./pages/LeaderboardPage";
+import SubmissionHistoryPage from "./pages/SubmissionHistoryPage";
+import DashboardPage from "./pages/DashboardPage";
+
+import CreateProblemPage from "./pages/CreateProblemPage";
+import EditProblemPage from "./pages/EditProblemPage";
+
 import ProtectedRoute from "./routes/ProtectedRoute";
 import AppLayout from "./layouts/AppLayout";
-import CreateProblemPage from "./pages/CreateProblemPage";
-import SubmissionHistoryPage from "./pages/SubmissionHistoryPage";
-import HomePage from "./pages/HomePage";
-import EditProblemPage from "./pages/EditProblemPage";
-import DashboardPage from "./pages/DashboardPage";
 
 function App() {
   return (
     <Routes>
 
-      {/* Public Routes */}
+      {/* PUBLIC ROUTES */}
       <Route path="/" element={<HomePage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
 
-      {/* Protected Routes */}
+      {/* ALL AUTHENTICATED ROUTES */}
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
 
+          {/* Core */}
+          <Route path="/dashboard" element={<DashboardPage />} />
           <Route path="/problems" element={<ProblemsPage />} />
+          <Route path="/problems/:problemId" element={<ProblemDetailPage />} />
+          <Route path="/leaderboard/:problemId" element={<LeaderboardPage />} />
+          <Route path="/submissions" element={<SubmissionHistoryPage />} />
 
-          <Route
-            path="/problems/:problemId"
-            element={<ProblemDetailPage />}
-          />
+          {/* ADMIN ONLY ROUTES */}
+          <Route element={<ProtectedRoute requiredRole="admin" />}>
+            <Route path="/admin/create" element={<CreateProblemPage />} />
+            <Route path="/admin/edit/:id" element={<EditProblemPage />} />
+          </Route>
 
-          <Route
-            path="/leaderboard/:problemId"
-            element={<LeaderboardPage />}
-          />
-
-        </Route>
-      </Route>
-
-      <Route element={<ProtectedRoute />}>
-        <Route path="/submissions" element={<SubmissionHistoryPage />} />
-      </Route>
-
-      <Route element={<ProtectedRoute requiredRole="admin" />}>
-        <Route path="/admin/edit/:id" element={<EditProblemPage />} />
-      </Route>
-
-      <Route element={<ProtectedRoute />}>
-        <Route path="/dashboard" element={<DashboardPage />} />
-      </Route>
-
-      <Route element={<ProtectedRoute requiredRole="admin" />}>
-        <Route element={<AppLayout />}>
-          <Route path="/admin/create" element={<CreateProblemPage />} />
         </Route>
       </Route>
 

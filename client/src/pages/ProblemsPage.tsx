@@ -2,6 +2,7 @@ import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/authContext";
 import axios from "../api/axios";
+import PageContainer from "../layouts/PageContainer";
 
 interface Problem {
   _id: string;
@@ -120,6 +121,7 @@ const ProblemsPage: React.FC = () => {
     );
 
   return (
+    <PageContainer>
     <div className="space-y-10">
 
       <h1 className="text-3xl font-bold">
@@ -274,6 +276,7 @@ const ProblemsPage: React.FC = () => {
         </div>
       )}
     </div>
+    </PageContainer>
   );
 };
 
