@@ -42,18 +42,42 @@ const ProblemsPage: React.FC = () => {
   /* ================= Fetch Data ================= */
   useEffect(() => {
     const fetchData = async () => {
-      const [problemsRes, progressRes] = await Promise.all([
-        axios.get("/problems"),
-        axios.get("/users/progress"),
-      ]);
+      try {
+        const [problemsRes, progressRes] = await Promise.all([
+          axios.get("/problems"),
+          axios.get("/users/progress"),
+        ]);
 
-      setProblems(problemsRes.data?.data?.problems || []);
-      setProgress(progressRes.data?.data);
-      setLoading(false);
+        setProblems(problemsRes.data?.data?.problems || []);
+        setProgress(progressRes.data?.data);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchData();
   }, []);
+
+  /* ================= DELETE (FIXED) ================= */
+  const handleDelete = async (id: string) => {
+    try {
+      const confirmDelete = window.confirm(
+        "Are you sure you want to delete this problem?"
+      );
+      if (!confirmDelete) return;
+
+      await axios.delete(`/problems/${id}`);
+
+      setProblems((prev) =>
+        prev.filter((p) => p._id !== id)
+      );
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete problem");
+    }
+  };
 
   /* ================= Unique Tags ================= */
   const uniqueTags = useMemo(() => {
@@ -112,7 +136,7 @@ const ProblemsPage: React.FC = () => {
       </div>
     );
 
-  /* ================= Circle Animation ================= */
+  /* ================= Circle ================= */
   const radius = 46;
   const circumference = 2 * Math.PI * radius;
   const offset =
@@ -144,10 +168,9 @@ const ProblemsPage: React.FC = () => {
   return (
     <div className="max-w-[1400px] mx-auto grid grid-cols-12 gap-12">
 
-      {/* LEFT SIDE */}
+      {/* ================= LEFT SIDE ================= */}
       <div className="col-span-8 space-y-6">
 
-        {/* Header */}
         <div className="flex justify-between items-center">
           <h1 className="text-[28px] font-semibold text-neutral-100">
             Problems
@@ -157,7 +180,6 @@ const ProblemsPage: React.FC = () => {
           </span>
         </div>
 
-        {/* Difficulty Tabs */}
         <div className="flex gap-8 border-b border-neutral-800 pb-3">
           {["all", "easy", "medium", "hard"].map(
             (level) => (
@@ -181,10 +203,8 @@ const ProblemsPage: React.FC = () => {
           )}
         </div>
 
-        {/* Controls */}
         <div className="flex gap-4 items-center">
 
-          {/* Search */}
           <input
             type="text"
             placeholder="Search problems..."
@@ -195,7 +215,6 @@ const ProblemsPage: React.FC = () => {
             className="flex-1 bg-neutral-900 border border-neutral-800 rounded-md px-4 py-2 text-sm focus:outline-none focus:border-neutral-600"
           />
 
-          {/* Tag Filter */}
           <select
             value={selectedTag}
             onChange={(e) =>
@@ -211,7 +230,6 @@ const ProblemsPage: React.FC = () => {
             ))}
           </select>
 
-          {/* Sort */}
           <select
             value={sortBy}
             onChange={(e) =>
@@ -226,74 +244,69 @@ const ProblemsPage: React.FC = () => {
 
         </div>
 
-        {/* List */}
         <div className="divide-y divide-neutral-800 border-t border-neutral-800">
+
           {filteredProblems.map((problem) => (
-          <div
-            key={problem._id}
-            onClick={() => navigate(`/problems/${problem._id}`)}
-            className="group grid grid-cols-12 py-5 cursor-pointer hover:bg-neutral-900/50 transition relative"
-          >
-            {/* Title */}
-            <div className="col-span-8 text-[16px] font-medium text-neutral-200">
-              {problem.title}
-            </div>
-
-            {/* Difficulty */}
             <div
-              className={`col-span-2 capitalize text-[14px] ${
-                problem.difficulty === "easy"
-                  ? "text-emerald-400"
-                  : problem.difficulty === "medium"
-                  ? "text-amber-400"
-                  : "text-rose-400"
-              }`}
+              key={problem._id}
+              onClick={() =>
+                navigate(`/problems/${problem._id}`)
+              }
+              className="group grid grid-cols-12 py-5 cursor-pointer hover:bg-neutral-900/50 transition relative"
             >
-              {problem.difficulty}
-            </div>
-
-            {/* Admin Actions */}
-            {user?.role === "admin" && (
-              <div
-                className="col-span-2 flex justify-end gap-4 text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                onClick={(e) => e.stopPropagation()}
-              >
-                <button
-                  onClick={() =>
-                    navigate(`/admin/edit/${problem._id}`)
-                  }
-                  className="text-neutral-400 hover:text-neutral-200 transition"
-                >
-                  Edit
-                </button>
-
-                <button
-                  onClick={() => {
-                    const confirmDelete = window.confirm(
-                      "Delete this problem?"
-                    );
-                    if (confirmDelete) {
-                      // call delete API
-                    }
-                  }}
-                  className="text-neutral-500 hover:text-rose-400 transition"
-                >
-                  Delete
-                </button>
+              <div className="col-span-8 text-[16px] font-medium text-neutral-200">
+                {problem.title}
               </div>
-            )}
-          </div>
-        ))}
-        </div>
 
+              <div
+                className={`col-span-2 capitalize text-[14px] ${
+                  problem.difficulty === "easy"
+                    ? "text-emerald-400"
+                    : problem.difficulty === "medium"
+                    ? "text-amber-400"
+                    : "text-rose-400"
+                }`}
+              >
+                {problem.difficulty}
+              </div>
+
+              {user?.role === "admin" && (
+                <div
+                  className="col-span-2 flex justify-end gap-4 text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                  onClick={(e) =>
+                    e.stopPropagation()
+                  }
+                >
+                  <button
+                    onClick={() =>
+                      navigate(`/admin/edit/${problem._id}`)
+                    }
+                    className="text-neutral-400 hover:text-neutral-200 transition"
+                  >
+                    Edit
+                  </button>
+
+                  <button
+                    onClick={() =>
+                      handleDelete(problem._id)
+                    }
+                    className="text-neutral-500 hover:text-rose-400 transition"
+                  >
+                    Delete
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
+
+        </div>
       </div>
 
-      {/* RIGHT SIDE (Sticky) */}
+      {/* ================= RIGHT SIDE ================= */}
       <div className="col-span-4 space-y-6 sticky top-24 h-fit">
 
-        {/* Card 1 – Overview */}
+        {/* Circle */}
         <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6 space-y-6">
-
           <h2 className="text-sm uppercase text-neutral-400 tracking-wide">
             Progress Overview
           </h2>
@@ -334,9 +347,8 @@ const ProblemsPage: React.FC = () => {
           </div>
         </div>
 
-        {/* Card 2 – Difficulty Breakdown */}
+        {/* Difficulty Breakdown */}
         <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6 space-y-5">
-
           <h2 className="text-sm uppercase text-neutral-400 tracking-wide">
             Difficulty Breakdown
           </h2>
