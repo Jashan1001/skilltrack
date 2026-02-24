@@ -16,17 +16,12 @@ interface Problem {
   publicTestCases: TestCase[];
 }
 
-interface PublicTestCaseResult {
-  passed: boolean;
-}
-
 interface SubmissionResult {
   verdict: string;
   score: number;
   passed: number;
   total: number;
   runtime: number;
-  publicResults: PublicTestCaseResult[];
 }
 
 const ProblemDetailPage: React.FC = () => {
@@ -35,8 +30,6 @@ const ProblemDetailPage: React.FC = () => {
 
   const [problem, setProblem] = useState<Problem | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
-
   const [code, setCode] = useState("");
   const [language, setLanguage] = useState("javascript");
   const [submitting, setSubmitting] = useState(false);
@@ -44,16 +37,10 @@ const ProblemDetailPage: React.FC = () => {
 
   useEffect(() => {
     const fetchProblem = async () => {
-      try {
-        const res = await axios.get(`/problems/${problemId}`);
-        setProblem(res.data?.data || null);
-      } catch {
-        setError("Failed to load problem");
-      } finally {
-        setLoading(false);
-      }
+      const res = await axios.get(`/problems/${problemId}`);
+      setProblem(res.data?.data || null);
+      setLoading(false);
     };
-
     if (problemId) fetchProblem();
   }, [problemId]);
 
@@ -63,7 +50,6 @@ const ProblemDetailPage: React.FC = () => {
     try {
       setSubmitting(true);
       setResult(null);
-      setError("");
 
       const res = await axios.post("/submissions", {
         problemId,
@@ -72,163 +58,154 @@ const ProblemDetailPage: React.FC = () => {
       });
 
       setResult(res.data.data);
-    } catch {
-      setError("Submission failed");
     } finally {
       setSubmitting(false);
     }
   };
 
-  if (loading)
+  if (loading) {
     return (
-      <div className="flex justify-center py-20 text-gray-400">
-        Loading problem...
+      <div className="flex justify-center py-16 text-neutral-500">
+        Loading...
       </div>
     );
-
-  if (error)
-    return (
-      <div className="flex justify-center py-20 text-red-400">
-        {error}
-      </div>
-    );
+  }
 
   if (!problem) return null;
 
-  const difficulty = problem.difficulty.toLowerCase();
-
-  const difficultyStyle =
-    difficulty === "easy"
-      ? "bg-emerald-400/15 text-emerald-300"
-      : difficulty === "medium"
-      ? "bg-amber-400/15 text-amber-300"
-      : "bg-rose-400/15 text-rose-300";
-
-  const formattedDifficulty =
-    problem.difficulty.charAt(0).toUpperCase() +
-    problem.difficulty.slice(1);
-
-  const verdict = result?.verdict.toLowerCase();
-
-  const verdictStyle =
-    verdict === "accepted"
-      ? "bg-emerald-400/20 text-emerald-300"
-      : verdict === "wrong_answer"
-      ? "bg-rose-400/20 text-rose-300"
-      : verdict === "time_limit_exceeded"
-      ? "bg-amber-400/20 text-amber-300"
-      : "bg-gray-600/20 text-gray-300";
-
-  const formattedVerdict = result?.verdict.replace(/_/g, " ");
+  const difficultyColor =
+    problem.difficulty === "easy"
+      ? "text-emerald-400"
+      : problem.difficulty === "medium"
+      ? "text-amber-400"
+      : "text-rose-400";
 
   return (
-    <div className="space-y-12">
+    <div className="w-full max-w-[1500px] mx-auto px-6 pt-6 pb-10 space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-start">
-        <div className="space-y-3">
-          <h1 className="text-3xl font-semibold text-gray-100">
+      <div className="flex justify-between items-center">
+        <div className="space-y-2">
+          <h1 className="text-2xl font-semibold text-neutral-100">
             {problem.title}
           </h1>
 
-          <span
-            className={`px-3 py-1 text-xs font-medium rounded-full ${difficultyStyle}`}
-          >
-            {formattedDifficulty}
+          <span className={`text-sm capitalize ${difficultyColor}`}>
+            {problem.difficulty}
           </span>
         </div>
 
         <button
           onClick={() => navigate(`/leaderboard/${problem._id}`)}
-          className="px-4 py-2 text-sm rounded-md border border-gray-600 hover:border-gray-400 transition text-gray-200"
+          className="border border-neutral-700 px-4 py-2 text-sm rounded-md text-neutral-300 hover:bg-neutral-800 transition"
         >
           Leaderboard →
         </button>
       </div>
 
-      {/* Description */}
-      <div className="bg-gray-800/40 border border-gray-700 rounded-xl p-6">
-        <p className="text-gray-300 whitespace-pre-line leading-relaxed">
-          {problem.description}
-        </p>
-      </div>
+      {/* Split Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_1fr] gap-6">
+        {/* LEFT PANEL */}
+        <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-5 space-y-6">
+          {/* Description */}
+          <div>
+            <h2 className="text-lg font-medium text-neutral-100 mb-3">
+              Description
+            </h2>
+            <p className="text-neutral-400 whitespace-pre-line leading-relaxed">
+              {problem.description}
+            </p>
+          </div>
 
-      {/* Public Test Cases (Display Section) */}
-      {problem.publicTestCases?.length > 0 && (
-        <div className="bg-gray-800/40 border border-gray-700 rounded-xl p-6 space-y-4">
-          <h2 className="text-lg font-medium text-gray-200">
-            Sample Test Cases
+          {/* Sample Test Cases */}
+          {problem.publicTestCases?.length > 0 && (
+            <div className="space-y-4">
+              <h3 className="text-md font-medium text-neutral-100">
+                Sample Test Cases
+              </h3>
+
+              {problem.publicTestCases.map((tc, index) => (
+                <div
+                  key={index}
+                  className="bg-neutral-950 border border-neutral-800 rounded-lg p-4 space-y-3"
+                >
+                  <div>
+                    <p className="text-xs uppercase text-neutral-500 tracking-wide">
+                      Input
+                    </p>
+                    <pre className="mt-2 bg-neutral-900 p-3 rounded text-sm text-neutral-300 overflow-x-auto">
+                      {tc.input}
+                    </pre>
+                  </div>
+
+                  <div>
+                    <p className="text-xs uppercase text-neutral-500 tracking-wide">
+                      Expected Output
+                    </p>
+                    <pre className="mt-2 bg-neutral-900 p-3 rounded text-sm text-neutral-300 overflow-x-auto">
+                      {tc.expectedOutput}
+                    </pre>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* RIGHT PANEL (Editor) */}
+        <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-5 flex flex-col sticky top-4 h-fit space-y-5">
+          <h2 className="text-lg font-medium text-neutral-100">
+            Code Editor
           </h2>
 
-          {problem.publicTestCases.map((tc, index) => (
-            <div
-              key={index}
-              className="bg-gray-900/60 border border-gray-700 rounded-lg p-4 space-y-3"
+          <select
+            value={language}
+            onChange={(e) => setLanguage(e.target.value)}
+            className="bg-neutral-800 border border-neutral-700 text-neutral-200 px-3 py-2 rounded-md text-sm focus:outline-none"
+          >
+            <option value="javascript">JavaScript</option>
+            <option value="python">Python</option>
+            <option value="cpp">C++</option>
+          </select>
+
+          <textarea
+            rows={16}
+            value={code}
+            onChange={(e) => setCode(e.target.value)}
+            placeholder="Write your solution here..."
+            className="w-full bg-neutral-950 border border-neutral-800 text-neutral-200 rounded-lg p-4 font-mono text-sm focus:outline-none"
+          />
+
+          {/* Action Bar */}
+          <div className="flex justify-between items-center pt-3 border-t border-neutral-800">
+            <button
+              onClick={handleSubmit}
+              disabled={submitting}
+              className="bg-neutral-100 text-neutral-900 px-6 py-2 rounded-md text-sm font-medium hover:bg-neutral-300 transition disabled:opacity-50"
             >
-              <div>
-                <p className="text-sm text-gray-400">Input</p>
-                <pre className="bg-gray-800 p-3 rounded text-sm overflow-x-auto">
-                  {tc.input}
-                </pre>
+              {submitting ? "Running..." : "Submit"}
+            </button>
+
+            {result && (
+              <div className="text-sm text-neutral-400">
+                Verdict:{" "}
+                <span className="font-medium text-neutral-200">
+                  {result.verdict}
+                </span>
               </div>
-
-              <div>
-                <p className="text-sm text-gray-400">Expected Output</p>
-                <pre className="bg-gray-800 p-3 rounded text-sm overflow-x-auto">
-                  {tc.expectedOutput}
-                </pre>
-              </div>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Submission Section */}
-      <div className="bg-gray-800/40 border border-gray-700 rounded-xl p-6 space-y-6">
-        <h2 className="text-lg font-medium text-gray-200">
-          Submit Solution
-        </h2>
-
-        <select
-          value={language}
-          onChange={(e) => setLanguage(e.target.value)}
-          className="bg-gray-700 text-gray-100 border border-gray-600 rounded-md px-3 py-2 text-sm focus:outline-none focus:border-blue-500"
-        >
-          <option value="javascript">JavaScript</option>
-          <option value="python">Python</option>
-          <option value="cpp">C++</option>
-        </select>
-
-        <textarea
-          rows={12}
-          placeholder="Write your solution here..."
-          value={code}
-          onChange={(e) => setCode(e.target.value)}
-          className="w-full bg-gray-800 text-gray-100 border border-gray-600 rounded-md p-4 font-mono text-sm focus:outline-none focus:border-blue-500"
-        />
-
-        <button
-          onClick={handleSubmit}
-          disabled={submitting}
-          className="bg-blue-500 hover:bg-blue-600 disabled:opacity-50 px-6 py-2 rounded-md text-sm font-medium transition"
-        >
-          {submitting ? "Running..." : "Submit"}
-        </button>
-
-        {result && (
-          <div className="mt-8 bg-gray-900/60 border border-gray-700 rounded-xl p-6 space-y-6">
-            <div className="flex justify-between items-center">
-              <span
-                className={`px-4 py-2 text-sm font-medium rounded-full ${verdictStyle}`}
-              >
-                {formattedVerdict}
-              </span>
-
-              <span className="text-sm text-gray-400">
-                Runtime: {result.runtime} ms
-              </span>
-            </div>
+            )}
           </div>
-        )}
+
+          {/* Compact Result */}
+          {result && (
+            <div className="bg-neutral-950 border border-neutral-800 rounded-lg p-4 text-sm text-neutral-300 space-y-2">
+              <div>Score: {result.score}</div>
+              <div>
+                Passed: {result.passed} / {result.total}
+              </div>
+              <div>Runtime: {result.runtime} ms</div>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

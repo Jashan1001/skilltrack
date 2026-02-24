@@ -27,8 +27,8 @@ const LoginPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 flex items-center justify-center px-6">
-      <div className="w-full max-w-md bg-gray-900 border border-gray-800 rounded-2xl p-8 space-y-8 shadow-xl">
+    <div className="min-h-screen flex items-center justify-center px-6">
+      <div className="w-full max-w-md border border-gray-800 rounded-2xl p-8 space-y-8 shadow-xl">
 
         {/* Heading */}
         <div className="space-y-2 text-center">
