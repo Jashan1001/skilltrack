@@ -39,6 +39,13 @@ const Navbar: React.FC = () => {
             Submissions
           </Link>
 
+          <Link
+            to="/dashboard"
+            className="text-gray-300 hover:text-white transition"
+          >
+            Dashboard
+          </Link>
+
           {user?.role === "admin" && (
             <Link
               to="/admin/create"

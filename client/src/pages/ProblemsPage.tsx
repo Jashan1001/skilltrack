@@ -18,6 +18,7 @@ const ProblemsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
+  const [searchQuery, setSearchQuery] = useState("");
   const [selectedDifficulty, setSelectedDifficulty] = useState("all");
   const [selectedTag, setSelectedTag] = useState("all");
 
@@ -52,7 +53,7 @@ const ProblemsPage: React.FC = () => {
   }, [problems]);
 
   /* ========================
-     Filtering Logic (Case-Insensitive)
+     Combined Filtering Logic
   =========================== */
   const filteredProblems = useMemo(() => {
     return problems.filter((problem) => {
@@ -69,9 +70,21 @@ const ProblemsPage: React.FC = () => {
             selectedTag.toLowerCase()
         );
 
-      return difficultyMatch && tagMatch;
+      const searchMatch =
+        problem.title
+          .toLowerCase()
+          .includes(searchQuery.trim().toLowerCase());
+
+      return (
+        difficultyMatch && tagMatch && searchMatch
+      );
     });
-  }, [problems, selectedDifficulty, selectedTag]);
+  }, [
+    problems,
+    selectedDifficulty,
+    selectedTag,
+    searchQuery,
+  ]);
 
   /* ========================
      Delete Handler
@@ -114,9 +127,19 @@ const ProblemsPage: React.FC = () => {
       </h1>
 
       {/* ========================
-          Filters Section
+          Search + Filters
       =========================== */}
       <div className="flex flex-wrap gap-4">
+
+        <input
+          type="text"
+          placeholder="Search problems..."
+          value={searchQuery}
+          onChange={(e) =>
+            setSearchQuery(e.target.value)
+          }
+          className="bg-gray-800 border border-gray-700 px-4 py-2 rounded-lg text-sm w-full md:w-72"
+        />
 
         <select
           value={selectedDifficulty}
@@ -125,9 +148,13 @@ const ProblemsPage: React.FC = () => {
           }
           className="bg-gray-800 border border-gray-700 px-4 py-2 rounded-lg text-sm"
         >
-          <option value="all">All Difficulties</option>
+          <option value="all">
+            All Difficulties
+          </option>
           <option value="easy">Easy</option>
-          <option value="medium">Medium</option>
+          <option value="medium">
+            Medium
+          </option>
           <option value="hard">Hard</option>
         </select>
 
@@ -138,7 +165,9 @@ const ProblemsPage: React.FC = () => {
           }
           className="bg-gray-800 border border-gray-700 px-4 py-2 rounded-lg text-sm"
         >
-          <option value="all">All Topics</option>
+          <option value="all">
+            All Topics
+          </option>
           {uniqueTags.map((tag) => (
             <option key={tag} value={tag}>
               {tag.charAt(0).toUpperCase() +

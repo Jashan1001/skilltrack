@@ -10,6 +10,7 @@ import CreateProblemPage from "./pages/CreateProblemPage";
 import SubmissionHistoryPage from "./pages/SubmissionHistoryPage";
 import HomePage from "./pages/HomePage";
 import EditProblemPage from "./pages/EditProblemPage";
+import DashboardPage from "./pages/DashboardPage";
 
 function App() {
   return (
@@ -38,12 +39,17 @@ function App() {
 
         </Route>
       </Route>
+
       <Route element={<ProtectedRoute />}>
         <Route path="/submissions" element={<SubmissionHistoryPage />} />
       </Route>
 
       <Route element={<ProtectedRoute requiredRole="admin" />}>
         <Route path="/admin/edit/:id" element={<EditProblemPage />} />
+      </Route>
+
+      <Route element={<ProtectedRoute />}>
+        <Route path="/dashboard" element={<DashboardPage />} />
       </Route>
 
       <Route element={<ProtectedRoute requiredRole="admin" />}>
