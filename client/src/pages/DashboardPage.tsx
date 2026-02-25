@@ -35,137 +35,167 @@ const DashboardPage: React.FC = () => {
      Derived Statistics
   ========================== */
   const stats = useMemo(() => {
-  if (!submissions.length)
+    if (!submissions.length)
+      return {
+        totalSubmissions: 0,
+        solvedProblems: 0,
+        accuracy: 0,
+        avgRuntime: 0,
+        easySolved: 0,
+        mediumSolved: 0,
+        hardSolved: 0,
+      };
+
+    const acceptedSubs = submissions.filter(
+      (s) => s.status.toLowerCase() === "accepted"
+    );
+
+    const uniqueSolvedMap = new Map<
+      string,
+      { difficulty: string; runtime: number }
+    >();
+
+    acceptedSubs.forEach((sub) => {
+      if (!uniqueSolvedMap.has(sub.problem._id)) {
+        uniqueSolvedMap.set(sub.problem._id, {
+          difficulty: sub.problem.difficulty.toLowerCase(),
+          runtime: sub.runtime,
+        });
+      }
+    });
+
+    const uniqueSolvedProblems = Array.from(
+      uniqueSolvedMap.values()
+    );
+
+    let easySolved = 0;
+    let mediumSolved = 0;
+    let hardSolved = 0;
+
+    uniqueSolvedProblems.forEach((p) => {
+      if (p.difficulty === "easy") easySolved++;
+      else if (p.difficulty === "medium") mediumSolved++;
+      else if (p.difficulty === "hard") hardSolved++;
+    });
+
+    const totalRuntime = acceptedSubs.reduce(
+      (sum, s) => sum + s.runtime,
+      0
+    );
+
     return {
-      totalSubmissions: 0,
-      solvedProblems: 0,
-      accuracy: 0,
-      avgRuntime: 0,
-      easySolved: 0,
-      mediumSolved: 0,
-      hardSolved: 0,
+      totalSubmissions: submissions.length,
+      solvedProblems: uniqueSolvedProblems.length,
+      accuracy:
+        submissions.length === 0
+          ? 0
+          : Math.round(
+              (acceptedSubs.length / submissions.length) * 100
+            ),
+      avgRuntime:
+        acceptedSubs.length === 0
+          ? 0
+          : Math.round(
+              totalRuntime / acceptedSubs.length
+            ),
+      easySolved,
+      mediumSolved,
+      hardSolved,
     };
-
-  const acceptedSubs = submissions.filter(
-    (s) => s.status.toLowerCase() === "accepted"
-  );
-
-  // Unique solved problems (by problem ID)
-  const uniqueSolvedMap = new Map<
-    string,
-    { difficulty: string; runtime: number }
-  >();
-
-  acceptedSubs.forEach((sub) => {
-    if (!uniqueSolvedMap.has(sub.problem._id)) {
-      uniqueSolvedMap.set(sub.problem._id, {
-        difficulty: sub.problem.difficulty.toLowerCase(),
-        runtime: sub.runtime,
-      });
-    }
-  });
-
-  const uniqueSolvedProblems = Array.from(
-    uniqueSolvedMap.values()
-  );
-
-  let easySolved = 0;
-  let mediumSolved = 0;
-  let hardSolved = 0;
-
-  uniqueSolvedProblems.forEach((p) => {
-    if (p.difficulty === "easy") easySolved++;
-    else if (p.difficulty === "medium") mediumSolved++;
-    else if (p.difficulty === "hard") hardSolved++;
-  });
-
-  const totalRuntime = acceptedSubs.reduce(
-    (sum, s) => sum + s.runtime,
-    0
-  );
-
-  return {
-    totalSubmissions: submissions.length,
-    solvedProblems: uniqueSolvedProblems.length,
-    accuracy:
-      submissions.length === 0
-        ? 0
-        : Math.round(
-            (acceptedSubs.length / submissions.length) * 100
-          ),
-    avgRuntime:
-      acceptedSubs.length === 0
-        ? 0
-        : Math.round(
-            totalRuntime / acceptedSubs.length
-          ),
-    easySolved,
-    mediumSolved,
-    hardSolved,
-  };
-}, [submissions]);
+  }, [submissions]);
 
   if (loading)
     return (
-      <div className="flex justify-center py-20 text-gray-400">
+      <div className="flex justify-center py-20 text-gray-500 dark:text-neutral-400">
         Loading dashboard...
       </div>
     );
 
   if (error)
     return (
-      <div className="flex justify-center py-20 text-red-400">
+      <div className="flex justify-center py-20 text-red-500">
         {error}
       </div>
     );
 
   return (
-    <div className="space-y-10">
-      <h1 className="text-3xl font-bold">
-        Progress Dashboard
-      </h1>
+    <div className="space-y-12">
 
-      {/* Top Stats */}
-      <div className="grid md:grid-cols-4 gap-6">
-        <StatCard
-          title="Total Submissions"
-          value={stats.totalSubmissions}
-        />
-        <StatCard
-          title="Problems Solved"
-          value={stats.solvedProblems}
-        />
-        <StatCard
-          title="Accuracy"
-          value={`${stats.accuracy}%`}
-        />
-        <StatCard
-          title="Avg Runtime"
-          value={`${stats.avgRuntime} ms`}
-        />
+      {/* Heading */}
+      <div>
+        <h1 className="text-3xl font-semibold text-gray-900 dark:text-white">
+          Dashboard Overview
+        </h1>
+        <p className="text-sm text-gray-500 dark:text-neutral-400 mt-1">
+          Your DSA mastery progress
+        </p>
       </div>
 
-      {/* Difficulty Breakdown */}
-      <div className="bg-gray-800/60 border border-gray-700 p-6 rounded-xl">
-        <h2 className="text-lg font-semibold mb-6">
-          Difficulty Breakdown (Accepted)
-        </h2>
+      {/* Stats Row */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        <StatCard title="Problems Solved" value={stats.solvedProblems} />
+        <StatCard title="Total Submissions" value={stats.totalSubmissions} />
+        <StatCard title="Accuracy" value={`${stats.accuracy}%`} />
+        <StatCard title="Avg Runtime" value={`${stats.avgRuntime} ms`} />
+      </div>
 
-        <div className="grid md:grid-cols-3 gap-6 text-center">
-          <DifficultyCard
+      {/* Middle Section */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-10">
+
+        {/* Mastery Ring */}
+        <div className="lg:col-span-5 bg-white dark:bg-neutral-900
+                        border border-gray-200 dark:border-neutral-800
+                        rounded-2xl p-8 flex flex-col items-center
+                        justify-center space-y-6 transition-colors">
+
+          <h2 className="text-sm uppercase tracking-wide text-gray-500 dark:text-neutral-400">
+            Mastery Progress
+          </h2>
+
+          <MasteryRing
+            percentage={stats.accuracy}
+            label={`${stats.solvedProblems} Solved`}
+          />
+        </div>
+
+        {/* Difficulty Breakdown */}
+        <div className="lg:col-span-7 bg-white dark:bg-neutral-900
+                        border border-gray-200 dark:border-neutral-800
+                        rounded-2xl p-8 space-y-6 transition-colors">
+
+          <h2 className="text-sm uppercase tracking-wide text-gray-500 dark:text-neutral-400">
+            Difficulty Breakdown
+          </h2>
+
+          <DifficultyBar
             label="Easy"
             value={stats.easySolved}
-            color="text-emerald-400"
+            total={
+              stats.easySolved +
+              stats.mediumSolved +
+              stats.hardSolved
+            }
+            color="bg-emerald-500"
           />
-          <DifficultyCard
+          <DifficultyBar
             label="Medium"
             value={stats.mediumSolved}
-            color="text-amber-400"
+            total={
+              stats.easySolved +
+              stats.mediumSolved +
+              stats.hardSolved
+            }
+            color="bg-amber-500"
           />
-          <DifficultyCard
+          <DifficultyBar
             label="Hard"
             value={stats.hardSolved}
-            color="text-rose-400"
+            total={
+              stats.easySolved +
+              stats.mediumSolved +
+              stats.hardSolved
+            }
+            color="bg-rose-500"
           />
         </div>
       </div>
@@ -184,33 +214,97 @@ const StatCard = ({
   title: string;
   value: string | number;
 }) => (
-  <div className="bg-gray-800/60 border border-gray-700 p-6 rounded-xl">
-    <p className="text-gray-400 text-sm">
+  <div className="bg-white dark:bg-neutral-900
+                  border border-gray-200 dark:border-neutral-800
+                  rounded-2xl p-6 transition-colors">
+    <p className="text-sm text-gray-500 dark:text-neutral-400">
       {title}
     </p>
-    <h2 className="text-2xl font-semibold mt-2">
+    <h2 className="text-2xl font-semibold mt-2 text-gray-900 dark:text-white">
       {value}
     </h2>
   </div>
 );
 
-const DifficultyCard = ({
+const MasteryRing = ({
+  percentage,
+  label,
+}: {
+  percentage: number;
+  label: string;
+}) => {
+  const radius = 52;
+  const circumference = 2 * Math.PI * radius;
+  const offset =
+    circumference - (percentage / 100) * circumference;
+
+  return (
+    <div className="flex flex-col items-center space-y-3">
+      <svg width="150" height="150">
+        <circle
+          cx="75"
+          cy="75"
+          r={radius}
+          stroke="currentColor"
+          strokeWidth="10"
+          fill="transparent"
+          className="text-gray-200 dark:text-neutral-800"
+        />
+        <circle
+          cx="75"
+          cy="75"
+          r={radius}
+          stroke="currentColor"
+          strokeWidth="10"
+          fill="transparent"
+          strokeDasharray={circumference}
+          strokeDashoffset={offset}
+          strokeLinecap="round"
+          transform="rotate(-90 75 75)"
+          className="text-gray-900 dark:text-white transition-all duration-1000"
+        />
+      </svg>
+
+      <div className="text-center">
+        <p className="text-2xl font-semibold text-gray-900 dark:text-white">
+          {percentage}%
+        </p>
+        <p className="text-sm text-gray-500 dark:text-neutral-400">
+          {label}
+        </p>
+      </div>
+    </div>
+  );
+};
+
+const DifficultyBar = ({
   label,
   value,
+  total,
   color,
 }: {
   label: string;
   value: number;
+  total: number;
   color: string;
-}) => (
-  <div>
-    <p className="text-gray-400 text-sm">
-      {label}
-    </p>
-    <h3 className={`text-2xl font-semibold mt-2 ${color}`}>
-      {value}
-    </h3>
-  </div>
-);
+}) => {
+  const percentage = total === 0 ? 0 : (value / total) * 100;
+
+  return (
+    <div className="space-y-2">
+      <div className="flex justify-between text-sm text-gray-700 dark:text-neutral-300">
+        <span>{label}</span>
+        <span>{value}</span>
+      </div>
+
+      <div className="w-full h-2 bg-gray-200 dark:bg-neutral-800 rounded-full overflow-hidden">
+        <div
+          className={`${color} h-full transition-all duration-700`}
+          style={{ width: `${percentage}%` }}
+        />
+      </div>
+    </div>
+  );
+};
 
 export default DashboardPage;

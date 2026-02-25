@@ -1,8 +1,10 @@
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/authContext";
+import { useTheme } from "../hooks/useTheme";
 
 const Navbar: React.FC = () => {
   const { logout, user } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -11,72 +13,71 @@ const Navbar: React.FC = () => {
     navigate("/login");
   };
 
-  const linkBase =
-    "text-sm transition-colors duration-200";
+  const getPageTitle = () => {
+    const path = location.pathname;
 
-  const activeStyle =
-    "text-neutral-100";
+    if (path.startsWith("/dashboard")) return "Dashboard";
+    if (path.startsWith("/patterns")) return "Patterns";
+    if (path.startsWith("/problems/")) return "Problem";
+    if (path.startsWith("/problems")) return "Problems";
+    if (path.startsWith("/submissions")) return "Submissions";
+    if (path.startsWith("/leaderboard")) return "Leaderboard";
+    if (path.startsWith("/admin")) return "Admin Panel";
 
-  const inactiveStyle =
-    "text-neutral-400 hover:text-neutral-200";
-
-  const getLinkStyle = (path: string) =>
-    `${linkBase} ${
-      location.pathname.startsWith(path)
-        ? activeStyle
-        : inactiveStyle
-    }`;
+    return "SkillTrack";
+  };
 
   return (
-    <nav className="border-b border-neutral-800 bg-neutral-950/95 backdrop-blur supports-[backdrop-filter]:bg-neutral-950/80">
-      <div className="w-full max-w-[1600px] mx-auto px-6 h-14 flex items-center justify-between">
+    <header
+      className="h-14 flex items-center justify-between px-6
+                 bg-white dark:bg-neutral-950
+                 border-b border-gray-200 dark:border-neutral-800
+                 transition-colors"
+    >
+      {/* Left — Title */}
+      <h1 className="text-base font-semibold text-gray-900 dark:text-white">
+        {getPageTitle()}
+      </h1>
 
-        {/* Brand */}
-        <Link
-          to="/problems"
-          className="text-lg font-semibold tracking-tight text-neutral-100 hover:text-white transition"
+      {/* Right — Controls */}
+      <div className="flex items-center gap-4">
+
+        {/* Theme Toggle */}
+        <button
+          onClick={toggleTheme}
+          className="px-3 py-1.5 text-xs font-medium rounded-md
+                     bg-gray-100 dark:bg-neutral-800
+                     text-gray-700 dark:text-neutral-200
+                     hover:bg-gray-200 dark:hover:bg-neutral-700
+                     transition"
         >
-          Interview<span className="text-neutral-400">Sphere</span>
-        </Link>
+          {theme === "dark" ? "Light" : "Dark"}
+        </button>
 
-        {/* Navigation */}
-        <div className="flex items-center gap-8">
+        {/* Role Badge */}
+        <span
+          className="px-2 py-1 text-xs rounded-md
+                     bg-gray-100 dark:bg-neutral-800
+                     text-gray-700 dark:text-neutral-300
+                     capitalize"
+        >
+          {user?.role}
+        </span>
 
-          <Link to="/problems" className={getLinkStyle("/problems")}>
-            Problems
-          </Link>
+        {/* Email */}
+        <span className="text-sm text-gray-600 dark:text-neutral-400">
+          {user?.email}
+        </span>
 
-          <Link to="/submissions" className={getLinkStyle("/submissions")}>
-            Submissions
-          </Link>
-
-          <Link to="/dashboard" className={getLinkStyle("/dashboard")}>
-            Dashboard
-          </Link>
-
-          {user?.role === "admin" && (
-            <Link
-              to="/admin/create"
-              className={getLinkStyle("/admin")}
-            >
-              Create Problem
-            </Link>
-          )}
-
-          {/* Divider */}
-          <div className="h-5 w-px bg-neutral-800" />
-
-          {/* Logout */}
-          <button
-            onClick={handleLogout}
-            className="text-sm text-rose-400 hover:text-rose-300 transition"
-          >
-            Logout
-          </button>
-
-        </div>
+        {/* Logout */}
+        <button
+          onClick={handleLogout}
+          className="text-sm font-medium text-rose-500 hover:text-rose-600 transition"
+        >
+          Logout
+        </button>
       </div>
-    </nav>
+    </header>
   );
 };
 

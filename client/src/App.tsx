@@ -4,7 +4,9 @@ import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import HomePage from "./pages/HomePage";
 
-import ProblemsPage from "./pages/ProblemsPage";
+import PatternsPage from "./pages/PatternsPage";
+import PatternDetailPage from "./pages/PatternDetailPage";
+import ProblemsPage from "./pages/ProblemsPage"; // Master Sheet
 import ProblemDetailPage from "./pages/ProblemDetailPage";
 import LeaderboardPage from "./pages/LeaderboardPage";
 import SubmissionHistoryPage from "./pages/SubmissionHistoryPage";
@@ -25,18 +27,25 @@ function App() {
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
 
-      {/* ALL AUTHENTICATED ROUTES */}
+      {/* AUTHENTICATED ROUTES */}
       <Route element={<ProtectedRoute />}>
         <Route element={<AppLayout />}>
 
-          {/* Core */}
+          {/* Core Structure */}
           <Route path="/dashboard" element={<DashboardPage />} />
+          <Route path="/patterns" element={<PatternsPage />} />
+          <Route path="/patterns/:patternName" element={<PatternDetailPage />} />
           <Route path="/problems" element={<ProblemsPage />} />
           <Route path="/problems/:problemId" element={<ProblemDetailPage />} />
-          <Route path="/leaderboard/:problemId" element={<LeaderboardPage />} />
+
           <Route path="/submissions" element={<SubmissionHistoryPage />} />
 
-          {/* ADMIN ONLY ROUTES */}
+          {/* Global Leaderboard */}
+          <Route path="/leaderboard" element={<LeaderboardPage />} />
+          {/* Problem Leaderboard */}
+          <Route path="/leaderboard/:problemId" element={<LeaderboardPage />} />
+
+          {/* ADMIN ONLY */}
           <Route element={<ProtectedRoute requiredRole="admin" />}>
             <Route path="/admin/create" element={<CreateProblemPage />} />
             <Route path="/admin/edit/:id" element={<EditProblemPage />} />

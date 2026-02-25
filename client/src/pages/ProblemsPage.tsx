@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/authContext";
 import axios from "../api/axios";
@@ -6,23 +6,10 @@ import axios from "../api/axios";
 interface Problem {
   _id: string;
   title: string;
-  difficulty: string;
+  difficulty: "easy" | "medium" | "hard";
+  pattern?: string;
   tags?: string[];
-}
-
-interface Progress {
-  totalSolved: number;
-  totalProblems: number;
-
-  easySolved: number;
-  mediumSolved: number;
-  hardSolved: number;
-
-  easyTotal: number;
-  mediumTotal: number;
-  hardTotal: number;
-
-  completionPercentage: number;
+  orderInPattern?: number;
 }
 
 const ProblemsPage: React.FC = () => {
@@ -30,12 +17,12 @@ const ProblemsPage: React.FC = () => {
   const { user } = useAuth();
 
   const [problems, setProblems] = useState<Problem[]>([]);
-  const [progress, setProgress] = useState<Progress | null>(null);
+  const [solvedIds, setSolvedIds] = useState<Set<string>>(new Set());
 
-  const [selectedDifficulty, setSelectedDifficulty] = useState("all");
-  const [selectedTag, setSelectedTag] = useState("all");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState("default");
+  const [search, setSearch] = useState("");
+  const [difficulty, setDifficulty] = useState("all");
+  const [pattern, setPattern] = useState("all");
+  const [tag, setTag] = useState("all");
 
   const [loading, setLoading] = useState(true);
 
@@ -44,12 +31,16 @@ const ProblemsPage: React.FC = () => {
     const fetchData = async () => {
       try {
         const [problemsRes, progressRes] = await Promise.all([
-          axios.get("/problems"),
+          axios.get("/problems/official-all"),
           axios.get("/users/progress"),
         ]);
 
         setProblems(problemsRes.data?.data?.problems || []);
-        setProgress(progressRes.data?.data);
+
+        const solvedIdsFromProgress =
+          progressRes.data?.data?.solvedProblemIds || [];
+
+        setSolvedIds(new Set(solvedIdsFromProgress));
       } catch (err) {
         console.error(err);
       } finally {
@@ -60,7 +51,7 @@ const ProblemsPage: React.FC = () => {
     fetchData();
   }, []);
 
-  /* ================= DELETE (FIXED) ================= */
+  /* ================= Delete ================= */
   const handleDelete = async (id: string) => {
     try {
       const confirmDelete = window.confirm(
@@ -75,311 +66,232 @@ const ProblemsPage: React.FC = () => {
       );
     } catch (err) {
       console.error(err);
-      alert("Failed to delete problem");
+      alert("Delete failed");
     }
   };
 
-  /* ================= Unique Tags ================= */
-  const uniqueTags = useMemo(() => {
-    const set = new Set<string>();
-    problems.forEach((p) =>
-      p.tags?.forEach((tag) =>
-        set.add(tag.toLowerCase())
-      )
+  /* ================= Filters ================= */
+
+  const uniquePatterns = useMemo(() => {
+    return Array.from(
+      new Set(problems.map((p) => p.pattern).filter(Boolean))
     );
-    return Array.from(set);
   }, [problems]);
 
-  /* ================= Filtering + Sorting ================= */
-  const filteredProblems = useMemo(() => {
-    let result = problems.filter((p) => {
-      const diffMatch =
-        selectedDifficulty === "all" ||
-        p.difficulty === selectedDifficulty;
+  const uniqueTags = useMemo(() => {
+    const tagSet = new Set<string>();
+    problems.forEach((p) =>
+      p.tags?.forEach((t) => tagSet.add(t))
+    );
+    return Array.from(tagSet);
+  }, [problems]);
 
-      const tagMatch =
-        selectedTag === "all" ||
-        p.tags?.includes(selectedTag);
-
+  const filtered = useMemo(() => {
+    return problems.filter((p) => {
       const searchMatch = p.title
         .toLowerCase()
-        .includes(searchQuery.toLowerCase());
+        .includes(search.toLowerCase());
 
-      return diffMatch && tagMatch && searchMatch;
+      const diffMatch =
+        difficulty === "all" || p.difficulty === difficulty;
+
+      const patternMatch =
+        pattern === "all" || p.pattern === pattern;
+
+      const tagMatch =
+        tag === "all" || p.tags?.includes(tag);
+
+      return searchMatch && diffMatch && patternMatch && tagMatch;
     });
+  }, [problems, search, difficulty, pattern, tag]);
 
-    if (sortBy === "a-z") {
-      result.sort((a, b) =>
-        a.title.localeCompare(b.title)
-      );
-    }
+  /* ================= Structured Sorting ================= */
 
-    if (sortBy === "z-a") {
-      result.sort((a, b) =>
-        b.title.localeCompare(a.title)
-      );
-    }
-
-    return result;
-  }, [
-    problems,
-    selectedDifficulty,
-    selectedTag,
-    searchQuery,
-    sortBy,
-  ]);
-
-  if (loading || !progress)
-    return (
-      <div className="py-20 text-center text-neutral-400">
-        Loading...
-      </div>
-    );
-
-  /* ================= Circle ================= */
-  const radius = 46;
-  const circumference = 2 * Math.PI * radius;
-  const offset =
-    circumference -
-    (progress.completionPercentage / 100) *
-      circumference;
-
-  const difficultyBars = [
-    {
-      label: "Easy",
-      solved: progress.easySolved,
-      total: progress.easyTotal,
-      color: "bg-emerald-500",
-    },
-    {
-      label: "Medium",
-      solved: progress.mediumSolved,
-      total: progress.mediumTotal,
-      color: "bg-amber-500",
-    },
-    {
-      label: "Hard",
-      solved: progress.hardSolved,
-      total: progress.hardTotal,
-      color: "bg-rose-500",
-    },
+  const masterOrder = [
+    "Sliding Window",
+    "Two Pointers",
+    "Binary Search",
+    "Stack",
+    "Linked List",
+    "Tree",
+    "Graph",
+    "Heap",
+    "Greedy",
+    "Backtracking",
+    "Dynamic Programming",
+    "Bit Manipulation",
   ];
 
+  const sorted = useMemo(() => {
+    return [...filtered].sort((a, b) => {
+      const patternDiff =
+        masterOrder.indexOf(a.pattern || "") -
+        masterOrder.indexOf(b.pattern || "");
+
+      if (patternDiff !== 0) return patternDiff;
+
+      return (a.orderInPattern || 0) - (b.orderInPattern || 0);
+    });
+  }, [filtered]);
+
+  if (loading) {
+    return (
+      <div className="py-20 text-center text-gray-500 dark:text-neutral-400">
+        Loading master sheet...
+      </div>
+    );
+  }
+
   return (
-    <div className="max-w-[1400px] mx-auto grid grid-cols-12 gap-12">
+    <div className="space-y-8">
 
-      {/* ================= LEFT SIDE ================= */}
-      <div className="col-span-8 space-y-6">
+      {/* Header */}
+      <div>
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
+          Master Sheet
+        </h1>
+        <p className="text-sm text-gray-500 dark:text-neutral-400">
+          Browse and filter the complete structured curriculum.
+        </p>
+      </div>
 
-        <div className="flex justify-between items-center">
-          <h1 className="text-[28px] font-semibold text-neutral-100">
-            Problems
-          </h1>
-          <span className="text-sm text-neutral-500">
-            {filteredProblems.length} total
-          </span>
-        </div>
+      {/* Filters */}
+      <div className="flex flex-wrap gap-4">
 
-        <div className="flex gap-8 border-b border-neutral-800 pb-3">
-          {["all", "easy", "medium", "hard"].map(
-            (level) => (
-              <button
-                key={level}
-                onClick={() =>
-                  setSelectedDifficulty(level)
-                }
-                className={`relative text-[15px] capitalize pb-2 transition ${
-                  selectedDifficulty === level
-                    ? "text-neutral-200"
-                    : "text-neutral-500 hover:text-neutral-300"
-                }`}
-              >
-                {level}
-                {selectedDifficulty === level && (
-                  <span className="absolute bottom-0 left-0 w-full h-[2px] bg-neutral-200"></span>
-                )}
-              </button>
-            )
-          )}
-        </div>
+        <input
+          type="text"
+          placeholder="Search..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="px-4 py-2 rounded-lg border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm focus:outline-none"
+        />
 
-        <div className="flex gap-4 items-center">
+        <select
+          value={difficulty}
+          onChange={(e) => setDifficulty(e.target.value)}
+          className="px-4 py-2 rounded-lg border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm"
+        >
+          <option value="all">All Difficulty</option>
+          <option value="easy">Easy</option>
+          <option value="medium">Medium</option>
+          <option value="hard">Hard</option>
+        </select>
 
-          <input
-            type="text"
-            placeholder="Search problems..."
-            value={searchQuery}
-            onChange={(e) =>
-              setSearchQuery(e.target.value)
-            }
-            className="flex-1 bg-neutral-900 border border-neutral-800 rounded-md px-4 py-2 text-sm focus:outline-none focus:border-neutral-600"
-          />
+        <select
+          value={pattern}
+          onChange={(e) => setPattern(e.target.value)}
+          className="px-4 py-2 rounded-lg border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm"
+        >
+          <option value="all">All Patterns</option>
+          {uniquePatterns.map((p) => (
+            <option key={p} value={p}>
+              {p}
+            </option>
+          ))}
+        </select>
 
-          <select
-            value={selectedTag}
-            onChange={(e) =>
-              setSelectedTag(e.target.value)
-            }
-            className="bg-neutral-900 border border-neutral-800 px-4 py-2 rounded-md text-sm"
-          >
-            <option value="all">All Topics</option>
-            {uniqueTags.map((tag) => (
-              <option key={tag} value={tag}>
-                {tag}
-              </option>
-            ))}
-          </select>
+        <select
+          value={tag}
+          onChange={(e) => setTag(e.target.value)}
+          className="px-4 py-2 rounded-lg border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm"
+        >
+          <option value="all">All Tags</option>
+          {uniqueTags.map((t) => (
+            <option key={t} value={t}>
+              {t}
+            </option>
+          ))}
+        </select>
 
-          <select
-            value={sortBy}
-            onChange={(e) =>
-              setSortBy(e.target.value)
-            }
-            className="bg-neutral-900 border border-neutral-800 px-4 py-2 rounded-md text-sm"
-          >
-            <option value="default">Sort</option>
-            <option value="a-z">A → Z</option>
-            <option value="z-a">Z → A</option>
-          </select>
+      </div>
 
-        </div>
+      {/* Table */}
+      <div className="overflow-x-auto border border-gray-200 dark:border-neutral-800 rounded-xl">
+        <table className="w-full text-sm">
 
-        <div className="divide-y divide-neutral-800 border-t border-neutral-800">
-
-          {filteredProblems.map((problem) => (
-            <div
-              key={problem._id}
-              onClick={() =>
-                navigate(`/problems/${problem._id}`)
-              }
-              className="group grid grid-cols-12 py-5 cursor-pointer hover:bg-neutral-900/50 transition relative"
-            >
-              <div className="col-span-8 text-[16px] font-medium text-neutral-200">
-                {problem.title}
-              </div>
-
-              <div
-                className={`col-span-2 capitalize text-[14px] ${
-                  problem.difficulty === "easy"
-                    ? "text-emerald-400"
-                    : problem.difficulty === "medium"
-                    ? "text-amber-400"
-                    : "text-rose-400"
-                }`}
-              >
-                {problem.difficulty}
-              </div>
-
+          <thead className="bg-gray-50 dark:bg-neutral-900 text-gray-600 dark:text-neutral-400">
+            <tr className="text-left">
+              <th className="px-4 py-3">✓</th>
+              <th className="px-4 py-3">Title</th>
+              <th className="px-4 py-3">Pattern</th>
+              <th className="px-4 py-3">Difficulty</th>
               {user?.role === "admin" && (
-                <div
-                  className="col-span-2 flex justify-end gap-4 text-sm opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                  onClick={(e) =>
-                    e.stopPropagation()
+                <th className="px-4 py-3 text-right">Admin</th>
+              )}
+            </tr>
+          </thead>
+
+          <tbody>
+            {sorted.map((problem) => {
+              const solved = solvedIds.has(problem._id);
+
+              return (
+                <tr
+                  key={problem._id}
+                  className="border-t border-gray-200 dark:border-neutral-800 hover:bg-gray-50 dark:hover:bg-neutral-900 cursor-pointer transition"
+                  onClick={() =>
+                    navigate(`/problems/${problem._id}`)
                   }
                 >
-                  <button
-                    onClick={() =>
-                      navigate(`/admin/edit/${problem._id}`)
-                    }
-                    className="text-neutral-400 hover:text-neutral-200 transition"
-                  >
-                    Edit
-                  </button>
+                  <td className="px-4 py-3">
+                    {solved ? "✔️" : ""}
+                  </td>
 
-                  <button
-                    onClick={() =>
-                      handleDelete(problem._id)
-                    }
-                    className="text-neutral-500 hover:text-rose-400 transition"
-                  >
-                    Delete
-                  </button>
-                </div>
-              )}
-            </div>
-          ))}
+                  <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">
+                    {problem.title}
+                  </td>
 
-        </div>
+                  <td className="px-4 py-3 text-gray-500 dark:text-neutral-400">
+                    {problem.pattern || "-"}
+                  </td>
+
+                  <td
+                    className={`px-4 py-3 capitalize
+                      ${
+                        problem.difficulty === "easy"
+                          ? "text-emerald-500"
+                          : problem.difficulty === "medium"
+                          ? "text-amber-500"
+                          : "text-rose-500"
+                      }`}
+                  >
+                    {problem.difficulty}
+                  </td>
+
+                  {user?.role === "admin" && (
+                    <td
+                      className="px-4 py-3 text-right space-x-3"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <button
+                        onClick={() =>
+                          navigate(`/admin/edit/${problem._id}`)
+                        }
+                        className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
+                      >
+                        Edit
+                      </button>
+
+                      <button
+                        onClick={() => handleDelete(problem._id)}
+                        className="text-xs text-rose-600 dark:text-rose-400 hover:underline"
+                      >
+                        Delete
+                      </button>
+                    </td>
+                  )}
+                </tr>
+              );
+            })}
+          </tbody>
+
+        </table>
       </div>
 
-      {/* ================= RIGHT SIDE ================= */}
-      <div className="col-span-4 space-y-6 sticky top-24 h-fit">
-
-        {/* Circle */}
-        <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6 space-y-6">
-          <h2 className="text-sm uppercase text-neutral-400 tracking-wide">
-            Progress Overview
-          </h2>
-
-          <div className="flex flex-col items-center space-y-4">
-            <svg width="130" height="130">
-              <circle
-                cx="65"
-                cy="65"
-                r={radius}
-                stroke="#262626"
-                strokeWidth="10"
-                fill="transparent"
-              />
-              <circle
-                cx="65"
-                cy="65"
-                r={radius}
-                stroke="#e5e5e5"
-                strokeWidth="10"
-                fill="transparent"
-                strokeDasharray={circumference}
-                strokeDashoffset={offset}
-                strokeLinecap="round"
-                transform="rotate(-90 65 65)"
-                className="transition-all duration-1000 ease-out"
-              />
-            </svg>
-
-            <div className="text-center">
-              <p className="text-[22px] font-semibold text-neutral-100">
-                {progress.completionPercentage}%
-              </p>
-              <p className="text-sm text-neutral-500">
-                {progress.totalSolved} / {progress.totalProblems} solved
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {/* Difficulty Breakdown */}
-        <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-6 space-y-5">
-          <h2 className="text-sm uppercase text-neutral-400 tracking-wide">
-            Difficulty Breakdown
-          </h2>
-
-          {difficultyBars.map((item) => {
-            const percentage =
-              item.total === 0
-                ? 0
-                : (item.solved / item.total) * 100;
-
-            return (
-              <div key={item.label} className="space-y-1">
-                <div className="flex justify-between text-sm">
-                  <span>{item.label}</span>
-                  <span className="text-neutral-500">
-                    {item.solved} / {item.total}
-                  </span>
-                </div>
-
-                <div className="w-full h-2 bg-neutral-800 rounded-full overflow-hidden">
-                  <div
-                    className={`${item.color} h-full transition-all duration-700`}
-                    style={{ width: `${percentage}%` }}
-                  />
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
+      <div className="text-sm text-gray-500 dark:text-neutral-400">
+        {sorted.length} problems found
       </div>
+
     </div>
   );
 };
