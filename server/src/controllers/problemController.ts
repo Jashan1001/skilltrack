@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from "express";
-import Problem from "../models/Problem";
+import Problem, { PATTERN_FLOW } from "../models/Problem";
 import { asyncHandler } from "../utils/asyncHandler";
 import { AppError } from "../utils/AppError";
 
@@ -13,10 +13,16 @@ export const createProblem = asyncHandler(
       description,
       difficulty,
       tags,
+      pattern,
+      orderInPattern,
+      estimatedTime,
       publicTestCases,
       privateTestCases,
       evaluationType,
+      visibility,
     } = req.body;
+
+    const userRole = req.user.role;
 
     if (!publicTestCases || publicTestCases.length === 0) {
       return next(
@@ -30,11 +36,36 @@ export const createProblem = asyncHandler(
       );
     }
 
+    let isOfficial = false;
+
+    /* ===== ADMIN CAN CREATE OFFICIAL ROADMAP ===== */
+    if (userRole === "admin") {
+      if (!pattern || !PATTERN_FLOW.includes(pattern)) {
+        return next(new AppError("Valid pattern is required for official problems", 400));
+      }
+
+      if (!orderInPattern) {
+        return next(new AppError("orderInPattern is required for official problems", 400));
+      }
+
+      isOfficial = true;
+    }
+
+    /* ===== RECRUITER CAN ONLY CREATE NON-OFFICIAL ===== */
+    if (userRole === "recruiter") {
+      isOfficial = false;
+    }
+
     const problem = await Problem.create({
       title,
       description,
       difficulty,
       tags,
+      pattern: isOfficial ? pattern : undefined,
+      orderInPattern: isOfficial ? orderInPattern : undefined,
+      estimatedTime: estimatedTime || 20,
+      isOfficial,
+      visibility: visibility || "public",
       publicTestCases,
       privateTestCases,
       evaluationType: evaluationType || "strict",
@@ -56,19 +87,46 @@ export const createProblem = asyncHandler(
 /* GET ALL PROBLEMS */
 /* ============================= */
 export const getAllProblems = asyncHandler(
-  async (req: Request, res: Response) => {
-    const { difficulty, page = "1", limit = "10" } = req.query;
-
-    const filter: any = {};
-    if (difficulty) filter.difficulty = difficulty;
+  async (req: any, res: Response) => {
+    const {
+      difficulty,
+      pattern,
+      page = "1",
+      limit = "10",
+      type = "official", // default view = roadmap
+    } = req.query;
 
     const pageNumber = parseInt(page as string);
     const limitNumber = parseInt(limit as string);
 
-    const problems = await Problem.find(filter)
+    const filter: any = {};
+
+    /* ===== Official Roadmap Mode ===== */
+    if (type === "official") {
+      filter.isOfficial = true;
+      filter.visibility = "public";
+    }
+
+    /* ===== Recruiter Mode ===== */
+    if (type === "my") {
+      filter.createdBy = req.user.userId;
+    }
+
+    if (difficulty) filter.difficulty = difficulty;
+    if (pattern) filter.pattern = pattern;
+
+    let query = Problem.find(filter)
       .select("-privateTestCases")
-      .populate("createdBy", "name email")
-      .sort({ createdAt: -1 })
+      .populate("createdBy", "name email");
+
+    /* ===== Guided Sorting ===== */
+    if (pattern && filter.isOfficial) {
+      query = query.sort({ orderInPattern: 1 });
+    } else {
+      query = query.sort({ createdAt: -1 });
+    }
+
+    const problems = await query
       .skip((pageNumber - 1) * limitNumber)
       .limit(limitNumber);
 
@@ -93,19 +151,26 @@ export const getProblemById = asyncHandler(
   async (req: any, res: Response, next: NextFunction) => {
     const { id } = req.params;
 
-    let query = Problem.findById(id).populate(
+    const problem = await Problem.findById(id).populate(
       "createdBy",
       "name email"
     );
 
-    if (req.user.role !== "admin") {
-      query = query.select("-privateTestCases");
-    }
-
-    const problem = await query;
-
     if (!problem) {
       return next(new AppError("Problem not found", 404));
+    }
+
+    /* ===== Visibility Protection ===== */
+    if (
+      problem.visibility === "private" &&
+      req.user.userId !== problem.createdBy.toString() &&
+      req.user.role !== "admin"
+    ) {
+      return next(new AppError("Access denied", 403));
+    }
+
+    if (req.user.role !== "admin") {
+      (problem as any).privateTestCases = undefined;
     }
 
     res.status(200).json({
@@ -128,16 +193,13 @@ export const updateProblem = asyncHandler(
       return next(new AppError("Problem not found", 404));
     }
 
-    // Authorization
+    /* ===== Authorization ===== */
     if (
       req.user.role !== "admin" &&
       problem.createdBy.toString() !== req.user.userId
     ) {
       return next(
-        new AppError(
-          "You can only edit your own problems",
-          403
-        )
+        new AppError("Not authorized to update this problem", 403)
       );
     }
 
@@ -146,15 +208,30 @@ export const updateProblem = asyncHandler(
       description,
       difficulty,
       tags,
+      pattern,
+      orderInPattern,
+      estimatedTime,
       publicTestCases,
       privateTestCases,
       evaluationType,
+      visibility,
     } = req.body;
 
     if (title) problem.title = title;
     if (description) problem.description = description;
     if (difficulty) problem.difficulty = difficulty;
     if (tags) problem.tags = tags;
+    if (estimatedTime) problem.estimatedTime = estimatedTime;
+    if (visibility) problem.visibility = visibility;
+
+    if (problem.isOfficial && req.user.role === "admin") {
+      if (pattern && PATTERN_FLOW.includes(pattern)) {
+        problem.pattern = pattern;
+      }
+      if (orderInPattern) {
+        problem.orderInPattern = orderInPattern;
+      }
+    }
 
     if (publicTestCases) problem.publicTestCases = publicTestCases;
 
@@ -194,10 +271,7 @@ export const deleteProblem = asyncHandler(
       problem.createdBy.toString() !== req.user.userId
     ) {
       return next(
-        new AppError(
-          "You can only delete your own problems",
-          403
-        )
+        new AppError("Not authorized to delete this problem", 403)
       );
     }
 
@@ -206,6 +280,25 @@ export const deleteProblem = asyncHandler(
     res.status(200).json({
       success: true,
       message: "Problem deleted successfully",
+    });
+  }
+);
+
+//get all official problems (for roadmap)
+export const getAllOfficialProblems = asyncHandler(
+  async (req, res: Response) => {
+    const problems = await Problem.find({
+      isOfficial: true,
+      visibility: "public",
+    })
+      .select("_id pattern orderInPattern difficulty title")
+      .sort({ pattern: 1, orderInPattern: 1 });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        problems,
+      },
     });
   }
 );

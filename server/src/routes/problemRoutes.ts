@@ -5,36 +5,50 @@ import {
   getAllProblems,
   getProblemById,
   updateProblem,
-  deleteProblem
+  deleteProblem,
+  getAllOfficialProblems
 } from "../controllers/problemController";
 
 const router = Router();
 
-// Public route - anyone can view problems
+/* ========================= */
+/* VIEW ROUTES */
+/* ========================= */
+router.get("/official-all", getAllOfficialProblems);
+// Anyone can view roadmap problems
 router.get("/", getAllProblems);
 
-router.get("/:id",protect, getProblemById);
+// Logged in users can view full problem details
+router.get("/:id", protect, getProblemById);
 
-router.put(
-  "/:id",
-  protect,
-  allowRoles("admin", "recruiter"),
-  updateProblem
-);
+/* ========================= */
+/* ADMIN ONLY ROUTES */
+/* ========================= */
 
-// Only admin & recruiter can create problems
+// Only admin can create roadmap problems
 router.post(
   "/",
   protect,
-  allowRoles("admin", "recruiter"),
+  allowRoles("admin"),
   createProblem
 );
 
+// Only admin can update roadmap problems
+router.put(
+  "/:id",
+  protect,
+  allowRoles("admin"),
+  updateProblem
+);
+
+// Only admin can delete roadmap problems
 router.delete(
   "/:id",
   protect,
-  allowRoles("admin", "recruiter"),
+  allowRoles("admin"),
   deleteProblem
 );
+
+
 
 export default router;
