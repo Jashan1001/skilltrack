@@ -8,9 +8,9 @@ export const getUserProgress = asyncHandler(
     const userId = req.user.userId;
 
     /* ======================== */
-    /* UNIQUE SOLVED PROBLEMS  */
+    /* UNIQUE SOLVED PROBLEMS   */
     /* ======================== */
-    const solvedProblems = await Submission.aggregate([
+    const solvedProblemsAgg = await Submission.aggregate([
       {
         $match: {
           user: userId,
@@ -24,30 +24,45 @@ export const getUserProgress = asyncHandler(
       },
     ]);
 
-    const solvedIds = solvedProblems.map((s) => s._id);
+    const solvedIds = solvedProblemsAgg.map((s) => s._id);
 
-    const solved = await Problem.find({
+    const solvedProblems = await Problem.find({
       _id: { $in: solvedIds },
-    }).select("difficulty");
+    }).select("_id difficulty pattern");
 
     let easySolved = 0;
     let mediumSolved = 0;
     let hardSolved = 0;
 
-    solved.forEach((problem) => {
+    solvedProblems.forEach((problem) => {
       if (problem.difficulty === "easy") easySolved++;
       if (problem.difficulty === "medium") mediumSolved++;
       if (problem.difficulty === "hard") hardSolved++;
     });
 
-    const totalSolved = solved.length;
+    const totalSolved = solvedProblems.length;
 
     /* ======================== */
     /* TOTAL PROBLEMS COUNT     */
+    /* (Official Public Only)   */
     /* ======================== */
-    const easyTotal = await Problem.countDocuments({ difficulty: "easy" });
-    const mediumTotal = await Problem.countDocuments({ difficulty: "medium" });
-    const hardTotal = await Problem.countDocuments({ difficulty: "hard" });
+    const easyTotal = await Problem.countDocuments({
+      difficulty: "easy",
+      isOfficial: true,
+      visibility: "public",
+    });
+
+    const mediumTotal = await Problem.countDocuments({
+      difficulty: "medium",
+      isOfficial: true,
+      visibility: "public",
+    });
+
+    const hardTotal = await Problem.countDocuments({
+      difficulty: "hard",
+      isOfficial: true,
+      visibility: "public",
+    });
 
     const totalProblems = easyTotal + mediumTotal + hardTotal;
 
@@ -69,6 +84,10 @@ export const getUserProgress = asyncHandler(
           totalProblems === 0
             ? 0
             : Math.round((totalSolved / totalProblems) * 100),
+
+        // 🔥 NEW — used for pattern grouping
+        solvedProblemIds: solvedIds,
+        solvedProblems,
       },
     });
   }
