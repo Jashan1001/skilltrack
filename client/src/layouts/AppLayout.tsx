@@ -1,14 +1,26 @@
 import { Outlet } from "react-router-dom";
 import Navbar from "../components/Navbar";
+import Sidebar from "../components/Sidebar";
 
 const AppLayout: React.FC = () => {
   return (
-    <div className="min-h-screen bg-neutral-950 text-neutral-100">
-      <Navbar />
+    <div className="h-screen flex 
+                bg-gray-50 dark:bg-neutral-950 
+                text-gray-900 dark:text-neutral-100 
+                transition-colors">
+      
+      <Sidebar />
 
-      <main className="w-full max-w-[1600px] mx-auto px-6 pt-6 pb-8">
-        <Outlet />
-      </main>
+      <div className="flex-1 flex flex-col overflow-hidden">
+        <Navbar />
+
+        <main className="flex-1 overflow-y-auto px-6 py-6">
+          <div className="max-w-[1600px] mx-auto">
+            <Outlet />
+          </div>
+        </main>
+      </div>
+
     </div>
   );
 };
