@@ -1,135 +1,297 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import axios from "../api/axios";
 
 interface Submission {
   _id: string;
   status: string;
-  score: number;
   runtime: number;
   createdAt: string;
   problem: {
+    _id: string;
     title: string;
-    difficulty: string;
-  };
+    difficulty: "easy" | "medium" | "hard";
+    pattern?: string;
+  } | null;
 }
 
 const SubmissionHistoryPage: React.FC = () => {
+  const navigate = useNavigate();
+
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState("");
+
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [difficultyFilter, setDifficultyFilter] = useState("all");
+  const [search, setSearch] = useState("");
 
   useEffect(() => {
-    const fetchSubmissions = async () => {
-      try {
-        const res = await axios.get("/submissions/me");
-        setSubmissions(res.data?.data?.submissions || []);
-      } catch (err) {
-        setError("Failed to load submissions");
-      } finally {
-        setLoading(false);
-      }
+    const fetch = async () => {
+      const res = await axios.get("/submissions/me");
+      setSubmissions(res.data?.data?.submissions || []);
+      setLoading(false);
     };
 
-    fetchSubmissions();
+    fetch();
   }, []);
+
+  /* ========================= */
+  /* Derived Analytics         */
+  /* ========================= */
+
+  const validSubs = useMemo(
+    () => submissions.filter((s) => s.problem),
+    [submissions]
+  );
+
+  const accepted = validSubs.filter(
+    (s) => s.status.toLowerCase() === "accepted"
+  );
+
+  const accuracy =
+    validSubs.length === 0
+      ? 0
+      : Math.round((accepted.length / validSubs.length) * 100);
+
+  const avgRuntime =
+    accepted.length === 0
+      ? 0
+      : Math.round(
+          accepted.reduce((sum, s) => sum + s.runtime, 0) /
+            accepted.length
+        );
+
+  // Correct avg attempts per solved problem
+  const solvedProblemIds = Array.from(
+    new Set(
+      accepted.map((s) => s.problem!._id)
+    )
+  );
+
+  const avgAttempts =
+    solvedProblemIds.length === 0
+      ? 0
+      : Math.round(
+          validSubs.length / solvedProblemIds.length
+        );
+
+  /* ========================= */
+  /* Filtering                 */
+  /* ========================= */
+
+  const filtered = useMemo(() => {
+    return validSubs.filter((s) => {
+      const statusMatch =
+        statusFilter === "all" ||
+        s.status.toLowerCase() === statusFilter;
+
+      const diffMatch =
+        difficultyFilter === "all" ||
+        s.problem?.difficulty === difficultyFilter;
+
+      const searchMatch =
+        s.problem?.title
+          .toLowerCase()
+          .includes(search.toLowerCase()) ?? false;
+
+      return statusMatch && diffMatch && searchMatch;
+    });
+  }, [validSubs, statusFilter, difficultyFilter, search]);
 
   if (loading)
     return (
-      <div className="flex justify-center py-20 text-gray-400">
+      <div className="py-20 text-center text-neutral-500">
         Loading submissions...
       </div>
     );
 
-  if (error)
-    return (
-      <div className="flex justify-center py-20 text-red-400">
-        {error}
-      </div>
-    );
-
   return (
-  <div className="min-h-screen bg-gray-950 text-gray-100 py-10">
-    <div className="max-w-6xl mx-auto px-6 space-y-8">
-      <h1 className="text-3xl font-semibold text-gray-100">
-        My Submissions
-      </h1>
+    <div className="space-y-14">
 
-      {submissions.length === 0 ? (
-        <p className="text-gray-400">No submissions yet.</p>
-      ) : (
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-sm">
-            <thead>
-              <tr className="border-b border-gray-700 text-gray-400 text-left">
-                <th className="py-3 px-4">Problem</th>
-                <th className="py-3 px-4">Difficulty</th>
-                <th className="py-3 px-4">Verdict</th>
-                <th className="py-3 px-4">Score</th>
-                <th className="py-3 px-4">Runtime (ms)</th>
-                <th className="py-3 px-4">Date</th>
+      {/* Header */}
+      <div>
+        <h1 className="text-3xl font-semibold text-gray-900 dark:text-white">
+          Performance Analytics
+        </h1>
+        <p className="text-gray-500 dark:text-neutral-400 mt-2">
+          Analyze efficiency, accuracy, and improvement trends.
+        </p>
+      </div>
+
+      {/* Analytics Strip */}
+      <div className="grid md:grid-cols-5 gap-6">
+        <StatCard title="Total Submissions" value={validSubs.length} />
+        <StatCard title="Accepted" value={accepted.length} />
+        <StatCard title="Accuracy" value={`${accuracy}%`} />
+        <StatCard title="Avg Runtime" value={`${avgRuntime} ms`} />
+        <StatCard title="Avg Attempts / Solve" value={avgAttempts} />
+      </div>
+
+      {/* Filter Bar */}
+      <div className="bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 rounded-xl p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+
+        <input
+          type="text"
+          placeholder="Search by problem..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="md:w-1/3 px-4 py-2 rounded-md border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+        />
+
+        <div className="flex gap-4">
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="px-4 py-2 rounded-md border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm"
+          >
+            <option value="all">All Status</option>
+            <option value="accepted">Accepted</option>
+            <option value="wrong_answer">Wrong</option>
+            <option value="time_limit_exceeded">TLE</option>
+            <option value="runtime_error">Runtime Error</option>
+          </select>
+
+          <select
+            value={difficultyFilter}
+            onChange={(e) =>
+              setDifficultyFilter(e.target.value)
+            }
+            className="px-4 py-2 rounded-md border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm"
+          >
+            <option value="all">All Difficulty</option>
+            <option value="easy">Easy</option>
+            <option value="medium">Medium</option>
+            <option value="hard">Hard</option>
+          </select>
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 rounded-xl overflow-hidden">
+        {filtered.length === 0 ? (
+          <div className="p-10 text-center text-gray-500 dark:text-neutral-400">
+            No matching submissions.
+          </div>
+        ) : (
+          <table className="w-full text-sm">
+            <thead className="border-b border-gray-200 dark:border-neutral-800 text-left text-gray-500 dark:text-neutral-400">
+              <tr>
+                <th className="px-6 py-4">Problem</th>
+                <th className="px-6 py-4">Pattern</th>
+                <th className="px-6 py-4">Difficulty</th>
+                <th className="px-6 py-4">Verdict</th>
+                <th className="px-6 py-4">Runtime</th>
+                <th className="px-6 py-4">Date</th>
               </tr>
             </thead>
             <tbody>
-              {submissions.map((sub) => {
-                const verdict = sub.status.toLowerCase();
-
-                const verdictStyle =
-                  verdict === "accepted"
-                    ? "text-emerald-400"
-                    : verdict === "wrong_answer"
-                    ? "text-rose-400"
-                    : verdict === "time_limit_exceeded"
-                    ? "text-amber-400"
-                    : verdict === "runtime_error"
-                    ? "text-orange-400"
-                    : "text-gray-400";
-
-                const difficulty = sub.problem?.difficulty.toLowerCase();
-
-                const difficultyStyle =
-                  difficulty === "easy"
-                    ? "text-emerald-400"
-                    : difficulty === "medium"
-                    ? "text-amber-400"
-                    : "text-rose-400";
-
-                return (
-                  <tr
-                    key={sub._id}
-                    className="border-b border-gray-800 hover:bg-gray-800/40 transition"
+              {filtered.map((sub) => (
+                <tr
+                  key={sub._id}
+                  className="border-b border-gray-100 dark:border-neutral-800 hover:bg-gray-50 dark:hover:bg-neutral-800/40 transition"
+                >
+                  <td
+                    onClick={() =>
+                      navigate(`/problems/${sub.problem!._id}`)
+                    }
+                    className="px-6 py-4 cursor-pointer text-gray-900 dark:text-neutral-200 hover:underline"
                   >
-                    <td className="py-3 px-4 text-gray-200">
-                      {sub.problem?.title}
-                    </td>
+                    {sub.problem?.title}
+                  </td>
 
-                    <td className={`py-3 px-4 ${difficultyStyle}`}>
-                      {sub.problem?.difficulty}
-                    </td>
+                  <td className="px-6 py-4 text-gray-500 dark:text-neutral-400">
+                    {sub.problem?.pattern || "—"}
+                  </td>
 
-                    <td className={`py-3 px-4 font-medium ${verdictStyle}`}>
-                      {sub.status}
-                    </td>
+                  <td className="px-6 py-4">
+                    <DifficultyBadge
+                      difficulty={sub.problem!.difficulty}
+                    />
+                  </td>
 
-                    <td className="py-3 px-4 text-gray-300">
-                      {sub.score}
-                    </td>
+                  <td className="px-6 py-4">
+                    <VerdictBadge verdict={sub.status} />
+                  </td>
 
-                    <td className="py-3 px-4 text-gray-300">
-                      {sub.runtime}
-                    </td>
+                  <td className="px-6 py-4">
+                    {sub.runtime} ms
+                  </td>
 
-                    <td className="py-3 px-4 text-gray-400">
-                      {new Date(sub.createdAt).toLocaleString()}
-                    </td>
-                  </tr>
-                );
-              })}
+                  <td className="px-6 py-4 text-gray-500 dark:text-neutral-400">
+                    {new Date(
+                      sub.createdAt
+                    ).toLocaleDateString()}
+                  </td>
+                </tr>
+              ))}
             </tbody>
           </table>
-        </div>
-      )}
+        )}
+      </div>
     </div>
-    </div>
+  );
+};
+
+/* ========================= */
+/* Components                */
+/* ========================= */
+
+const StatCard = ({
+  title,
+  value,
+}: {
+  title: string;
+  value: string | number;
+}) => (
+  <div className="bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 rounded-xl p-6 shadow-sm">
+    <p className="text-sm text-gray-500 dark:text-neutral-400">
+      {title}
+    </p>
+    <p className="text-xl font-semibold text-gray-900 dark:text-white mt-2">
+      {value}
+    </p>
+  </div>
+);
+
+const DifficultyBadge = ({
+  difficulty,
+}: {
+  difficulty: string;
+}) => {
+  const style =
+    difficulty === "easy"
+      ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+      : difficulty === "medium"
+      ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+      : "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400";
+
+  return (
+    <span className={`px-2 py-1 rounded-full text-xs font-medium ${style}`}>
+      {difficulty}
+    </span>
+  );
+};
+
+const VerdictBadge = ({
+  verdict,
+}: {
+  verdict: string;
+}) => {
+  const v = verdict.toLowerCase();
+
+  const style =
+    v === "accepted"
+      ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+      : v === "wrong_answer"
+      ? "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400"
+      : v === "time_limit_exceeded"
+      ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
+      : "bg-gray-200 text-gray-700 dark:bg-neutral-700 dark:text-neutral-300";
+
+  return (
+    <span className={`px-2 py-1 rounded-full text-xs font-medium ${style}`}>
+      {verdict.replace("_", " ")}
+    </span>
   );
 };
 

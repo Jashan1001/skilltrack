@@ -1,80 +1,96 @@
-import { Request, Response, NextFunction } from "express";
-import mongoose from "mongoose";
+import { Request, Response } from "express";
 import Submission from "../models/Submission";
-import { asyncHandler } from "../utils/asyncHandler";
-import { AppError } from "../utils/AppError";
+import User from "../models/User";
 
 /* ============================= */
-/* GET PROBLEM LEADERBOARD */
+/* PROBLEM LEADERBOARD */
 /* ============================= */
-export const getProblemLeaderboard = asyncHandler(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const rawProblemId = req.params.problemId;
 
-    // Type narrowing (string | string[])
-    if (Array.isArray(rawProblemId)) {
-      return next(new AppError("Invalid problem ID", 400));
-    }
+export const getProblemLeaderboard = async (
+  req: Request,
+  res: Response
+) => {
+  try {
+    const { problemId } = req.params;
 
-    if (!rawProblemId || !mongoose.Types.ObjectId.isValid(rawProblemId)) {
-      return next(new AppError("Invalid problem ID", 400));
-    }
+    const submissions = await Submission.find({
+      problem: problemId,
+      status: "accepted",
+    })
+      .sort({ score: -1, runtime: 1 })
+      .populate("user", "name");
 
-    const objectId = new mongoose.Types.ObjectId(rawProblemId);
+    res.status(200).json({
+      success: true,
+      data: submissions.map((s) => ({
+        user: s.user,
+        score: s.score,
+        runtime: s.runtime,
+      })),
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch problem leaderboard",
+    });
+  }
+};
 
+/* ============================= */
+/* GLOBAL LEADERBOARD */
+/* ============================= */
+
+export const getGlobalLeaderboard = async (
+  req: Request,
+  res: Response
+) => {
+  try {
     const leaderboard = await Submission.aggregate([
-      {
-        $match: {
-          problem: objectId,
-        },
-      },
-      {
-        $sort: {
-          score: -1,      // Higher score first
-          runtime: 1,     // Lower runtime wins on tie
-        },
-      },
+      { $match: { status: "accepted" } },
       {
         $group: {
           _id: "$user",
-          bestScore: { $first: "$score" },
-          bestRuntime: { $first: "$runtime" },
+          solvedProblems: { $addToSet: "$problem" },
+          totalScore: { $sum: "$score" },
+          averageRuntime: { $avg: "$runtime" },
+        },
+      },
+      {
+        $project: {
+          totalSolved: { $size: "$solvedProblems" },
+          totalScore: 1,
+          averageRuntime: { $round: ["$averageRuntime", 0] },
         },
       },
       {
         $sort: {
-          bestScore: -1,
-          bestRuntime: 1,
-        },
-      },
-      {
-        $lookup: {
-          from: "users",  // Mongo collection name
-          localField: "_id",
-          foreignField: "_id",
-          as: "user",
-        },
-      },
-      {
-        $unwind: "$user",
-      },
-      {
-        $project: {
-          _id: 0,
-          user: {
-            _id: "$user._id",
-            name: "$user.name",
-            email: "$user.email",
-          },
-          score: "$bestScore",
-          runtime: "$bestRuntime",
+          totalSolved: -1,
+          totalScore: -1,
+          averageRuntime: 1,
         },
       },
     ]);
 
+    const populated = await User.populate(leaderboard, {
+      path: "_id",
+      select: "name",
+    });
+
+    const formatted = populated.map((entry: any) => ({
+      user: entry._id,
+      totalSolved: entry.totalSolved,
+      totalScore: entry.totalScore,
+      averageRuntime: entry.averageRuntime,
+    }));
+
     res.status(200).json({
       success: true,
-      data: leaderboard,
+      data: formatted,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch global leaderboard",
     });
   }
-);
+};

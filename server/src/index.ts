@@ -10,6 +10,9 @@ import submissionRoutes from "./routes/submissionRoutes";
 import { globalErrorHandler } from "./middleware/errorHandler";
 import leaderboardRoutes from "./routes/leaderboardRoutes";
 import userRoutes from "./routes/userRoutes";
+import runRoutes from "./routes/runRoutes";
+
+
 
 dotenv.config();
 
@@ -25,6 +28,7 @@ app.use("/api/problems", problemRoutes);
 app.use("/api/submissions", submissionRoutes);
 app.use("/api/leaderboard", leaderboardRoutes);
 app.use("/api/users", userRoutes);
+app.use("/api/run", runRoutes);
 app.use(globalErrorHandler);
 
 app.get("/", (req, res) => {

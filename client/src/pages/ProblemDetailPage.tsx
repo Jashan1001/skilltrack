@@ -1,6 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
+import Editor from "@monaco-editor/react";
 import axios from "../api/axios";
+import { Play, Send, ArrowLeft, Trophy } from "lucide-react";
 
 interface TestCase {
   input: string;
@@ -12,19 +14,10 @@ interface Problem {
   title: string;
   description: string;
   difficulty: string;
-  tags: string[];
   publicTestCases: TestCase[];
 }
 
-interface SubmissionResult {
-  verdict: string;
-  score: number;
-  passed: number;
-  total: number;
-  runtime: number;
-}
-
-const ProblemDetailPage: React.FC = () => {
+const ProblemDetailPage = () => {
   const { problemId } = useParams();
   const navigate = useNavigate();
 
@@ -32,179 +25,331 @@ const ProblemDetailPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [code, setCode] = useState("");
   const [language, setLanguage] = useState("javascript");
-  const [submitting, setSubmitting] = useState(false);
-  const [result, setResult] = useState<SubmissionResult | null>(null);
 
+  const [running, setRunning] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const [runResult, setRunResult] = useState<any>(null);
+  const [submitResult, setSubmitResult] = useState<any>(null);
+
+  const [theme, setTheme] = useState(
+    document.documentElement.classList.contains("dark")
+      ? "dark"
+      : "light"
+  );
+
+  const resultRef = useRef<HTMLDivElement | null>(null);
+  const editorRef = useRef<any>(null);
+
+  /* ---------------- THEME OBSERVER ---------------- */
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      const isDark =
+        document.documentElement.classList.contains("dark");
+      setTheme(isDark ? "dark" : "light");
+    });
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+
+    return () => observer.disconnect();
+  }, []);
+
+  /* ---------------- FETCH PROBLEM ---------------- */
   useEffect(() => {
     const fetchProblem = async () => {
       const res = await axios.get(`/problems/${problemId}`);
-      setProblem(res.data?.data || null);
+      setProblem(res.data.data);
       setLoading(false);
     };
-    if (problemId) fetchProblem();
+    fetchProblem();
   }, [problemId]);
 
+  /* ---------------- AUTO SCROLL AFTER RUN ---------------- */
+  useEffect(() => {
+    if (runResult) {
+      setTimeout(() => {
+        resultRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }, 150);
+    }
+  }, [runResult]);
+
+  /* ---------------- HANDLE RUN ---------------- */
+  const handleRun = async () => {
+    if (!code.trim()) return;
+
+    setRunning(true);
+    setSubmitResult(null);
+
+    const res = await axios.post("/run", {
+      problemId,
+      code,
+      language,
+    });
+
+    setRunResult(res.data.data);
+    setRunning(false);
+  };
+
+  /* ---------------- HANDLE SUBMIT ---------------- */
   const handleSubmit = async () => {
     if (!code.trim()) return;
 
+    setSubmitting(true);
+    setRunResult(null);
+
+    const res = await axios.post("/submissions", {
+      problemId,
+      code,
+      language,
+    });
+
+    setSubmitResult(res.data.data);
+    setSubmitting(false);
+  };
+
+  const formatJSONInput = (input: string) => {
     try {
-      setSubmitting(true);
-      setResult(null);
-
-      const res = await axios.post("/submissions", {
-        problemId,
-        code,
-        language,
-      });
-
-      setResult(res.data.data);
-    } finally {
-      setSubmitting(false);
+      const parsed = JSON.parse(input);
+      return Object.entries(parsed)
+        .map(([k, v]) => `${k} = ${JSON.stringify(v)}`)
+        .join("\n");
+    } catch {
+      return input;
     }
   };
 
-  if (loading) {
-    return (
-      <div className="flex justify-center py-16 text-neutral-500">
-        Loading...
-      </div>
-    );
-  }
-
-  if (!problem) return null;
+  if (loading || !problem) return null;
 
   const difficultyColor =
     problem.difficulty === "easy"
-      ? "text-emerald-400"
+      ? "bg-emerald-500/10 text-emerald-500"
       : problem.difficulty === "medium"
-      ? "text-amber-400"
-      : "text-rose-400";
+      ? "bg-amber-500/10 text-amber-500"
+      : "bg-rose-500/10 text-rose-500";
 
   return (
-    <div className="w-full max-w-[1500px] mx-auto px-6 pt-6 pb-10 space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div className="space-y-2">
-          <h1 className="text-2xl font-semibold text-neutral-100">
+    <div className="flex flex-col px-8 py-6 space-y-6 min-h-screen">
+
+      {/* HEADER */}
+      <div className="flex justify-between items-start">
+        <div>
+          <h1 className="text-3xl font-semibold tracking-tight">
             {problem.title}
           </h1>
-
-          <span className={`text-sm capitalize ${difficultyColor}`}>
+          <span
+            className={`mt-3 inline-block px-3 py-1 rounded-full text-xs font-medium capitalize ${difficultyColor}`}
+          >
             {problem.difficulty}
           </span>
         </div>
 
-        <button
-          onClick={() => navigate(`/leaderboard/${problem._id}`)}
-          className="border border-neutral-700 px-4 py-2 text-sm rounded-md text-neutral-300 hover:bg-neutral-800 transition"
-        >
-          Leaderboard →
-        </button>
+        <div className="flex gap-6 text-sm text-gray-500 dark:text-gray-400">
+          <button
+            onClick={() => navigate(-1)}
+            className="flex items-center gap-2 hover:text-gray-900 dark:hover:text-white"
+          >
+            <ArrowLeft size={16} /> Back
+          </button>
+
+          <button
+            onClick={() =>
+              navigate(`/leaderboard/${problem._id}`)
+            }
+            className="flex items-center gap-2 hover:text-gray-900 dark:hover:text-white"
+          >
+            <Trophy size={16} /> Leaderboard
+          </button>
+        </div>
       </div>
 
-      {/* Split Layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-[1.15fr_1fr] gap-6">
+      {/* MAIN LAYOUT */}
+      <div className="flex gap-8">
+
         {/* LEFT PANEL */}
-        <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-5 space-y-6">
-          {/* Description */}
+        <div className="w-[45%] overflow-y-auto pr-6 space-y-8">
+
           <div>
-            <h2 className="text-lg font-medium text-neutral-100 mb-3">
+            <h2 className="text-lg font-semibold mb-3">
               Description
             </h2>
-            <p className="text-neutral-400 whitespace-pre-line leading-relaxed">
+            <p className="leading-7 whitespace-pre-line text-gray-600 dark:text-gray-400">
               {problem.description}
             </p>
           </div>
 
-          {/* Sample Test Cases */}
-          {problem.publicTestCases?.length > 0 && (
-            <div className="space-y-4">
-              <h3 className="text-md font-medium text-neutral-100">
-                Sample Test Cases
-              </h3>
+          <div>
+            <h2 className="text-lg font-semibold mb-4">
+              Sample Test Cases
+            </h2>
 
-              {problem.publicTestCases.map((tc, index) => (
-                <div
-                  key={index}
-                  className="bg-neutral-950 border border-neutral-800 rounded-lg p-4 space-y-3"
-                >
-                  <div>
-                    <p className="text-xs uppercase text-neutral-500 tracking-wide">
-                      Input
-                    </p>
-                    <pre className="mt-2 bg-neutral-900 p-3 rounded text-sm text-neutral-300 overflow-x-auto">
-                      {tc.input}
-                    </pre>
-                  </div>
-
-                  <div>
-                    <p className="text-xs uppercase text-neutral-500 tracking-wide">
-                      Expected Output
-                    </p>
-                    <pre className="mt-2 bg-neutral-900 p-3 rounded text-sm text-neutral-300 overflow-x-auto">
-                      {tc.expectedOutput}
-                    </pre>
-                  </div>
+            {problem.publicTestCases.map((tc, i) => (
+              <div
+                key={i}
+                className="border-b border-gray-200 dark:border-gray-700 pb-6 mb-6"
+              >
+                <div className="text-sm font-medium mb-2">
+                  Input
                 </div>
-              ))}
-            </div>
-          )}
+                <pre className="bg-gray-100 dark:bg-gray-800 p-4 rounded-md text-sm whitespace-pre-wrap">
+                  {formatJSONInput(tc.input)}
+                </pre>
+
+                <div className="text-sm font-medium mt-4 mb-2">
+                  Expected Output
+                </div>
+                <pre className="bg-gray-100 dark:bg-gray-800 p-4 rounded-md text-sm whitespace-pre-wrap">
+                  {tc.expectedOutput}
+                </pre>
+              </div>
+            ))}
+          </div>
         </div>
 
-        {/* RIGHT PANEL (Editor) */}
-        <div className="bg-neutral-900 border border-neutral-800 rounded-xl p-5 flex flex-col sticky top-4 h-fit space-y-5">
-          <h2 className="text-lg font-medium text-neutral-100">
-            Code Editor
-          </h2>
+        {/* RIGHT PANEL */}
+        <div className="w-[55%] flex flex-col space-y-5">
 
-          <select
-            value={language}
-            onChange={(e) => setLanguage(e.target.value)}
-            className="bg-neutral-800 border border-neutral-700 text-neutral-200 px-3 py-2 rounded-md text-sm focus:outline-none"
-          >
-            <option value="javascript">JavaScript</option>
-            <option value="python">Python</option>
-            <option value="cpp">C++</option>
-          </select>
+          {/* EDITOR HEADER */}
+          <div className="flex justify-between items-center">
 
-          <textarea
-            rows={16}
-            value={code}
-            onChange={(e) => setCode(e.target.value)}
-            placeholder="Write your solution here..."
-            className="w-full bg-neutral-950 border border-neutral-800 text-neutral-200 rounded-lg p-4 font-mono text-sm focus:outline-none"
-          />
-
-          {/* Action Bar */}
-          <div className="flex justify-between items-center pt-3 border-t border-neutral-800">
-            <button
-              onClick={handleSubmit}
-              disabled={submitting}
-              className="bg-neutral-100 text-neutral-900 px-6 py-2 rounded-md text-sm font-medium hover:bg-neutral-300 transition disabled:opacity-50"
+            <select
+              value={language}
+              onChange={(e) => setLanguage(e.target.value)}
+              className="
+                appearance-none
+                px-3 py-2 text-sm rounded-md
+                border border-gray-300 dark:border-gray-700
+                bg-white dark:bg-gray-900
+                text-gray-900 dark:text-gray-100
+                focus:outline-none
+              "
             >
-              {submitting ? "Running..." : "Submit"}
-            </button>
+              <option value="javascript">JavaScript</option>
+              <option value="python">Python</option>
+              <option value="cpp">C++</option>
+            </select>
 
-            {result && (
-              <div className="text-sm text-neutral-400">
-                Verdict:{" "}
-                <span className="font-medium text-neutral-200">
-                  {result.verdict}
-                </span>
-              </div>
-            )}
+            <div className="flex gap-3">
+              <button
+                onClick={handleRun}
+                disabled={running}
+                className="
+                  flex items-center gap-2
+                  px-4 py-2 rounded-md text-sm
+                  border border-emerald-500/40
+                  text-emerald-500
+                  hover:bg-emerald-500/10
+                  disabled:opacity-50
+                "
+              >
+                <Play size={16} />
+                {running ? "Running..." : "Run"}
+              </button>
+
+              <button
+                onClick={handleSubmit}
+                disabled={submitting}
+                className="
+                  flex items-center gap-2
+                  px-5 py-2 rounded-md text-sm font-medium
+                  bg-blue-600 hover:bg-blue-700
+                  text-white
+                  disabled:opacity-50
+                "
+              >
+                <Send size={16} />
+                {submitting ? "Submitting..." : "Submit"}
+              </button>
+            </div>
           </div>
 
-          {/* Compact Result */}
-          {result && (
-            <div className="bg-neutral-950 border border-neutral-800 rounded-lg p-4 text-sm text-neutral-300 space-y-2">
-              <div>Score: {result.score}</div>
-              <div>
-                Passed: {result.passed} / {result.total}
+          {/* MONACO */}
+          <div className="flex-1 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+            <Editor
+              height="100%"
+              language={language === "cpp" ? "cpp" : language}
+              value={code}
+              onChange={(v) => setCode(v || "")}
+              onMount={(editor) => {
+                editorRef.current = editor;
+              }}
+              theme={theme === "dark" ? "vs-dark" : "light"}
+              options={{
+                minimap: { enabled: false },
+                automaticLayout: true,
+                scrollBeyondLastLine: false,
+                fontSize: 14,
+              }}
+            />
+          </div>
+
+          {/* RESULTS */}
+          <div ref={resultRef} className="space-y-4">
+
+            {runResult && (
+              <div className="grid gap-4">
+                {runResult.detailedResults.map((r: any) => (
+                  <div
+                    key={r.testCase}
+                    className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-3"
+                  >
+                    <div className="flex justify-between font-medium">
+                      <span>Test Case {r.testCase}</span>
+                      <span
+                        className={
+                          r.passed
+                            ? "text-emerald-500"
+                            : "text-rose-500"
+                        }
+                      >
+                        {r.passed ? "Passed" : "Failed"}
+                      </span>
+                    </div>
+
+                    <div>
+                      <div className="text-xs mb-1">
+                        Expected
+                      </div>
+                      <pre className="bg-gray-100 dark:bg-gray-800 p-3 rounded whitespace-pre-wrap text-sm">
+                        {r.expected}
+                      </pre>
+                    </div>
+
+                    <div>
+                      <div className="text-xs mb-1">
+                        Your Output
+                      </div>
+                      <pre className="bg-gray-100 dark:bg-gray-800 p-3 rounded whitespace-pre-wrap text-sm">
+                        {r.output}
+                      </pre>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div>Runtime: {result.runtime} ms</div>
-            </div>
-          )}
+            )}
+
+            {submitResult && (
+              <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-5 text-sm space-y-2">
+                <div className="text-lg font-semibold">
+                  Verdict: {submitResult.verdict}
+                </div>
+                <div>Score: {submitResult.score}</div>
+                <div>
+                  Passed: {submitResult.passed}/
+                  {submitResult.total}
+                </div>
+                <div>
+                  Runtime: {submitResult.runtime} ms
+                </div>
+              </div>
+            )}
+
+          </div>
         </div>
       </div>
     </div>

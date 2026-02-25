@@ -1,9 +1,15 @@
 import express from "express";
-import { getProblemLeaderboard } from "../controllers/leaderboardController";
-import { protect } from "../middleware/authMiddleware";
+import {
+  getProblemLeaderboard,
+  getGlobalLeaderboard
+} from "../controllers/leaderboardController";
 
 const router = express.Router();
 
-router.get("/:problemId", protect, getProblemLeaderboard);
+// Global leaderboard
+router.get("/", getGlobalLeaderboard);
+
+// Problem leaderboard
+router.get("/:problemId", getProblemLeaderboard);
 
 export default router;

@@ -3,6 +3,7 @@ import Problem, { PATTERN_FLOW } from "../models/Problem";
 import { asyncHandler } from "../utils/asyncHandler";
 import { AppError } from "../utils/AppError";
 
+import Submission from "../models/Submission";
 /* ============================= */
 /* CREATE PROBLEM */
 /* ============================= */
@@ -257,29 +258,27 @@ export const updateProblem = asyncHandler(
 /* DELETE PROBLEM */
 /* ============================= */
 export const deleteProblem = asyncHandler(
-  async (req: any, res: Response, next: NextFunction) => {
+  async (req: Request, res: Response) => {
     const { id } = req.params;
 
     const problem = await Problem.findById(id);
 
     if (!problem) {
-      return next(new AppError("Problem not found", 404));
+      return res.status(404).json({
+        success: false,
+        message: "Problem not found",
+      });
     }
 
-    if (
-      req.user.role !== "admin" &&
-      problem.createdBy.toString() !== req.user.userId
-    ) {
-      return next(
-        new AppError("Not authorized to delete this problem", 403)
-      );
-    }
+    // Delete all related submissions first
+    await Submission.deleteMany({ problem: id });
 
-    await problem.deleteOne();
+    // Then delete the problem itself
+    await Problem.findByIdAndDelete(id);
 
-    res.status(200).json({
+    return res.status(200).json({
       success: true,
-      message: "Problem deleted successfully",
+      message: "Problem and all related submissions deleted successfully.",
     });
   }
 );

@@ -8,7 +8,7 @@ import PatternsPage from "./pages/PatternsPage";
 import PatternDetailPage from "./pages/PatternDetailPage";
 import ProblemsPage from "./pages/ProblemsPage"; // Master Sheet
 import ProblemDetailPage from "./pages/ProblemDetailPage";
-import LeaderboardPage from "./pages/LeaderboardPage";
+import ProblemLeaderboardPage from "./pages/ProblemLeaderboardPage";
 import SubmissionHistoryPage from "./pages/SubmissionHistoryPage";
 import DashboardPage from "./pages/DashboardPage";
 
@@ -17,6 +17,7 @@ import EditProblemPage from "./pages/EditProblemPage";
 
 import ProtectedRoute from "./routes/ProtectedRoute";
 import AppLayout from "./layouts/AppLayout";
+import GlobalLeaderboardPage from "./pages/GlobalLeaderboardPage";
 
 function App() {
   return (
@@ -40,11 +41,9 @@ function App() {
 
           <Route path="/submissions" element={<SubmissionHistoryPage />} />
 
-          {/* Global Leaderboard */}
-          <Route path="/leaderboard" element={<LeaderboardPage />} />
-          {/* Problem Leaderboard */}
-          <Route path="/leaderboard/:problemId" element={<LeaderboardPage />} />
-
+          <Route path="/leaderboard" element={<GlobalLeaderboardPage />} />
+          <Route path="/leaderboard/:problemId" element={<ProblemLeaderboardPage />} />
+          
           {/* ADMIN ONLY */}
           <Route element={<ProtectedRoute requiredRole="admin" />}>
             <Route path="/admin/create" element={<CreateProblemPage />} />
