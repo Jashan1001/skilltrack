@@ -1,6 +1,7 @@
 import { useState } from "react";
 import axios from "../api/axios";
 import { useNavigate } from "react-router-dom";
+import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 
 interface TestCase {
   input: string;
@@ -74,169 +75,256 @@ const CreateProblemPage: React.FC = () => {
       });
 
       navigate("/problems");
-    } catch (error) {
+    } catch {
       alert("Failed to create problem");
     }
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-10">
-      <h1 className="text-3xl font-semibold text-gray-100">
-        Create New Problem
-      </h1>
+    <div className="min-h-screen bg-background px-8 py-10 space-y-12">
 
-      {/* Basic Info */}
-      <div className="space-y-4">
-        <input
-          type="text"
-          placeholder="Problem Title"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          className="w-full bg-gray-800 text-gray-100 border border-gray-600 rounded-md px-4 py-2"
-        />
+      {/* Header */}
+      <div className="space-y-3">
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition"
+        >
+          <ArrowLeft size={16} />
+          Back
+        </button>
 
-        <textarea
-          rows={5}
-          placeholder="Problem Description"
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-          className="w-full bg-gray-800 text-gray-100 border border-gray-600 rounded-md p-4"
-        />
+        <div>
+          <h1 className="text-3xl font-semibold tracking-tight">
+            Create New Problem
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Configure problem metadata, difficulty and evaluation rules.
+          </p>
+        </div>
+      </div>
 
-        <div className="flex gap-4">
-          <select
-            value={difficulty}
-            onChange={(e) => setDifficulty(e.target.value)}
-            className="bg-gray-800 text-gray-100 border border-gray-600 rounded-md px-4 py-2"
-          >
-            <option value="easy">Easy</option>
-            <option value="medium">Medium</option>
-            <option value="hard">Hard</option>
-          </select>
+      <div className="bg-card border border-border rounded-2xl p-10 space-y-14 max-w-5xl">
 
-          <select
-            value={evaluationType}
-            onChange={(e) =>
-              setEvaluationType(e.target.value as "strict" | "partial")
-            }
-            className="bg-gray-800 text-gray-100 border border-gray-600 rounded-md px-4 py-2"
-          >
-            <option value="strict">Strict</option>
-            <option value="partial">Partial</option>
-          </select>
+        {/* ======================= */}
+        {/* Basic Information */}
+        {/* ======================= */}
+
+        <div className="space-y-8">
+          <h2 className="text-lg font-semibold">
+            Basic Information
+          </h2>
+
+          <div className="space-y-6">
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                Problem Title
+              </label>
+              <input
+                type="text"
+                value={title}
+                onChange={(e) => setTitle(e.target.value)}
+                className="w-full px-4 py-3 rounded-lg bg-muted border border-border focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                Description
+              </label>
+              <textarea
+                rows={6}
+                value={description}
+                onChange={(e) => setDescription(e.target.value)}
+                className="w-full px-4 py-3 rounded-lg bg-muted border border-border focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-6">
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
+                  Difficulty
+                </label>
+                <select
+                  value={difficulty}
+                  onChange={(e) => setDifficulty(e.target.value)}
+                  className="w-full px-4 py-3 rounded-lg bg-muted border border-border focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <option value="easy">Easy</option>
+                  <option value="medium">Medium</option>
+                  <option value="hard">Hard</option>
+                </select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
+                  Evaluation Type
+                </label>
+                <select
+                  value={evaluationType}
+                  onChange={(e) =>
+                    setEvaluationType(
+                      e.target.value as "strict" | "partial"
+                    )
+                  }
+                  className="w-full px-4 py-3 rounded-lg bg-muted border border-border focus:outline-none focus:ring-2 focus:ring-primary"
+                >
+                  <option value="strict">Strict</option>
+                  <option value="partial">Partial</option>
+                </select>
+              </div>
+
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">
+                Tags (comma separated)
+              </label>
+              <input
+                type="text"
+                value={tags}
+                onChange={(e) => setTags(e.target.value)}
+                className="w-full px-4 py-3 rounded-lg bg-muted border border-border focus:outline-none focus:ring-2 focus:ring-primary"
+              />
+            </div>
+
+          </div>
         </div>
 
-        <input
-          type="text"
-          placeholder="Tags (comma separated)"
-          value={tags}
-          onChange={(e) => setTags(e.target.value)}
-          className="w-full bg-gray-800 text-gray-100 border border-gray-600 rounded-md px-4 py-2"
-        />
-      </div>
+        {/* ======================= */}
+        {/* Public Test Cases */}
+        {/* ======================= */}
 
-      {/* Public Test Cases */}
-      <div className="space-y-4">
-        <h2 className="text-lg font-medium text-gray-200">
-          Public Test Cases
-        </h2>
+        <div className="space-y-6">
+          <h2 className="text-lg font-semibold">
+            Public Test Cases
+          </h2>
 
-        {publicTestCases.map((tc, index) => (
-          <div
-            key={index}
-            className="border border-gray-700 rounded-md p-4 space-y-2 bg-gray-800/40"
+          {publicTestCases.map((tc, index) => (
+            <div
+              key={index}
+              className="border border-border rounded-xl p-6 space-y-5 bg-muted/40"
+            >
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
+                  Input
+                </label>
+                <textarea
+                  value={tc.input}
+                  onChange={(e) =>
+                    updateTestCase(index, "input", e.target.value, setPublicTestCases)
+                  }
+                  className="w-full px-4 py-3 rounded-lg bg-muted border border-border focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
+                  Expected Output
+                </label>
+                <textarea
+                  value={tc.expectedOutput}
+                  onChange={(e) =>
+                    updateTestCase(index, "expectedOutput", e.target.value, setPublicTestCases)
+                  }
+                  className="w-full px-4 py-3 rounded-lg bg-muted border border-border focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
+
+              {publicTestCases.length > 1 && (
+                <button
+                  onClick={() => removeTestCase(index, setPublicTestCases)}
+                  className="flex items-center gap-2 text-sm text-destructive hover:opacity-80 transition"
+                >
+                  <Trash2 size={14} />
+                  Remove Test Case
+                </button>
+              )}
+            </div>
+          ))}
+
+          <button
+            onClick={() => addTestCase(setPublicTestCases)}
+            className="flex items-center gap-2 text-sm text-primary hover:opacity-90 transition"
           >
-            <textarea
-              placeholder="Input"
-              value={tc.input}
-              onChange={(e) =>
-                updateTestCase(index, "input", e.target.value, setPublicTestCases)
-              }
-              className="w-full bg-gray-900 text-gray-100 border border-gray-600 rounded-md p-2"
-            />
+            <Plus size={14} />
+            Add Public Test Case
+          </button>
+        </div>
 
-            <textarea
-              placeholder="Expected Output"
-              value={tc.expectedOutput}
-              onChange={(e) =>
-                updateTestCase(index, "expectedOutput", e.target.value, setPublicTestCases)
-              }
-              className="w-full bg-gray-900 text-gray-100 border border-gray-600 rounded-md p-2"
-            />
+        {/* ======================= */}
+        {/* Private Test Cases */}
+        {/* ======================= */}
 
-            {publicTestCases.length > 1 && (
-              <button
-                onClick={() => removeTestCase(index, setPublicTestCases)}
-                className="text-sm text-rose-400"
-              >
-                Remove
-              </button>
-            )}
-          </div>
-        ))}
+        <div className="space-y-6">
+          <h2 className="text-lg font-semibold">
+            Private Test Cases
+          </h2>
 
-        <button
-          onClick={() => addTestCase(setPublicTestCases)}
-          className="text-sm text-blue-400"
-        >
-          + Add Public Test Case
-        </button>
-      </div>
+          {privateTestCases.map((tc, index) => (
+            <div
+              key={index}
+              className="border border-border rounded-xl p-6 space-y-5 bg-muted/40"
+            >
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
+                  Input
+                </label>
+                <textarea
+                  value={tc.input}
+                  onChange={(e) =>
+                    updateTestCase(index, "input", e.target.value, setPrivateTestCases)
+                  }
+                  className="w-full px-4 py-3 rounded-lg bg-muted border border-border focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
 
-      {/* Private Test Cases */}
-      <div className="space-y-4">
-        <h2 className="text-lg font-medium text-gray-200">
-          Private Test Cases
-        </h2>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">
+                  Expected Output
+                </label>
+                <textarea
+                  value={tc.expectedOutput}
+                  onChange={(e) =>
+                    updateTestCase(index, "expectedOutput", e.target.value, setPrivateTestCases)
+                  }
+                  className="w-full px-4 py-3 rounded-lg bg-muted border border-border focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+              </div>
 
-        {privateTestCases.map((tc, index) => (
-          <div
-            key={index}
-            className="border border-gray-700 rounded-md p-4 space-y-2 bg-gray-800/40"
+              {privateTestCases.length > 1 && (
+                <button
+                  onClick={() => removeTestCase(index, setPrivateTestCases)}
+                  className="flex items-center gap-2 text-sm text-destructive hover:opacity-80 transition"
+                >
+                  <Trash2 size={14} />
+                  Remove Test Case
+                </button>
+              )}
+            </div>
+          ))}
+
+          <button
+            onClick={() => addTestCase(setPrivateTestCases)}
+            className="flex items-center gap-2 text-sm text-primary hover:opacity-90 transition"
           >
-            <textarea
-              placeholder="Input"
-              value={tc.input}
-              onChange={(e) =>
-                updateTestCase(index, "input", e.target.value, setPrivateTestCases)
-              }
-              className="w-full bg-gray-900 text-gray-100 border border-gray-600 rounded-md p-2"
-            />
+            <Plus size={14} />
+            Add Private Test Case
+          </button>
+        </div>
 
-            <textarea
-              placeholder="Expected Output"
-              value={tc.expectedOutput}
-              onChange={(e) =>
-                updateTestCase(index, "expectedOutput", e.target.value, setPrivateTestCases)
-              }
-              className="w-full bg-gray-900 text-gray-100 border border-gray-600 rounded-md p-2"
-            />
+        {/* Submit */}
+        <div className="pt-6 border-t border-border flex justify-end">
+          <button
+            onClick={handleSubmit}
+            className="px-6 py-3 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition"
+          >
+            Create Problem
+          </button>
+        </div>
 
-            {privateTestCases.length > 1 && (
-              <button
-                onClick={() => removeTestCase(index, setPrivateTestCases)}
-                className="text-sm text-rose-400"
-              >
-                Remove
-              </button>
-            )}
-          </div>
-        ))}
-
-        <button
-          onClick={() => addTestCase(setPrivateTestCases)}
-          className="text-sm text-blue-400"
-        >
-          + Add Private Test Case
-        </button>
       </div>
-
-      <button
-        onClick={handleSubmit}
-        className="bg-blue-500 hover:bg-blue-600 px-6 py-2 rounded-md text-sm font-medium"
-      >
-        Create Problem
-      </button>
     </div>
   );
 };

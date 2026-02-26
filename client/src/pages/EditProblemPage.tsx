@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import axios from "../api/axios";
+import { ArrowLeft, Plus, Trash2 } from "lucide-react";
 
 interface TestCase {
   input: string;
@@ -18,12 +19,11 @@ interface Problem {
 }
 
 const EditProblemPage: React.FC = () => {
-  const { id } = useParams();
+  const { id } = useParams(); // ✅ Keep your working param
   const navigate = useNavigate();
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
   const [problem, setProblem] = useState<Problem | null>(null);
 
   useEffect(() => {
@@ -38,7 +38,7 @@ const EditProblemPage: React.FC = () => {
       }
     };
 
-    fetchProblem();
+    if (id) fetchProblem();
   }, [id]);
 
   const handleUpdate = async () => {
@@ -96,13 +96,11 @@ const EditProblemPage: React.FC = () => {
     const updated = { ...problem };
 
     if (type === "public") {
-      updated.publicTestCases = updated.publicTestCases.filter(
-        (_, i) => i !== index
-      );
+      updated.publicTestCases =
+        updated.publicTestCases.filter((_, i) => i !== index);
     } else {
-      updated.privateTestCases = updated.privateTestCases.filter(
-        (_, i) => i !== index
-      );
+      updated.privateTestCases =
+        updated.privateTestCases.filter((_, i) => i !== index);
     }
 
     setProblem(updated);
@@ -110,160 +108,190 @@ const EditProblemPage: React.FC = () => {
 
   if (loading)
     return (
-      <div className="flex justify-center py-20 text-gray-400">
+      <div className="min-h-screen flex items-center justify-center text-muted-foreground">
         Loading problem...
       </div>
     );
 
   if (error || !problem)
     return (
-      <div className="flex justify-center py-20 text-red-400">
+      <div className="min-h-screen flex items-center justify-center text-destructive">
         {error || "Problem not found"}
       </div>
     );
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
-      <h1 className="text-3xl font-semibold text-gray-100">
-        Edit Problem
-      </h1>
+    <div className="min-h-screen bg-background px-8 py-10 space-y-12">
 
-      <input
-        type="text"
-        value={problem.title}
-        onChange={(e) =>
-          setProblem({ ...problem, title: e.target.value })
-        }
-        className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3"
-      />
-
-      <textarea
-        rows={6}
-        value={problem.description}
-        onChange={(e) =>
-          setProblem({ ...problem, description: e.target.value })
-        }
-        className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3"
-      />
-
-      <div className="flex gap-4">
-        <select
-          value={problem.difficulty}
-          onChange={(e) =>
-            setProblem({ ...problem, difficulty: e.target.value })
-          }
-          className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-3"
-        >
-          <option value="easy">Easy</option>
-          <option value="medium">Medium</option>
-          <option value="hard">Hard</option>
-        </select>
-
-        <select
-          value={problem.evaluationType}
-          onChange={(e) =>
-            setProblem({
-              ...problem,
-              evaluationType: e.target.value as "strict" | "partial",
-            })
-          }
-          className="bg-gray-800 border border-gray-700 rounded-lg px-4 py-3"
-        >
-          <option value="strict">Strict</option>
-          <option value="partial">Partial</option>
-        </select>
-      </div>
-
-      <input
-        type="text"
-        value={problem.tags.join(", ")}
-        onChange={(e) =>
-          setProblem({
-            ...problem,
-            tags: e.target.value.split(",").map((t) => t.trim()),
-          })
-        }
-        className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3"
-      />
-
-      <div>
-        <h2 className="text-lg font-semibold mt-6">Public Test Cases</h2>
-        {problem.publicTestCases.map((tc, index) => (
-          <div key={index} className="space-y-2 mt-3 bg-gray-800 p-4 rounded-lg">
-            <textarea
-              value={tc.input}
-              onChange={(e) =>
-                updateTestCase(index, "input", e.target.value, "public")
-              }
-              placeholder="Input"
-              className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2"
-            />
-            <textarea
-              value={tc.expectedOutput}
-              onChange={(e) =>
-                updateTestCase(index, "expectedOutput", e.target.value, "public")
-              }
-              placeholder="Expected Output"
-              className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2"
-            />
-            <button
-              onClick={() => removeTestCase(index, "public")}
-              className="text-rose-400 text-sm"
-            >
-              Remove
-            </button>
-          </div>
-        ))}
+      {/* Header */}
+      <div className="space-y-3">
         <button
-          onClick={() => addTestCase("public")}
-          className="text-blue-400 mt-3 text-sm"
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition"
         >
-          + Add Public Test Case
+          <ArrowLeft size={16} />
+          Back
         </button>
+
+        <div>
+          <h1 className="text-3xl font-semibold tracking-tight">
+            Edit Problem
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Modify problem details and evaluation rules.
+          </p>
+        </div>
       </div>
 
-      <div>
-        <h2 className="text-lg font-semibold mt-6">Private Test Cases</h2>
-        {problem.privateTestCases.map((tc, index) => (
-          <div key={index} className="space-y-2 mt-3 bg-gray-800 p-4 rounded-lg">
-            <textarea
-              value={tc.input}
+      <div className="bg-card border border-border rounded-2xl p-10 space-y-14 max-w-5xl">
+
+        {/* Basic Info */}
+        <div className="space-y-6">
+          <input
+            value={problem.title}
+            onChange={(e) =>
+              setProblem({ ...problem, title: e.target.value })
+            }
+            className="w-full px-4 py-3 rounded-lg bg-muted border border-border focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+
+          <textarea
+            rows={6}
+            value={problem.description}
+            onChange={(e) =>
+              setProblem({ ...problem, description: e.target.value })
+            }
+            className="w-full px-4 py-3 rounded-lg bg-muted border border-border focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+
+          <div className="grid md:grid-cols-2 gap-6">
+            <select
+              value={problem.difficulty}
               onChange={(e) =>
-                updateTestCase(index, "input", e.target.value, "private")
+                setProblem({ ...problem, difficulty: e.target.value })
               }
-              placeholder="Input"
-              className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2"
-            />
-            <textarea
-              value={tc.expectedOutput}
-              onChange={(e) =>
-                updateTestCase(index, "expectedOutput", e.target.value, "private")
-              }
-              placeholder="Expected Output"
-              className="w-full bg-gray-900 border border-gray-700 rounded-lg px-3 py-2"
-            />
-            <button
-              onClick={() => removeTestCase(index, "private")}
-              className="text-rose-400 text-sm"
+              className="w-full px-4 py-3 rounded-lg bg-muted border border-border focus:outline-none focus:ring-2 focus:ring-primary"
             >
-              Remove
-            </button>
-          </div>
-        ))}
-        <button
-          onClick={() => addTestCase("private")}
-          className="text-blue-400 mt-3 text-sm"
-        >
-          + Add Private Test Case
-        </button>
-      </div>
+              <option value="easy">Easy</option>
+              <option value="medium">Medium</option>
+              <option value="hard">Hard</option>
+            </select>
 
-      <button
-        onClick={handleUpdate}
-        className="bg-blue-600 hover:bg-blue-700 px-6 py-2 rounded-lg"
-      >
-        Update Problem
-      </button>
+            <select
+              value={problem.evaluationType}
+              onChange={(e) =>
+                setProblem({
+                  ...problem,
+                  evaluationType: e.target.value as "strict" | "partial",
+                })
+              }
+              className="w-full px-4 py-3 rounded-lg bg-muted border border-border focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="strict">Strict</option>
+              <option value="partial">Partial</option>
+            </select>
+          </div>
+
+          <input
+            value={problem.tags.join(", ")}
+            onChange={(e) =>
+              setProblem({
+                ...problem,
+                tags: e.target.value
+                  .split(",")
+                  .map((t) => t.trim()),
+              })
+            }
+            className="w-full px-4 py-3 rounded-lg bg-muted border border-border focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+        </div>
+
+        {/* Test Cases */}
+        {["public", "private"].map((type) => {
+          const isPublic = type === "public";
+          const cases = isPublic
+            ? problem.publicTestCases
+            : problem.privateTestCases;
+
+          return (
+            <div key={type} className="space-y-6">
+              <h2 className="text-lg font-semibold capitalize">
+                {type} Test Cases
+              </h2>
+
+              {cases.map((tc, index) => (
+                <div
+                  key={index}
+                  className="border border-border rounded-xl p-6 space-y-5 bg-muted/40"
+                >
+                  <textarea
+                    value={tc.input}
+                    onChange={(e) =>
+                      updateTestCase(
+                        index,
+                        "input",
+                        e.target.value,
+                        type as "public" | "private"
+                      )
+                    }
+                    placeholder="Input"
+                    className="w-full px-4 py-3 rounded-lg bg-muted border border-border focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+
+                  <textarea
+                    value={tc.expectedOutput}
+                    onChange={(e) =>
+                      updateTestCase(
+                        index,
+                        "expectedOutput",
+                        e.target.value,
+                        type as "public" | "private"
+                      )
+                    }
+                    placeholder="Expected Output"
+                    className="w-full px-4 py-3 rounded-lg bg-muted border border-border focus:outline-none focus:ring-2 focus:ring-primary"
+                  />
+
+                  {cases.length > 1 && (
+                    <button
+                      onClick={() =>
+                        removeTestCase(
+                          index,
+                          type as "public" | "private"
+                        )
+                      }
+                      className="flex items-center gap-2 text-sm text-destructive hover:opacity-80 transition"
+                    >
+                      <Trash2 size={14} />
+                      Remove
+                    </button>
+                  )}
+                </div>
+              ))}
+
+              <button
+                onClick={() =>
+                  addTestCase(type as "public" | "private")
+                }
+                className="flex items-center gap-2 text-sm text-primary hover:opacity-90 transition"
+              >
+                <Plus size={14} />
+                Add {type} Test Case
+              </button>
+            </div>
+          );
+        })}
+
+        <div className="pt-6 border-t border-border flex justify-end">
+          <button
+            onClick={handleUpdate}
+            className="px-6 py-3 rounded-lg bg-primary text-primary-foreground hover:opacity-90 transition"
+          >
+            Update Problem
+          </button>
+        </div>
+
+      </div>
     </div>
   );
 };

@@ -1,6 +1,7 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/authContext";
 import { useTheme } from "../hooks/useTheme";
+import { Sun, Moon, LogOut } from "lucide-react";
 
 const Navbar: React.FC = () => {
   const { logout, user } = useAuth();
@@ -28,54 +29,51 @@ const Navbar: React.FC = () => {
   };
 
   return (
-    <header
-      className="h-14 flex items-center justify-between px-6
-                 bg-white dark:bg-neutral-950
-                 border-b border-gray-200 dark:border-neutral-800
-                 transition-colors"
-    >
-      {/* Left — Title */}
-      <h1 className="text-base font-semibold text-gray-900 dark:text-white">
+    <header className="h-14 flex items-center justify-between px-6
+                       bg-background
+                       border-b border-border
+                       transition-colors">
+
+      {/* Left — Page Title */}
+      <h1 className="text-base font-semibold tracking-tight">
         {getPageTitle()}
       </h1>
 
       {/* Right — Controls */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-5">
 
         {/* Theme Toggle */}
         <button
           onClick={toggleTheme}
-          className="px-3 py-1.5 text-xs font-medium rounded-md
-                     bg-gray-100 dark:bg-neutral-800
-                     text-gray-700 dark:text-neutral-200
-                     hover:bg-gray-200 dark:hover:bg-neutral-700
-                     transition"
+          className="p-2 rounded-md hover:bg-muted transition"
         >
-          {theme === "dark" ? "Light" : "Dark"}
+          {theme === "dark" ? (
+            <Sun size={18} />
+          ) : (
+            <Moon size={18} />
+          )}
         </button>
 
-        {/* Role Badge */}
-        <span
-          className="px-2 py-1 text-xs rounded-md
-                     bg-gray-100 dark:bg-neutral-800
-                     text-gray-700 dark:text-neutral-300
-                     capitalize"
-        >
-          {user?.role}
-        </span>
+        {/* User Chip */}
+        <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-muted text-sm">
 
-        {/* Email */}
-        <span className="text-sm text-gray-600 dark:text-neutral-400">
-          {user?.email}
-        </span>
+          {/* Subtle status dot */}
+          <span className="w-2 h-2 rounded-full bg-primary"></span>
+
+          <span className="font-medium">
+            {user?.name || "User"}
+          </span>
+        </div>
 
         {/* Logout */}
         <button
           onClick={handleLogout}
-          className="text-sm font-medium text-rose-500 hover:text-rose-600 transition"
+          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition"
         >
+          <LogOut size={16} />
           Logout
         </button>
+
       </div>
     </header>
   );

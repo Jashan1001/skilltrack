@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/authContext";
+import Header from "../components/Header";
 
 const RegisterPage: React.FC = () => {
   const { register } = useAuth();
@@ -28,72 +29,84 @@ const RegisterPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 flex items-center justify-center px-6">
-      <div className="w-full max-w-md bg-gray-900 border border-gray-800 rounded-2xl p-8 space-y-8 shadow-xl">
+    <div className="min-h-screen bg-background text-foreground flex flex-col">
 
-        {/* Heading */}
-        <div className="space-y-2 text-center">
-          <h1 className="text-2xl font-semibold text-gray-100">
-            Create Account
-          </h1>
-          <p className="text-gray-400 text-sm">
-            Join InterviewSphere and start practicing
+      {/* Shared Header */}
+      <Header showAuthButtons={false} />
+
+      {/* Centered Form */}
+      <div className="flex-1 flex items-center justify-center px-6">
+
+        <div className="w-full max-w-md bg-card border border-border rounded-2xl p-8 space-y-8">
+
+          {/* Heading */}
+          <div className="space-y-2 text-center">
+            <h1 className="text-2xl font-semibold tracking-tight">
+              Create Account
+            </h1>
+            <p className="text-muted-foreground text-sm">
+              Join SkillTrack and start structured DSA practice.
+            </p>
+          </div>
+
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-5">
+
+            <input
+              type="text"
+              placeholder="Full Name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+              className="w-full bg-muted border border-border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary transition"
+            />
+
+            <input
+              type="email"
+              placeholder="Email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+              className="w-full bg-muted border border-border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary transition"
+            />
+
+            <input
+              type="password"
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+              className="w-full bg-muted border border-border rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary transition"
+            />
+
+            {error && (
+              <p className="text-sm text-destructive">
+                {error}
+              </p>
+            )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-primary text-primary-foreground rounded-lg py-3 text-sm font-medium hover:opacity-90 transition disabled:opacity-60"
+            >
+              {loading ? "Creating account..." : "Sign Up"}
+            </button>
+
+          </form>
+
+          {/* Footer */}
+          <p className="text-center text-sm text-muted-foreground">
+            Already have an account?{" "}
+            <Link
+              to="/login"
+              className="text-primary hover:underline"
+            >
+              Sign in
+            </Link>
           </p>
+
         </div>
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-5">
-
-          <input
-            type="text"
-            placeholder="Full Name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            required
-            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-sm text-gray-100 focus:outline-none focus:border-blue-500 transition"
-          />
-
-          <input
-            type="email"
-            placeholder="Email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            required
-            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-sm text-gray-100 focus:outline-none focus:border-blue-500 transition"
-          />
-
-          <input
-            type="password"
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-            className="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-3 text-sm text-gray-100 focus:outline-none focus:border-blue-500 transition"
-          />
-
-          {error && (
-            <p className="text-sm text-rose-400">{error}</p>
-          )}
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-700 transition rounded-lg py-3 text-sm font-medium text-white disabled:opacity-60"
-          >
-            {loading ? "Creating account..." : "Sign Up"}
-          </button>
-        </form>
-
-        {/* Footer */}
-        <p className="text-center text-sm text-gray-400">
-          Already have an account?{" "}
-          <Link
-            to="/login"
-            className="text-blue-400 hover:text-blue-300 transition"
-          >
-            Sign in
-          </Link>
-        </p>
 
       </div>
     </div>
