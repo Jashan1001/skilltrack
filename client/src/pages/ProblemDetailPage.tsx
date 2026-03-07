@@ -4,6 +4,13 @@ import Editor from "@monaco-editor/react";
 import axios from "../api/axios";
 import { Play, Send, ArrowLeft, Trophy } from "lucide-react";
 import { motion } from "framer-motion";
+import { useTheme } from "../hooks/useTheme";
+
+import {
+  Panel,
+  PanelGroup,
+  PanelResizeHandle,
+} from "react-resizable-panels";
 
 interface TestCase {
   input: string;
@@ -21,6 +28,7 @@ interface Problem {
 const ProblemDetailPage = () => {
   const { problemId } = useParams();
   const navigate = useNavigate();
+  const { theme } = useTheme();
 
   const [problem, setProblem] = useState<Problem | null>(null);
   const [loading, setLoading] = useState(true);
@@ -34,30 +42,7 @@ const ProblemDetailPage = () => {
   const [runResult, setRunResult] = useState<any>(null);
   const [submitResult, setSubmitResult] = useState<any>(null);
 
-  const [theme, setTheme] = useState(
-    document.documentElement.classList.contains("dark")
-      ? "dark"
-      : "light"
-  );
-
   const resultRef = useRef<HTMLDivElement | null>(null);
-
-  /* THEME OBSERVER */
-
-  useEffect(() => {
-    const observer = new MutationObserver(() => {
-      const isDark =
-        document.documentElement.classList.contains("dark");
-      setTheme(isDark ? "dark" : "light");
-    });
-
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["class"],
-    });
-
-    return () => observer.disconnect();
-  }, []);
 
   /* FETCH PROBLEM */
 
@@ -71,16 +56,15 @@ const ProblemDetailPage = () => {
     fetchProblem();
   }, [problemId]);
 
-  /* SCROLL TO RESULT */
+  /* AUTO SCROLL */
 
   useEffect(() => {
-    if (runResult) {
+    if (runResult || submitResult) {
       resultRef.current?.scrollIntoView({
         behavior: "smooth",
-        block: "start",
       });
     }
-  }, [runResult]);
+  }, [runResult, submitResult]);
 
   /* RUN CODE */
 
@@ -131,20 +115,21 @@ const ProblemDetailPage = () => {
 
   if (loading || !problem) return null;
 
-  const difficultyColor =
+  /* DIFFICULTY BADGE */
+
+  const difficultyStyle =
     problem.difficulty === "easy"
-      ? "text-emerald-500"
+      ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
       : problem.difficulty === "medium"
-      ? "text-amber-500"
-      : "text-rose-500";
+      ? "bg-amber-500/10 text-amber-500 border border-amber-500/20"
+      : "bg-red-500/10 text-red-500 border border-red-500/20";
 
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="h-full flex flex-col px-6 py-4"
+      className="flex flex-col h-full px-6 py-4 bg-gray-50 dark:bg-black"
     >
-
       {/* HEADER */}
 
       <div className="flex items-center justify-between mb-4">
@@ -156,18 +141,18 @@ const ProblemDetailPage = () => {
           </h1>
 
           <span
-            className={`text-sm font-medium ${difficultyColor}`}
+            className={`px-2 py-0.5 rounded text-xs font-medium capitalize ${difficultyStyle}`}
           >
             {problem.difficulty}
           </span>
 
         </div>
 
-        <div className="flex gap-5 text-sm text-gray-500">
+        <div className="flex gap-5 text-sm text-gray-500 dark:text-gray-400">
 
           <button
             onClick={() => navigate(-1)}
-            className="flex items-center gap-1 hover:text-white"
+            className="flex items-center gap-1 hover:text-gray-900 dark:hover:text-white"
           >
             <ArrowLeft size={16} /> Back
           </button>
@@ -176,7 +161,7 @@ const ProblemDetailPage = () => {
             onClick={() =>
               navigate(`/leaderboard/${problem._id}`)
             }
-            className="flex items-center gap-1 hover:text-white"
+            className="flex items-center gap-1 hover:text-gray-900 dark:hover:text-white"
           >
             <Trophy size={16} /> Leaderboard
           </button>
@@ -185,145 +170,224 @@ const ProblemDetailPage = () => {
 
       </div>
 
-      {/* WORKSPACE */}
+      {/* RESIZABLE WORKSPACE */}
 
-      <div className="flex flex-1 border border-gray-800 rounded-lg overflow-hidden">
-
+      <PanelGroup
+        direction="horizontal"
+        className="
+        flex-1
+        border border-gray-200
+        dark:border-gray-800
+        rounded-lg
+        overflow-hidden
+        bg-white
+        dark:bg-[#020617]
+        "
+      >
         {/* LEFT PANEL */}
 
-        <div className="w-[45%] border-r border-gray-800 overflow-y-auto">
+        <Panel defaultSize={45} minSize={30}>
 
-          <div className="p-4 border-b border-gray-800">
+          <div className="h-full overflow-y-auto border-r border-gray-200 dark:border-gray-800">
 
-            <h2 className="font-semibold text-sm mb-2">
-              Description
-            </h2>
+            {/* DESCRIPTION */}
 
-            <p className="text-sm leading-relaxed text-gray-400 whitespace-pre-line">
-              {problem.description}
-            </p>
+            <div className="p-4 border-b border-gray-200 dark:border-gray-800">
+
+              <h2 className="font-semibold text-sm mb-2">
+                Description
+              </h2>
+
+              <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-line">
+                {problem.description}
+              </p>
+
+            </div>
+
+            {/* TEST CASES */}
+
+            <div className="p-4">
+
+              <h2 className="font-semibold text-sm mb-3">
+                Sample Test Cases
+              </h2>
+
+              {problem.publicTestCases.map((tc, i) => (
+                <div key={i} className="mb-5">
+
+                  <div className="text-xs mb-1 text-gray-500">
+                    Input
+                  </div>
+
+                  <pre className="
+                  bg-gray-100
+                  dark:bg-gray-900
+                  border border-gray-200
+                  dark:border-gray-800
+                  p-3 rounded text-sm
+                  ">
+                    {formatJSONInput(tc.input)}
+                  </pre>
+
+                  <div className="text-xs mt-3 mb-1 text-gray-500">
+                    Expected Output
+                  </div>
+
+                  <pre className="
+                  bg-gray-100
+                  dark:bg-gray-900
+                  border border-gray-200
+                  dark:border-gray-800
+                  p-3 rounded text-sm
+                  ">
+                    {tc.expectedOutput}
+                  </pre>
+
+                </div>
+              ))}
+
+            </div>
 
           </div>
 
-          <div className="p-4">
+        </Panel>
 
-            <h2 className="font-semibold text-sm mb-3">
-              Sample Test Cases
-            </h2>
+        {/* RESIZE HANDLE */}
 
-            {problem.publicTestCases.map((tc, i) => (
-              <div key={i} className="mb-5">
-
-                <div className="text-xs mb-1 text-gray-400">
-                  Input
-                </div>
-
-                <pre className="bg-gray-900 p-3 rounded text-sm">
-                  {formatJSONInput(tc.input)}
-                </pre>
-
-                <div className="text-xs mt-3 mb-1 text-gray-400">
-                  Expected Output
-                </div>
-
-                <pre className="bg-gray-900 p-3 rounded text-sm">
-                  {tc.expectedOutput}
-                </pre>
-
-              </div>
-            ))}
-
-          </div>
-
-        </div>
+        <PanelResizeHandle
+          className="
+          w-[4px]
+          bg-gray-200
+          dark:bg-gray-800
+          hover:bg-blue-500
+          cursor-col-resize
+          transition-colors
+          "
+        />
 
         {/* RIGHT PANEL */}
 
-        <div className="w-[55%] flex flex-col">
+        <Panel defaultSize={55} minSize={35}>
 
-          {/* EDITOR TOOLBAR */}
+          <div className="flex flex-col h-full">
 
-          <div className="flex items-center justify-between px-3 py-2 border-b border-gray-800 bg-[#020617]">
+            {/* TOOLBAR */}
 
-            <div className="flex items-center gap-2 text-sm">
+            <div className="
+            flex items-center justify-between
+            px-3 py-2
+            border-b border-gray-200
+            dark:border-gray-800
+            bg-gray-100
+            dark:bg-[#020617]
+            ">
 
-              <span className="text-gray-400">
-                Language
-              </span>
+              <div className="flex items-center gap-2 text-sm">
 
-              <select
-                value={language}
-                onChange={(e) =>
-                  setLanguage(e.target.value)
-                }
-                className="bg-gray-900 border border-gray-700 px-2 py-1 rounded text-sm"
-              >
-                <option value="javascript">
-                  JavaScript
-                </option>
-                <option value="python">
-                  Python
-                </option>
-                <option value="cpp">C++</option>
-              </select>
+                <span className="text-gray-500 dark:text-gray-400">
+                  Language
+                </span>
+
+                <select
+                  value={language}
+                  onChange={(e) =>
+                    setLanguage(e.target.value)
+                  }
+                  className="
+                  bg-white
+                  dark:bg-gray-900
+                  border border-gray-300
+                  dark:border-gray-700
+                  px-2 py-1 rounded text-sm
+                  "
+                >
+                  <option value="javascript">
+                    JavaScript
+                  </option>
+                  <option value="python">
+                    Python
+                  </option>
+                  <option value="cpp">C++</option>
+                </select>
+
+              </div>
+
+              <div className="flex gap-2">
+
+                <button
+                  onClick={handleRun}
+                  disabled={running}
+                  className="
+                  flex items-center gap-1
+                  text-emerald-500
+                  border border-emerald-500
+                  px-3 py-1 rounded
+                  hover:bg-emerald-500/10
+                  text-sm
+                  "
+                >
+                  <Play size={14}/>
+                  {running ? "Running" : "Run"}
+                </button>
+
+                <button
+                  onClick={handleSubmit}
+                  disabled={submitting}
+                  className="
+                  flex items-center gap-1
+                  bg-blue-600
+                  px-3 py-1 rounded
+                  text-white text-sm
+                  hover:bg-blue-700
+                  "
+                >
+                  <Send size={14}/>
+                  {submitting ? "Submitting" : "Submit"}
+                </button>
+
+              </div>
 
             </div>
 
-            <div className="flex gap-2">
+            {/* MONACO EDITOR */}
 
-              <button
-                onClick={handleRun}
-                disabled={running}
-                className="flex items-center gap-1 text-emerald-500 border border-emerald-600 px-3 py-1 rounded hover:bg-emerald-600/10 text-sm"
-              >
-                <Play size={14} />
-                {running ? "Running" : "Run"}
-              </button>
+            <div className="flex-1">
 
-              <button
-                onClick={handleSubmit}
-                disabled={submitting}
-                className="flex items-center gap-1 bg-blue-600 px-3 py-1 rounded text-white text-sm hover:bg-blue-700"
-              >
-                <Send size={14} />
-                {submitting ? "Submitting" : "Submit"}
-              </button>
+              <Editor
+                height="100%"
+                language={language === "cpp" ? "cpp" : language}
+                value={code}
+                onChange={(v) => setCode(v || "")}
+                theme={theme === "dark" ? "vs-dark" : "light"}
+                options={{
+                  minimap: { enabled: false },
+                  fontSize: 14,
+                  automaticLayout: true,
+                  scrollBeyondLastLine: false,
+                }}
+              />
 
             </div>
 
           </div>
 
-          {/* EDITOR */}
+        </Panel>
 
-          <div className="flex-1">
+      </PanelGroup>
 
-            <Editor
-              height="100%"
-              language={
-                language === "cpp" ? "cpp" : language
-              }
-              value={code}
-              onChange={(v) => setCode(v || "")}
-              theme={
-                theme === "dark" ? "vs-dark" : "light"
-              }
-              options={{
-                minimap: { enabled: false },
-                fontSize: 14,
-                automaticLayout: true,
-                scrollBeyondLastLine: false,
-              }}
-            />
-
-          </div>
-
-        </div>
-
-      </div>
-
-      {/* RESULTS */}
+      {/* OUTPUT PANEL */}
 
       <div ref={resultRef} className="mt-4">
+
+        {!runResult && !submitResult && (
+          <div className="
+          border border-gray-200
+          dark:border-gray-800
+          rounded p-4 text-sm text-gray-500
+          ">
+            Run your code to see output here.
+          </div>
+        )}
 
         {runResult && (
           <div className="space-y-3">
@@ -331,7 +395,7 @@ const ProblemDetailPage = () => {
             {runResult.detailedResults.map((r: any) => (
               <div
                 key={r.testCase}
-                className="border border-gray-800 rounded p-3 text-sm"
+                className="border border-gray-200 dark:border-gray-800 rounded p-3 text-sm"
               >
 
                 <div className="flex justify-between mb-2">
@@ -344,7 +408,7 @@ const ProblemDetailPage = () => {
                     className={
                       r.passed
                         ? "text-emerald-500"
-                        : "text-rose-500"
+                        : "text-red-500"
                     }
                   >
                     {r.passed
@@ -354,19 +418,19 @@ const ProblemDetailPage = () => {
 
                 </div>
 
-                <div className="text-xs text-gray-400">
+                <div className="text-xs text-gray-500">
                   Expected
                 </div>
 
-                <pre className="bg-gray-900 p-2 rounded mb-2">
+                <pre className="bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-2 rounded mb-2">
                   {r.expected}
                 </pre>
 
-                <div className="text-xs text-gray-400">
+                <div className="text-xs text-gray-500">
                   Your Output
                 </div>
 
-                <pre className="bg-gray-900 p-2 rounded">
+                <pre className="bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-2 rounded">
                   {r.output}
                 </pre>
 
@@ -377,22 +441,23 @@ const ProblemDetailPage = () => {
         )}
 
         {submitResult && (
-          <div className="border border-gray-800 rounded p-4 text-sm">
+          <div className="border border-gray-200 dark:border-gray-800 rounded p-4 text-sm">
 
             <div className="font-semibold mb-1">
               Verdict: {submitResult.verdict}
             </div>
 
             <div>
-              Passed: {submitResult.passed}/
-              {submitResult.total}
+              Passed: {submitResult.passed}/{submitResult.total}
             </div>
 
             <div>
               Runtime: {submitResult.runtime} ms
             </div>
 
-            <div>Score: {submitResult.score}</div>
+            <div>
+              Score: {submitResult.score}
+            </div>
 
           </div>
         )}
