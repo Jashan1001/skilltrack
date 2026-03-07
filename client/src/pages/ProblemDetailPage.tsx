@@ -17,15 +17,29 @@ interface TestCase {
   expectedOutput: string;
 }
 
+interface Example {
+  input: string;
+  output: string;
+}
+
 interface Problem {
   _id: string;
   title: string;
   description: string;
   difficulty: string;
+
+  inputFormat?: string;
+  outputFormat?: string;
+  constraints?: string;
+  examples?: Example[];
+  hints?: string[];
+  tags?: string[];
+
   publicTestCases: TestCase[];
 }
 
 const ProblemDetailPage = () => {
+
   const { problemId } = useParams();
   const navigate = useNavigate();
   const { theme } = useTheme();
@@ -44,6 +58,8 @@ const ProblemDetailPage = () => {
 
   const [runResult, setRunResult] = useState<any>(null);
   const [submitResult, setSubmitResult] = useState<any>(null);
+
+  const [showHints, setShowHints] = useState(false);
 
   const [activeTab, setActiveTab] = useState<
     "console" | "testcases" | "result"
@@ -79,7 +95,9 @@ const ProblemDetailPage = () => {
   /* KEYBOARD SHORTCUTS */
 
   useEffect(() => {
+
     const handleKey = (e: KeyboardEvent) => {
+
       if (e.ctrlKey && e.key === "Enter") {
         e.preventDefault();
         handleRun();
@@ -89,10 +107,12 @@ const ProblemDetailPage = () => {
         e.preventDefault();
         handleSubmit();
       }
+
     };
 
     window.addEventListener("keydown", handleKey);
     return () => window.removeEventListener("keydown", handleKey);
+
   }, [code]);
 
   /* SCROLL TO OUTPUT */
@@ -106,6 +126,7 @@ const ProblemDetailPage = () => {
   /* RUN */
 
   const handleRun = async () => {
+
     if (!code.trim()) return;
 
     setRunning(true);
@@ -120,11 +141,13 @@ const ProblemDetailPage = () => {
     setRunResult(res.data.data);
     setRunning(false);
     setActiveTab("testcases");
+
   };
 
   /* SUBMIT */
 
   const handleSubmit = async () => {
+
     if (!code.trim()) return;
 
     setSubmitting(true);
@@ -139,17 +162,7 @@ const ProblemDetailPage = () => {
     setSubmitResult(res.data.data);
     setSubmitting(false);
     setActiveTab("result");
-  };
 
-  const formatJSONInput = (input: string) => {
-    try {
-      const parsed = JSON.parse(input);
-      return Object.entries(parsed)
-        .map(([k, v]) => `${k} = ${JSON.stringify(v)}`)
-        .join("\n");
-    } catch {
-      return input;
-    }
   };
 
   if (loading)
@@ -174,20 +187,42 @@ const ProblemDetailPage = () => {
       animate={{ opacity: 1 }}
       className="flex flex-col h-full px-6 py-4 bg-neutral-100 dark:bg-neutral-950"
     >
+
       {/* HEADER */}
 
       <div className="flex items-center justify-between mb-4">
 
-        <div className="flex items-center gap-4">
-          <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white">
-            {problem.title}
-          </h1>
+        <div>
 
-          <span
-            className={`px-2 py-0.5 rounded text-xs font-medium capitalize ${difficultyStyle}`}
-          >
-            {problem.difficulty}
-          </span>
+          <div className="flex items-center gap-4">
+
+            <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white">
+              {problem.title}
+            </h1>
+
+            <span
+              className={`px-2 py-0.5 rounded text-xs font-medium capitalize ${difficultyStyle}`}
+            >
+              {problem.difficulty}
+            </span>
+
+          </div>
+
+          {/* TAGS */}
+
+          {problem.tags && (
+            <div className="flex gap-2 mt-1">
+              {problem.tags.map(tag => (
+                <span
+                  key={tag}
+                  className="text-xs px-2 py-0.5 rounded bg-neutral-200 dark:bg-neutral-800"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+
         </div>
 
         <div className="flex gap-5 text-sm text-neutral-500">
@@ -196,7 +231,7 @@ const ProblemDetailPage = () => {
             onClick={() => navigate(-1)}
             className="flex items-center gap-1 hover:text-neutral-900 dark:hover:text-white"
           >
-            <ArrowLeft size={16} /> Back
+            <ArrowLeft size={16}/> Back
           </button>
 
           <button
@@ -205,7 +240,7 @@ const ProblemDetailPage = () => {
             }
             className="flex items-center gap-1 hover:text-neutral-900 dark:hover:text-white"
           >
-            <Trophy size={16} /> Leaderboard
+            <Trophy size={16}/> Leaderboard
           </button>
 
         </div>
@@ -225,21 +260,107 @@ const ProblemDetailPage = () => {
 
           <div className="h-full overflow-y-auto border-r border-neutral-200 dark:border-neutral-800">
 
-            <div className="p-4 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900">
+            <div className="p-4">
 
-              <h2 className="font-semibold text-sm mb-2">
-                Description
-              </h2>
+              {/* DESCRIPTION */}
+
+              <h2 className="font-semibold text-sm mb-2">Description</h2>
 
               <p className="text-sm text-neutral-600 dark:text-neutral-300 whitespace-pre-line">
                 {problem.description}
               </p>
 
-            </div>
+              {/* INPUT FORMAT */}
 
-            <div className="p-4">
+              {problem.inputFormat && (
+                <>
+                  <h3 className="mt-4 font-semibold text-sm">Input Format</h3>
+                  <pre className="text-sm whitespace-pre-line">
+                    {problem.inputFormat}
+                  </pre>
+                </>
+              )}
 
-              <h2 className="font-semibold text-sm mb-3">
+              {/* OUTPUT FORMAT */}
+
+              {problem.outputFormat && (
+                <>
+                  <h3 className="mt-4 font-semibold text-sm">Output Format</h3>
+                  <pre className="text-sm whitespace-pre-line">
+                    {problem.outputFormat}
+                  </pre>
+                </>
+              )}
+
+              {/* CONSTRAINTS */}
+
+              {problem.constraints && (
+                <>
+                  <h3 className="mt-4 font-semibold text-sm">Constraints</h3>
+                  <pre className="text-sm whitespace-pre-line">
+                    {problem.constraints}
+                  </pre>
+                </>
+              )}
+
+              {/* EXAMPLES */}
+
+              {problem.examples && problem.examples.length > 0 && (
+                <div className="mt-4">
+
+                  <h3 className="font-semibold text-sm mb-2">Examples</h3>
+
+                  {problem.examples.map((ex, i) => (
+                    <div key={i} className="mb-4">
+
+                      <div className="text-xs mb-1 text-neutral-500">
+                        Input
+                      </div>
+
+                      <pre className="bg-neutral-100 dark:bg-neutral-800 border p-3 rounded text-sm font-mono whitespace-pre-wrap">
+                        {ex.input}
+                      </pre>
+
+                      <div className="text-xs mt-2 mb-1 text-neutral-500">
+                        Output
+                      </div>
+
+                      <pre className="bg-neutral-100 dark:bg-neutral-800 border p-3 rounded text-sm font-mono whitespace-pre-wrap">
+                        {ex.output}
+                      </pre>
+
+                    </div>
+                  ))}
+
+                </div>
+              )}
+
+              {/* HINTS */}
+
+              {problem.hints && problem.hints.length > 0 && (
+                <div className="mt-4">
+
+                  <button
+                    onClick={() => setShowHints(!showHints)}
+                    className="text-sm font-medium text-emerald-500 hover:underline"
+                  >
+                    {showHints ? "Hide Hints" : "Show Hints"}
+                  </button>
+
+                  {showHints && (
+                    <ul className="mt-2 text-sm list-disc pl-5 space-y-1">
+                      {problem.hints.map((hint, i) => (
+                        <li key={i}>{hint}</li>
+                      ))}
+                    </ul>
+                  )}
+
+                </div>
+              )}
+
+              {/* SAMPLE TEST CASES */}
+
+              <h2 className="font-semibold text-sm mt-6 mb-3">
                 Sample Test Cases
               </h2>
 
@@ -250,15 +371,15 @@ const ProblemDetailPage = () => {
                     Input
                   </div>
 
-                  <pre className="bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 p-3 rounded text-sm font-mono whitespace-pre-wrap break-all">
-                    {formatJSONInput(tc.input)}
+                  <pre className="bg-neutral-100 dark:bg-neutral-800 border p-3 rounded text-sm font-mono whitespace-pre-wrap">
+                    {tc.input}
                   </pre>
 
                   <div className="text-xs mt-3 mb-1 text-neutral-500">
                     Expected Output
                   </div>
 
-                  <pre className="bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 p-3 rounded text-sm font-mono whitespace-pre-wrap break-all">
+                  <pre className="bg-neutral-100 dark:bg-neutral-800 border p-3 rounded text-sm font-mono whitespace-pre-wrap">
                     {tc.expectedOutput}
                   </pre>
 
@@ -271,7 +392,7 @@ const ProblemDetailPage = () => {
 
         </Panel>
 
-        <PanelResizeHandle className="w-[4px] bg-neutral-200 dark:bg-neutral-700 hover:bg-neutral-400 cursor-col-resize transition" />
+        <PanelResizeHandle className="w-[4px] bg-neutral-200 dark:bg-neutral-700 hover:bg-neutral-400 cursor-col-resize transition"/>
 
         {/* RIGHT PANEL */}
 
@@ -281,34 +402,24 @@ const ProblemDetailPage = () => {
 
             {/* TOOLBAR */}
 
-            <div className="flex items-center justify-between px-3 py-2 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-900">
+            <div className="flex items-center justify-between px-3 py-2 border-b bg-neutral-100 dark:bg-neutral-900">
 
-              <div className="flex items-center gap-2 text-sm">
-
-                <span className="text-neutral-500">
-                  Language
-                </span>
-
-                <select
-                  value={language}
-                  onChange={(e) =>
-                    setLanguage(e.target.value)
-                  }
-                  className="bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 px-2 py-1 rounded text-sm"
-                >
-                  <option value="javascript">JavaScript</option>
-                  <option value="python">Python</option>
-                  <option value="cpp">C++</option>
-                </select>
-
-              </div>
+              <select
+                value={language}
+                onChange={(e) => setLanguage(e.target.value)}
+                className="bg-white dark:bg-neutral-800 border px-2 py-1 rounded text-sm"
+              >
+                <option value="javascript">JavaScript</option>
+                <option value="python">Python</option>
+                <option value="cpp">C++</option>
+              </select>
 
               <div className="flex gap-2">
 
                 <button
                   onClick={handleRun}
                   disabled={running}
-                  className="flex items-center gap-1 text-emerald-500 border border-emerald-500 px-3 py-1 rounded-md hover:bg-emerald-500/10 text-sm font-medium transition"
+                  className="flex items-center gap-1 text-emerald-500 border border-emerald-500 px-3 py-1 rounded-md"
                 >
                   <Play size={14}/>
                   {running ? "Running..." : "Run"}
@@ -317,7 +428,7 @@ const ProblemDetailPage = () => {
                 <button
                   onClick={handleSubmit}
                   disabled={submitting}
-                  className="flex items-center gap-1 bg-emerald-600 px-3 py-1 rounded-md text-white text-sm font-medium hover:bg-emerald-700 transition"
+                  className="flex items-center gap-1 bg-emerald-600 px-3 py-1 rounded-md text-white"
                 >
                   <Send size={14}/>
                   {submitting ? "Submitting..." : "Submit"}
@@ -329,108 +440,25 @@ const ProblemDetailPage = () => {
 
             {/* EDITOR */}
 
-            <div className="flex-1">
-
-              <Editor
-                height="100%"
-                language={language === "cpp" ? "cpp" : language}
-                value={code}
-                onChange={(v) => setCode(v || "")}
-                theme={theme === "dark" ? "vs-dark" : "vs-light"}
-                onMount={(editor, monaco) => {
-                  monacoRef.current = monaco;
-                }}
-                options={{
-                  minimap: { enabled: false },
-                  fontSize: 14,
-                  automaticLayout: true,
-                  scrollBeyondLastLine: false,
-                  fontFamily: "JetBrains Mono, monospace",
-                  smoothScrolling: true,
-                  wordWrap: "on",
-                  bracketPairColorization: { enabled: true },
-                  autoIndent: "advanced",
-                  formatOnPaste: true
-                }}
-              />
-
-            </div>
+            <Editor
+              height="100%"
+              language={language === "cpp" ? "cpp" : language}
+              value={code}
+              onChange={(v) => setCode(v || "")}
+              theme={theme === "dark" ? "vs-dark" : "vs-light"}
+              options={{
+                minimap: { enabled: false },
+                fontSize: 14,
+                automaticLayout: true,
+                fontFamily: "JetBrains Mono, monospace"
+              }}
+            />
 
           </div>
 
         </Panel>
 
       </PanelGroup>
-
-      {/* OUTPUT PANEL */}
-
-      <div ref={resultRef} className="mt-4 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
-
-        <div className="flex border-b border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-900 text-sm">
-
-          {["console","testcases","result"].map((tab) => (
-            <button
-              key={tab}
-              onClick={() => setActiveTab(tab as any)}
-              className={`px-4 py-2 capitalize ${
-                activeTab === tab
-                  ? "text-emerald-500 border-b-2 border-emerald-500"
-                  : "text-neutral-500 hover:text-neutral-800 dark:hover:text-white"
-              }`}
-            >
-              {tab}
-            </button>
-          ))}
-
-        </div>
-
-        <div className="p-4 text-sm">
-
-          {activeTab === "console" && (
-            <pre className="text-neutral-500 font-mono whitespace-pre-wrap break-all">
-              {JSON.stringify(runResult || submitResult || "Run your code to see output", null, 2)}
-            </pre>
-          )}
-
-          {activeTab === "testcases" && runResult && (
-            <div className="space-y-3">
-
-              {runResult.detailedResults.map((r: any) => (
-                <div key={r.testCase} className="border border-neutral-200 dark:border-neutral-800 rounded p-3">
-
-                  <div className="flex justify-between mb-2">
-                    <span>Test Case {r.testCase}</span>
-                    <span className={r.passed ? "text-emerald-500" : "text-red-500"}>
-                      {r.passed ? "Passed" : "Failed"}
-                    </span>
-                  </div>
-
-                  <pre className="bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 p-2 rounded font-mono whitespace-pre-wrap break-all mb-2">
-                    {r.expected}
-                  </pre>
-
-                  <pre className="bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 p-2 rounded font-mono whitespace-pre-wrap break-all">
-                    {r.output}
-                  </pre>
-
-                </div>
-              ))}
-
-            </div>
-          )}
-
-          {activeTab === "result" && submitResult && (
-            <div className="space-y-2">
-              <div className="font-semibold text-lg">{submitResult.verdict}</div>
-              <div>Passed: {submitResult.passed}/{submitResult.total}</div>
-              <div>Runtime: {submitResult.runtime} ms</div>
-              <div>Score: {submitResult.score}</div>
-            </div>
-          )}
-
-        </div>
-
-      </div>
 
     </motion.div>
   );
