@@ -482,9 +482,11 @@ const ProblemDetailPage = () => {
         )}
 
       </div>
+      
 
     </motion.div>
   );
 };
+
 
 export default ProblemDetailPage;
