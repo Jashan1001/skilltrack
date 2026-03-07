@@ -290,7 +290,7 @@ export const getAllOfficialProblems = asyncHandler(
       isOfficial: true,
       visibility: "public",
     })
-      .select("_id pattern orderInPattern difficulty title")
+      .select("_id pattern orderInPattern difficulty title tags")
       .sort({ pattern: 1, orderInPattern: 1 });
 
     res.status(200).json({
