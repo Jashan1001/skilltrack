@@ -45,6 +45,10 @@ const ProblemDetailPage = () => {
   const [runResult, setRunResult] = useState<any>(null);
   const [submitResult, setSubmitResult] = useState<any>(null);
 
+  const [activeTab, setActiveTab] = useState<
+    "console" | "testcases" | "result"
+  >("console");
+
   /* FETCH PROBLEM */
 
   useEffect(() => {
@@ -62,7 +66,7 @@ const ProblemDetailPage = () => {
     fetchProblem();
   }, [problemId]);
 
-  /* MONACO THEME SYNC */
+  /* MONACO THEME */
 
   useEffect(() => {
     if (monacoRef.current) {
@@ -71,6 +75,25 @@ const ProblemDetailPage = () => {
       );
     }
   }, [theme]);
+
+  /* KEYBOARD SHORTCUTS */
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.ctrlKey && e.key === "Enter") {
+        e.preventDefault();
+        handleRun();
+      }
+
+      if (e.ctrlKey && e.shiftKey && e.key === "Enter") {
+        e.preventDefault();
+        handleSubmit();
+      }
+    };
+
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [code]);
 
   /* SCROLL TO OUTPUT */
 
@@ -96,6 +119,7 @@ const ProblemDetailPage = () => {
 
     setRunResult(res.data.data);
     setRunning(false);
+    setActiveTab("testcases");
   };
 
   /* SUBMIT */
@@ -114,6 +138,7 @@ const ProblemDetailPage = () => {
 
     setSubmitResult(res.data.data);
     setSubmitting(false);
+    setActiveTab("result");
   };
 
   const formatJSONInput = (input: string) => {
@@ -171,7 +196,7 @@ const ProblemDetailPage = () => {
             onClick={() => navigate(-1)}
             className="flex items-center gap-1 hover:text-neutral-900 dark:hover:text-white"
           >
-            <ArrowLeft size={16}/> Back
+            <ArrowLeft size={16} /> Back
           </button>
 
           <button
@@ -180,7 +205,7 @@ const ProblemDetailPage = () => {
             }
             className="flex items-center gap-1 hover:text-neutral-900 dark:hover:text-white"
           >
-            <Trophy size={16}/> Leaderboard
+            <Trophy size={16} /> Leaderboard
           </button>
 
         </div>
@@ -191,15 +216,7 @@ const ProblemDetailPage = () => {
 
       <PanelGroup
         direction="horizontal"
-        className="
-        flex-1
-        border border-neutral-200
-        dark:border-neutral-800
-        rounded-lg
-        overflow-hidden
-        bg-white
-        dark:bg-neutral-900
-      "
+        className="flex-1 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden bg-white dark:bg-neutral-900"
       >
 
         {/* LEFT PANEL */}
@@ -233,13 +250,7 @@ const ProblemDetailPage = () => {
                     Input
                   </div>
 
-                  <pre className="
-                  bg-neutral-100
-                  dark:bg-neutral-800
-                  border border-neutral-200
-                  dark:border-neutral-700
-                  p-3 rounded text-sm
-                  ">
+                  <pre className="bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 p-3 rounded text-sm font-mono whitespace-pre-wrap break-all">
                     {formatJSONInput(tc.input)}
                   </pre>
 
@@ -247,13 +258,7 @@ const ProblemDetailPage = () => {
                     Expected Output
                   </div>
 
-                  <pre className="
-                  bg-neutral-100
-                  dark:bg-neutral-800
-                  border border-neutral-200
-                  dark:border-neutral-700
-                  p-3 rounded text-sm
-                  ">
+                  <pre className="bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 p-3 rounded text-sm font-mono whitespace-pre-wrap break-all">
                     {tc.expectedOutput}
                   </pre>
 
@@ -266,18 +271,7 @@ const ProblemDetailPage = () => {
 
         </Panel>
 
-        {/* RESIZE HANDLE */}
-
-        <PanelResizeHandle
-          className="
-          w-[4px]
-          bg-neutral-200
-          dark:bg-neutral-700
-          hover:bg-neutral-400
-          cursor-col-resize
-          transition
-        "
-        />
+        <PanelResizeHandle className="w-[4px] bg-neutral-200 dark:bg-neutral-700 hover:bg-neutral-400 cursor-col-resize transition" />
 
         {/* RIGHT PANEL */}
 
@@ -287,14 +281,7 @@ const ProblemDetailPage = () => {
 
             {/* TOOLBAR */}
 
-            <div className="
-            flex items-center justify-between
-            px-3 py-2
-            border-b border-neutral-200
-            dark:border-neutral-800
-            bg-neutral-100
-            dark:bg-neutral-900
-            ">
+            <div className="flex items-center justify-between px-3 py-2 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-900">
 
               <div className="flex items-center gap-2 text-sm">
 
@@ -307,13 +294,7 @@ const ProblemDetailPage = () => {
                   onChange={(e) =>
                     setLanguage(e.target.value)
                   }
-                  className="
-                  bg-white
-                  dark:bg-neutral-800
-                  border border-neutral-300
-                  dark:border-neutral-700
-                  px-2 py-1 rounded text-sm
-                  "
+                  className="bg-white dark:bg-neutral-800 border border-neutral-300 dark:border-neutral-700 px-2 py-1 rounded text-sm"
                 >
                   <option value="javascript">JavaScript</option>
                   <option value="python">Python</option>
@@ -327,15 +308,7 @@ const ProblemDetailPage = () => {
                 <button
                   onClick={handleRun}
                   disabled={running}
-                  className="
-                  flex items-center gap-1
-                  text-emerald-500
-                  border border-emerald-500
-                  px-3 py-1 rounded-md
-                  hover:bg-emerald-500/10
-                  text-sm font-medium
-                  transition
-                "
+                  className="flex items-center gap-1 text-emerald-500 border border-emerald-500 px-3 py-1 rounded-md hover:bg-emerald-500/10 text-sm font-medium transition"
                 >
                   <Play size={14}/>
                   {running ? "Running..." : "Run"}
@@ -344,15 +317,7 @@ const ProblemDetailPage = () => {
                 <button
                   onClick={handleSubmit}
                   disabled={submitting}
-                  className="
-                  flex items-center gap-1
-                  bg-emerald-600
-                  px-3 py-1 rounded-md
-                  text-white text-sm font-medium
-                  hover:bg-emerald-700
-                  active:scale-[0.97]
-                  transition
-                "
+                  className="flex items-center gap-1 bg-emerald-600 px-3 py-1 rounded-md text-white text-sm font-medium hover:bg-emerald-700 transition"
                 >
                   <Send size={14}/>
                   {submitting ? "Submitting..." : "Submit"}
@@ -374,9 +339,6 @@ const ProblemDetailPage = () => {
                 theme={theme === "dark" ? "vs-dark" : "vs-light"}
                 onMount={(editor, monaco) => {
                   monacoRef.current = monaco;
-                  monaco.editor.setTheme(
-                    theme === "dark" ? "vs-dark" : "vs-light"
-                  );
                 }}
                 options={{
                   minimap: { enabled: false },
@@ -385,6 +347,10 @@ const ProblemDetailPage = () => {
                   scrollBeyondLastLine: false,
                   fontFamily: "JetBrains Mono, monospace",
                   smoothScrolling: true,
+                  wordWrap: "on",
+                  bracketPairColorization: { enabled: true },
+                  autoIndent: "advanced",
+                  formatOnPaste: true
                 }}
               />
 
@@ -396,97 +362,78 @@ const ProblemDetailPage = () => {
 
       </PanelGroup>
 
-      {/* OUTPUT */}
+      {/* OUTPUT PANEL */}
 
-      <div ref={resultRef} className="mt-4">
+      <div ref={resultRef} className="mt-4 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden">
 
-        {!runResult && !submitResult && (
-          <div className="
-          border border-neutral-200
-          dark:border-neutral-800
-          rounded p-4 text-sm text-neutral-500
-          ">
-            Run your code to see output here.
-          </div>
-        )}
+        <div className="flex border-b border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-900 text-sm">
 
-        {runResult && (
-          <div className="space-y-3">
+          {["console","testcases","result"].map((tab) => (
+            <button
+              key={tab}
+              onClick={() => setActiveTab(tab as any)}
+              className={`px-4 py-2 capitalize ${
+                activeTab === tab
+                  ? "text-emerald-500 border-b-2 border-emerald-500"
+                  : "text-neutral-500 hover:text-neutral-800 dark:hover:text-white"
+              }`}
+            >
+              {tab}
+            </button>
+          ))}
 
-            {runResult.detailedResults.map((r: any) => (
-              <div
-                key={r.testCase}
-                className="border border-neutral-200 dark:border-neutral-800 rounded p-3 text-sm"
-              >
+        </div>
 
-                <div className="flex justify-between mb-2">
+        <div className="p-4 text-sm">
 
-                  <span>
-                    Test Case {r.testCase}
-                  </span>
+          {activeTab === "console" && (
+            <pre className="text-neutral-500 font-mono whitespace-pre-wrap break-all">
+              {JSON.stringify(runResult || submitResult || "Run your code to see output", null, 2)}
+            </pre>
+          )}
 
-                  <span
-                    className={
-                      r.passed
-                        ? "text-emerald-500"
-                        : "text-red-500"
-                    }
-                  >
-                    {r.passed ? "Passed" : "Failed"}
-                  </span>
+          {activeTab === "testcases" && runResult && (
+            <div className="space-y-3">
+
+              {runResult.detailedResults.map((r: any) => (
+                <div key={r.testCase} className="border border-neutral-200 dark:border-neutral-800 rounded p-3">
+
+                  <div className="flex justify-between mb-2">
+                    <span>Test Case {r.testCase}</span>
+                    <span className={r.passed ? "text-emerald-500" : "text-red-500"}>
+                      {r.passed ? "Passed" : "Failed"}
+                    </span>
+                  </div>
+
+                  <pre className="bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 p-2 rounded font-mono whitespace-pre-wrap break-all mb-2">
+                    {r.expected}
+                  </pre>
+
+                  <pre className="bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 p-2 rounded font-mono whitespace-pre-wrap break-all">
+                    {r.output}
+                  </pre>
 
                 </div>
+              ))}
 
-                <div className="text-xs text-neutral-500">
-                  Expected
-                </div>
-
-                <pre className="bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 p-2 rounded mb-2">
-                  {r.expected}
-                </pre>
-
-                <div className="text-xs text-neutral-500">
-                  Your Output
-                </div>
-
-                <pre className="bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 p-2 rounded">
-                  {r.output}
-                </pre>
-
-              </div>
-            ))}
-
-          </div>
-        )}
-
-        {submitResult && (
-          <div className="border border-neutral-200 dark:border-neutral-800 rounded p-4 text-sm">
-
-            <div className="font-semibold mb-1">
-              Verdict: {submitResult.verdict}
             </div>
+          )}
 
-            <div>
-              Passed: {submitResult.passed}/{submitResult.total}
+          {activeTab === "result" && submitResult && (
+            <div className="space-y-2">
+              <div className="font-semibold text-lg">{submitResult.verdict}</div>
+              <div>Passed: {submitResult.passed}/{submitResult.total}</div>
+              <div>Runtime: {submitResult.runtime} ms</div>
+              <div>Score: {submitResult.score}</div>
             </div>
+          )}
 
-            <div>
-              Runtime: {submitResult.runtime} ms
-            </div>
-
-            <div>
-              Score: {submitResult.score}
-            </div>
-
-          </div>
-        )}
+        </div>
 
       </div>
-      
 
     </motion.div>
   );
 };
-
 
 export default ProblemDetailPage;
