@@ -35,16 +35,19 @@ const ProblemDetailPage = () => {
   const [submitResult, setSubmitResult] = useState<any>(null);
 
   const [theme, setTheme] = useState(
-    document.documentElement.classList.contains("dark") ? "dark" : "light"
+    document.documentElement.classList.contains("dark")
+      ? "dark"
+      : "light"
   );
 
   const resultRef = useRef<HTMLDivElement | null>(null);
 
-  /* ---------------- THEME OBSERVER ---------------- */
+  /* THEME OBSERVER */
 
   useEffect(() => {
     const observer = new MutationObserver(() => {
-      const isDark = document.documentElement.classList.contains("dark");
+      const isDark =
+        document.documentElement.classList.contains("dark");
       setTheme(isDark ? "dark" : "light");
     });
 
@@ -56,7 +59,7 @@ const ProblemDetailPage = () => {
     return () => observer.disconnect();
   }, []);
 
-  /* ---------------- FETCH PROBLEM ---------------- */
+  /* FETCH PROBLEM */
 
   useEffect(() => {
     const fetchProblem = async () => {
@@ -68,20 +71,18 @@ const ProblemDetailPage = () => {
     fetchProblem();
   }, [problemId]);
 
-  /* ---------------- AUTO SCROLL AFTER RUN ---------------- */
+  /* SCROLL TO RESULT */
 
   useEffect(() => {
     if (runResult) {
-      setTimeout(() => {
-        resultRef.current?.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        });
-      }, 150);
+      resultRef.current?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
     }
   }, [runResult]);
 
-  /* ---------------- RUN CODE ---------------- */
+  /* RUN CODE */
 
   const handleRun = async () => {
     if (!code.trim()) return;
@@ -99,7 +100,7 @@ const ProblemDetailPage = () => {
     setRunning(false);
   };
 
-  /* ---------------- SUBMIT CODE ---------------- */
+  /* SUBMIT CODE */
 
   const handleSubmit = async () => {
     if (!code.trim()) return;
@@ -132,47 +133,50 @@ const ProblemDetailPage = () => {
 
   const difficultyColor =
     problem.difficulty === "easy"
-      ? "bg-emerald-500/10 text-emerald-500"
+      ? "text-emerald-500"
       : problem.difficulty === "medium"
-      ? "bg-amber-500/10 text-amber-500"
-      : "bg-rose-500/10 text-rose-500";
+      ? "text-amber-500"
+      : "text-rose-500";
 
   return (
     <motion.div
-      initial={{ opacity: 0, y: 12 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35 }}
-      className="max-w-[1600px] mx-auto flex flex-col px-8 py-6 space-y-6 min-h-screen"
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      className="h-full flex flex-col px-6 py-4"
     >
 
       {/* HEADER */}
 
-      <div className="flex justify-between items-start">
+      <div className="flex items-center justify-between mb-4">
 
-        <div>
-          <h1 className="text-3xl font-semibold tracking-tight">
+        <div className="flex items-center gap-4">
+
+          <h1 className="text-2xl font-semibold">
             {problem.title}
           </h1>
 
           <span
-            className={`mt-3 inline-block px-3 py-1 rounded-full text-xs font-medium capitalize ${difficultyColor}`}
+            className={`text-sm font-medium ${difficultyColor}`}
           >
             {problem.difficulty}
           </span>
+
         </div>
 
-        <div className="flex gap-6 text-sm text-gray-500 dark:text-gray-400">
+        <div className="flex gap-5 text-sm text-gray-500">
 
           <button
             onClick={() => navigate(-1)}
-            className="flex items-center gap-2 hover:text-gray-900 dark:hover:text-white transition"
+            className="flex items-center gap-1 hover:text-white"
           >
             <ArrowLeft size={16} /> Back
           </button>
 
           <button
-            onClick={() => navigate(`/leaderboard/${problem._id}`)}
-            className="flex items-center gap-2 hover:text-gray-900 dark:hover:text-white transition"
+            onClick={() =>
+              navigate(`/leaderboard/${problem._id}`)
+            }
+            className="flex items-center gap-1 hover:text-white"
           >
             <Trophy size={16} /> Leaderboard
           </button>
@@ -181,50 +185,48 @@ const ProblemDetailPage = () => {
 
       </div>
 
-      {/* MAIN LAYOUT */}
+      {/* WORKSPACE */}
 
-      <div className="flex gap-6 border-t border-gray-200 dark:border-gray-800 pt-6">
+      <div className="flex flex-1 border border-gray-800 rounded-lg overflow-hidden">
 
         {/* LEFT PANEL */}
 
-        <div className="w-[45%] overflow-y-auto space-y-6 pr-4">
+        <div className="w-[45%] border-r border-gray-800 overflow-y-auto">
 
-          <div className="p-6 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm">
+          <div className="p-4 border-b border-gray-800">
 
-            <h2 className="text-lg font-semibold mb-4">
+            <h2 className="font-semibold text-sm mb-2">
               Description
             </h2>
 
-            <p className="leading-7 whitespace-pre-line text-gray-600 dark:text-gray-400">
+            <p className="text-sm leading-relaxed text-gray-400 whitespace-pre-line">
               {problem.description}
             </p>
 
           </div>
 
-          <div className="p-6 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm">
+          <div className="p-4">
 
-            <h2 className="text-lg font-semibold mb-6">
+            <h2 className="font-semibold text-sm mb-3">
               Sample Test Cases
             </h2>
 
             {problem.publicTestCases.map((tc, i) => (
-              <div
-                key={i}
-                className="border-b border-gray-200 dark:border-gray-700 pb-6 mb-6"
-              >
-                <div className="text-sm font-medium mb-2">
+              <div key={i} className="mb-5">
+
+                <div className="text-xs mb-1 text-gray-400">
                   Input
                 </div>
 
-                <pre className="bg-gray-100 dark:bg-gray-800 p-4 rounded-md text-sm whitespace-pre-wrap">
+                <pre className="bg-gray-900 p-3 rounded text-sm">
                   {formatJSONInput(tc.input)}
                 </pre>
 
-                <div className="text-sm font-medium mt-4 mb-2">
+                <div className="text-xs mt-3 mb-1 text-gray-400">
                   Expected Output
                 </div>
 
-                <pre className="bg-gray-100 dark:bg-gray-800 p-4 rounded-md text-sm whitespace-pre-wrap">
+                <pre className="bg-gray-900 p-3 rounded text-sm">
                   {tc.expectedOutput}
                 </pre>
 
@@ -237,48 +239,54 @@ const ProblemDetailPage = () => {
 
         {/* RIGHT PANEL */}
 
-        <div className="w-[55%] flex flex-col space-y-4">
+        <div className="w-[55%] flex flex-col">
 
           {/* EDITOR TOOLBAR */}
 
-          <div className="flex justify-between items-center px-4 py-2 rounded-t-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#020617]">
+          <div className="flex items-center justify-between px-3 py-2 border-b border-gray-800 bg-[#020617]">
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 text-sm">
 
-              <span className="text-xs text-gray-500">
+              <span className="text-gray-400">
                 Language
               </span>
 
               <select
                 value={language}
-                onChange={(e) => setLanguage(e.target.value)}
-                className="text-sm px-2 py-1 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900"
+                onChange={(e) =>
+                  setLanguage(e.target.value)
+                }
+                className="bg-gray-900 border border-gray-700 px-2 py-1 rounded text-sm"
               >
-                <option value="javascript">JavaScript</option>
-                <option value="python">Python</option>
+                <option value="javascript">
+                  JavaScript
+                </option>
+                <option value="python">
+                  Python
+                </option>
                 <option value="cpp">C++</option>
               </select>
 
             </div>
 
-            <div className="flex gap-3">
+            <div className="flex gap-2">
 
               <button
                 onClick={handleRun}
                 disabled={running}
-                className="flex items-center gap-2 px-4 py-1.5 rounded-md text-sm border border-emerald-500/40 text-emerald-500 hover:bg-emerald-500/10 hover:-translate-y-0.5 transition-all"
+                className="flex items-center gap-1 text-emerald-500 border border-emerald-600 px-3 py-1 rounded hover:bg-emerald-600/10 text-sm"
               >
-                <Play size={16} />
-                {running ? "Running..." : "Run"}
+                <Play size={14} />
+                {running ? "Running" : "Run"}
               </button>
 
               <button
                 onClick={handleSubmit}
                 disabled={submitting}
-                className="flex items-center gap-2 px-4 py-1.5 rounded-md text-sm bg-blue-600 hover:bg-blue-700 text-white hover:-translate-y-0.5 transition-all"
+                className="flex items-center gap-1 bg-blue-600 px-3 py-1 rounded text-white text-sm hover:bg-blue-700"
               >
-                <Send size={16} />
-                {submitting ? "Submitting..." : "Submit"}
+                <Send size={14} />
+                {submitting ? "Submitting" : "Submit"}
               </button>
 
             </div>
@@ -287,104 +295,107 @@ const ProblemDetailPage = () => {
 
           {/* EDITOR */}
 
-          <div className="flex-1 rounded-b-xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-lg bg-white dark:bg-[#0f172a]">
+          <div className="flex-1">
 
             <Editor
-              height="520px"
-              language={language === "cpp" ? "cpp" : language}
+              height="100%"
+              language={
+                language === "cpp" ? "cpp" : language
+              }
               value={code}
               onChange={(v) => setCode(v || "")}
-              theme={theme === "dark" ? "vs-dark" : "light"}
+              theme={
+                theme === "dark" ? "vs-dark" : "light"
+              }
               options={{
                 minimap: { enabled: false },
+                fontSize: 14,
                 automaticLayout: true,
                 scrollBeyondLastLine: false,
-                fontSize: 14,
-                fontLigatures: true,
-                smoothScrolling: true,
-                cursorBlinking: "smooth",
               }}
             />
 
           </div>
 
-          {/* RESULTS */}
+        </div>
 
-          <div ref={resultRef} className="space-y-4">
+      </div>
 
-            {runResult && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="grid gap-4"
+      {/* RESULTS */}
+
+      <div ref={resultRef} className="mt-4">
+
+        {runResult && (
+          <div className="space-y-3">
+
+            {runResult.detailedResults.map((r: any) => (
+              <div
+                key={r.testCase}
+                className="border border-gray-800 rounded p-3 text-sm"
               >
-                {runResult.detailedResults.map((r: any) => (
-                  <div
-                    key={r.testCase}
-                    className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-3"
+
+                <div className="flex justify-between mb-2">
+
+                  <span>
+                    Test Case {r.testCase}
+                  </span>
+
+                  <span
+                    className={
+                      r.passed
+                        ? "text-emerald-500"
+                        : "text-rose-500"
+                    }
                   >
-                    <div className="flex justify-between font-medium">
-                      <span>Test Case {r.testCase}</span>
-                      <span
-                        className={
-                          r.passed
-                            ? "text-emerald-500"
-                            : "text-rose-500"
-                        }
-                      >
-                        {r.passed ? "Passed" : "Failed"}
-                      </span>
-                    </div>
+                    {r.passed
+                      ? "Passed"
+                      : "Failed"}
+                  </span>
 
-                    <div>
-                      <div className="text-xs mb-1">
-                        Expected
-                      </div>
-                      <pre className="bg-gray-100 dark:bg-gray-800 p-3 rounded text-sm whitespace-pre-wrap">
-                        {r.expected}
-                      </pre>
-                    </div>
-
-                    <div>
-                      <div className="text-xs mb-1">
-                        Your Output
-                      </div>
-                      <pre className="bg-gray-100 dark:bg-gray-800 p-3 rounded text-sm whitespace-pre-wrap">
-                        {r.output}
-                      </pre>
-                    </div>
-
-                  </div>
-                ))}
-              </motion.div>
-            )}
-
-            {submitResult && (
-              <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="border border-gray-200 dark:border-gray-700 rounded-lg p-5 text-sm space-y-2"
-              >
-                <div className="text-lg font-semibold">
-                  Verdict: {submitResult.verdict}
                 </div>
 
-                <div>Score: {submitResult.score}</div>
-
-                <div>
-                  Passed: {submitResult.passed}/{submitResult.total}
+                <div className="text-xs text-gray-400">
+                  Expected
                 </div>
 
-                <div>
-                  Runtime: {submitResult.runtime} ms
+                <pre className="bg-gray-900 p-2 rounded mb-2">
+                  {r.expected}
+                </pre>
+
+                <div className="text-xs text-gray-400">
+                  Your Output
                 </div>
 
-              </motion.div>
-            )}
+                <pre className="bg-gray-900 p-2 rounded">
+                  {r.output}
+                </pre>
+
+              </div>
+            ))}
 
           </div>
+        )}
 
-        </div>
+        {submitResult && (
+          <div className="border border-gray-800 rounded p-4 text-sm">
+
+            <div className="font-semibold mb-1">
+              Verdict: {submitResult.verdict}
+            </div>
+
+            <div>
+              Passed: {submitResult.passed}/
+              {submitResult.total}
+            </div>
+
+            <div>
+              Runtime: {submitResult.runtime} ms
+            </div>
+
+            <div>Score: {submitResult.score}</div>
+
+          </div>
+        )}
 
       </div>
 
