@@ -2,64 +2,65 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Use theme variables for global background */
-
 body {
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
 }
 
-/* Theme Design Tokens */
-
 @layer base {
   :root {
-    /* Light Mode */
 
-    --background: 0 0% 100%;
-    --foreground: 222 47% 11%;
+    /* LIGHT MODE */
+
+    --background: 0 0% 98%;
+    --foreground: 220 15% 15%;
 
     --card: 0 0% 100%;
-    --card-foreground: 222 47% 11%;
+    --card-foreground: 220 15% 15%;
 
-    --muted: 220 14% 96%;
-    --muted-foreground: 215 16% 47%;
+    --muted: 220 14% 94%;
+    --muted-foreground: 220 10% 40%;
 
-    --border: 220 13% 91%;
-    --input: 220 13% 91%;
+    --border: 220 13% 88%;
+    --input: 220 13% 88%;
 
-    /* Accent color (emerald style works well for coding platforms) */
-    --primary: 160 84% 39%;
+    /* TEAL ACCENT */
+
+    --primary: 174 60% 45%;
     --primary-foreground: 0 0% 100%;
 
-    --destructive: 0 84% 60%;
+    --destructive: 0 75% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --ring: 160 84% 39%;
+    --ring: 174 60% 45%;
 
     --radius: 0.75rem;
   }
 
   .dark {
-    /* Premium charcoal dark mode (not blue/navy) */
 
-    --background: 222 47% 7%;
-    --foreground: 210 40% 98%;
+    /* CHARCOAL DARK MODE */
 
-    --card: 222 47% 10%;
-    --card-foreground: 210 40% 98%;
+    --background: 0 0% 6%;
+    --foreground: 210 20% 92%;
 
-    --muted: 222 30% 16%;
-    --muted-foreground: 215 20% 65%;
+    --card: 0 0% 10%;
+    --card-foreground: 210 20% 92%;
 
-    --border: 222 30% 18%;
-    --input: 222 30% 18%;
+    --muted: 0 0% 16%;
+    --muted-foreground: 210 10% 65%;
 
-    --primary: 160 84% 39%;
+    --border: 0 0% 18%;
+    --input: 0 0% 18%;
+
+    /* TEAL ACCENT */
+
+    --primary: 174 60% 45%;
     --primary-foreground: 0 0% 100%;
 
-    --destructive: 0 72% 51%;
+    --destructive: 0 70% 50%;
     --destructive-foreground: 0 0% 100%;
 
-    --ring: 160 84% 39%;
+    --ring: 174 60% 45%;
   }
 }
