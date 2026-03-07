@@ -6,8 +6,8 @@ interface Problem {
   _id: string;
   title: string;
   difficulty: "easy" | "medium" | "hard";
-  pattern: string;
-  orderInPattern: number;
+  pattern?: string;
+  orderInPattern?: number;
   estimatedTime?: number;
 }
 
@@ -24,7 +24,12 @@ const PatternDetailPage: React.FC = () => {
       ?.replace(/-/g, " ")
       .replace(/\b\w/g, (c) => c.toUpperCase()) || "";
 
+  /* ================= FETCH DATA ================= */
   useEffect(() => {
+    if (!patternName) return;
+
+    let isMounted = true;
+
     const fetchData = async () => {
       try {
         const [problemsRes, progressRes] = await Promise.all([
@@ -38,29 +43,38 @@ const PatternDetailPage: React.FC = () => {
         const solvedProblemIds =
           progressRes.data?.data?.solvedProblemIds || [];
 
+        if (!isMounted) return;
+
         setSolvedIds(new Set(solvedProblemIds));
 
         const filtered = allProblems
           .filter(
             (p: Problem) =>
-              p.pattern.toLowerCase() ===
+              p.pattern?.toLowerCase() ===
               formattedPattern.toLowerCase()
           )
           .sort(
             (a: Problem, b: Problem) =>
-              a.orderInPattern - b.orderInPattern
+              (a.orderInPattern || 0) -
+              (b.orderInPattern || 0)
           );
 
         setProblems(filtered);
       } catch (err) {
         console.error("Failed to load pattern detail", err);
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
 
-    if (patternName) fetchData();
+    fetchData();
+
+    return () => {
+      isMounted = false;
+    };
   }, [patternName, formattedPattern]);
+
+  /* ================= CALCULATIONS ================= */
 
   const total = problems.length;
 
@@ -79,6 +93,8 @@ const PatternDetailPage: React.FC = () => {
     return problems.find((p) => !solvedIds.has(p._id));
   }, [problems, solvedIds]);
 
+  /* ================= RENDER ================= */
+
   if (loading) {
     return (
       <div className="py-20 text-center text-gray-500 dark:text-neutral-400">
@@ -88,16 +104,18 @@ const PatternDetailPage: React.FC = () => {
   }
 
   return (
-    <div className="space-y-12 max-w-3xl">
+    <div className="space-y-10 max-w-3xl">
 
-      {/* Header */}
+      {/* HEADER */}
       <div className="space-y-4">
         <h1 className="text-3xl font-semibold text-gray-900 dark:text-white">
           {formattedPattern}
         </h1>
 
         <div className="flex items-center gap-6 text-sm text-gray-600 dark:text-neutral-400">
-          <span>{solvedCount} / {total} solved</span>
+          <span>
+            {solvedCount} / {total} solved
+          </span>
           <span>{percentage}% complete</span>
         </div>
 
@@ -109,14 +127,15 @@ const PatternDetailPage: React.FC = () => {
         </div>
 
         {nextUnsolved && (
-          <div className="inline-flex items-center gap-2 mt-2 px-3 py-2 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-700 text-sm">
-            <span className="text-indigo-700 dark:text-indigo-300 font-medium">
+          <div className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-indigo-50 dark:bg-indigo-900/30 border border-indigo-200 dark:border-indigo-700 text-sm">
+            <span className="font-medium text-indigo-700 dark:text-indigo-300">
               Recommended:
             </span>
             <button
-              onClick={() =>
-                navigate(`/problems/${nextUnsolved._id}`)
-              }
+              onClick={() => {
+                if (!nextUnsolved._id) return;
+                navigate(`/problems/${nextUnsolved._id}`);
+              }}
               className="underline text-indigo-600 dark:text-indigo-300 hover:opacity-80"
             >
               {nextUnsolved.title}
@@ -125,37 +144,36 @@ const PatternDetailPage: React.FC = () => {
         )}
       </div>
 
-      {/* Timeline */}
-      <div className="relative pl-8 space-y-8">
+      {/* TIMELINE */}
+      <div className="relative pl-8 space-y-6">
         <div className="absolute left-3 top-0 bottom-0 w-px bg-gray-200 dark:bg-neutral-800" />
 
         {problems.map((problem, index) => {
           const isSolved = solvedIds.has(problem._id);
-          const isNext =
-            nextUnsolved?._id === problem._id;
+          const isNext = nextUnsolved?._id === problem._id;
 
           return (
             <div
               key={problem._id}
-              className={`relative flex items-start justify-between
-                          rounded-xl p-5 transition-colors
-                          border
-                          ${
-                            isNext
-                              ? "bg-indigo-50 dark:bg-indigo-900/20 border-indigo-300 dark:border-indigo-600"
-                              : "bg-white dark:bg-neutral-900 border-gray-200 dark:border-neutral-800"
-                          }`}
+              className={`relative flex items-start justify-between rounded-xl p-4 border transition
+                ${
+                  isNext
+                    ? "bg-indigo-50 dark:bg-indigo-900/20 border-indigo-300 dark:border-indigo-600"
+                    : "bg-white dark:bg-neutral-900 border-gray-200 dark:border-neutral-800"
+                }
+              `}
             >
               {/* Circle Indicator */}
               <div
                 className={`absolute -left-5 top-6 w-4 h-4 rounded-full border-2
-                ${
-                  isSolved
-                    ? "bg-emerald-500 border-emerald-500"
-                    : isNext
-                    ? "bg-indigo-600 border-indigo-600"
-                    : "bg-white dark:bg-neutral-900 border-gray-300 dark:border-neutral-700"
-                }`}
+                  ${
+                    isSolved
+                      ? "bg-emerald-500 border-emerald-500"
+                      : isNext
+                      ? "bg-indigo-600 border-indigo-600"
+                      : "bg-white dark:bg-neutral-900 border-gray-300 dark:border-neutral-700"
+                  }
+                `}
               />
 
               <div className="space-y-1">
@@ -172,7 +190,8 @@ const PatternDetailPage: React.FC = () => {
                           : problem.difficulty === "medium"
                           ? "text-amber-500"
                           : "text-rose-500"
-                      }`}
+                      }
+                    `}
                   >
                     {problem.difficulty}
                   </span>
@@ -186,17 +205,19 @@ const PatternDetailPage: React.FC = () => {
               </div>
 
               <button
-                onClick={() =>
-                  navigate(`/problems/${problem._id}`)
-                }
+                onClick={() => {
+                  if (!problem._id) return;
+                  navigate(`/problems/${problem._id}`);
+                }}
                 className={`px-4 py-2 text-xs font-medium rounded-lg transition
-                ${
-                  isSolved
-                    ? "bg-gray-200 dark:bg-neutral-700 text-gray-700 dark:text-neutral-300"
-                    : isNext
-                    ? "bg-indigo-600 text-white hover:bg-indigo-700"
-                    : "bg-gray-900 dark:bg-white text-white dark:text-black hover:opacity-90"
-                }`}
+                  ${
+                    isSolved
+                      ? "bg-gray-200 dark:bg-neutral-700 text-gray-700 dark:text-neutral-300"
+                      : isNext
+                      ? "bg-indigo-600 text-white hover:bg-indigo-700"
+                      : "bg-gray-900 dark:bg-white text-white dark:text-black hover:opacity-90"
+                  }
+                `}
               >
                 {isSolved ? "Review" : "Start"}
               </button>
