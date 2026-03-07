@@ -29,38 +29,52 @@ const Navbar: React.FC = () => {
   };
 
   return (
-    <header className="h-14 flex items-center justify-between px-6
-                       bg-background
-                       border-b border-border
-                       transition-colors">
-
-      {/* Left — Page Title */}
-      <h1 className="text-base font-semibold tracking-tight">
+    <header
+      className="
+      h-14
+      flex items-center justify-between
+      px-6
+      bg-white dark:bg-neutral-900
+      border-b border-neutral-200 dark:border-neutral-800
+      transition-colors
+    "
+    >
+      {/* Title */}
+      <h1 className="text-base font-semibold tracking-tight text-neutral-900 dark:text-white">
         {getPageTitle()}
       </h1>
 
-      {/* Right — Controls */}
-      <div className="flex items-center gap-5">
+      {/* Controls */}
+      <div className="flex items-center gap-4">
 
-        {/* Theme Toggle */}
+        {/* Theme toggle */}
         <button
           onClick={toggleTheme}
-          className="p-2 rounded-md hover:bg-muted transition"
+          className="
+          p-2
+          rounded-md
+          hover:bg-neutral-100
+          dark:hover:bg-neutral-800
+          transition
+        "
         >
-          {theme === "dark" ? (
-            <Sun size={18} />
-          ) : (
-            <Moon size={18} />
-          )}
+          {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
         </button>
 
-        {/* User Chip */}
-        <div className="flex items-center gap-2 px-3 py-1.5 rounded-md bg-muted text-sm">
+        {/* User */}
+        <div
+          className="
+          flex items-center gap-2
+          px-3 py-1.5
+          rounded-md
+          bg-neutral-100
+          dark:bg-neutral-800
+          text-sm
+        "
+        >
+          <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
 
-          {/* Subtle status dot */}
-          <span className="w-2 h-2 rounded-full bg-primary"></span>
-
-          <span className="font-medium">
+          <span className="font-medium text-neutral-800 dark:text-neutral-200">
             {user?.name || "User"}
           </span>
         </div>
@@ -68,7 +82,14 @@ const Navbar: React.FC = () => {
         {/* Logout */}
         <button
           onClick={handleLogout}
-          className="flex items-center gap-1 text-sm text-muted-foreground hover:text-foreground transition"
+          className="
+          flex items-center gap-1
+          text-sm
+          text-neutral-500
+          hover:text-neutral-900
+          dark:hover:text-white
+          transition
+        "
         >
           <LogOut size={16} />
           Logout

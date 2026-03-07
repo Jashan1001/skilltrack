@@ -56,15 +56,15 @@ const ProblemDetailPage = () => {
     fetchProblem();
   }, [problemId]);
 
-  /* AUTO SCROLL */
+  /* SCROLL TO OUTPUT */
 
   useEffect(() => {
     if (runResult || submitResult) {
-      resultRef.current?.scrollIntoView({
-        behavior: "smooth",
-      });
+      resultRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [runResult, submitResult]);
+
+  /* RUN */
 
   const handleRun = async () => {
     if (!code.trim()) return;
@@ -81,6 +81,8 @@ const ProblemDetailPage = () => {
     setRunResult(res.data.data);
     setRunning(false);
   };
+
+  /* SUBMIT */
 
   const handleSubmit = async () => {
     if (!code.trim()) return;
@@ -111,21 +113,20 @@ const ProblemDetailPage = () => {
 
   if (loading || !problem) return null;
 
-  /* DIFFICULTY BADGE */
-
   const difficultyStyle =
     problem.difficulty === "easy"
-      ? "bg-emerald-500/10 text-emerald-500 border border-emerald-500/20"
+      ? "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
       : problem.difficulty === "medium"
-      ? "bg-amber-500/10 text-amber-500 border border-amber-500/20"
-      : "bg-red-500/10 text-red-500 border border-red-500/20";
+      ? "bg-amber-500/10 text-amber-400 border border-amber-500/20"
+      : "bg-red-500/10 text-red-400 border border-red-500/20";
 
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
-      className="flex flex-col h-full px-6 py-4 bg-gray-50 dark:bg-black"
+      className="flex flex-col h-full px-6 py-4 bg-neutral-100 dark:bg-neutral-950"
     >
+
       {/* HEADER */}
 
       <div className="flex items-center justify-between mb-4">
@@ -142,11 +143,11 @@ const ProblemDetailPage = () => {
           </span>
         </div>
 
-        <div className="flex gap-5 text-sm text-gray-500 dark:text-gray-400">
+        <div className="flex gap-5 text-sm text-neutral-500">
 
           <button
             onClick={() => navigate(-1)}
-            className="flex items-center gap-1 hover:text-gray-900 dark:hover:text-white"
+            className="flex items-center gap-1 hover:text-neutral-900 dark:hover:text-white"
           >
             <ArrowLeft size={16}/> Back
           </button>
@@ -155,7 +156,7 @@ const ProblemDetailPage = () => {
             onClick={() =>
               navigate(`/leaderboard/${problem._id}`)
             }
-            className="flex items-center gap-1 hover:text-gray-900 dark:hover:text-white"
+            className="flex items-center gap-1 hover:text-neutral-900 dark:hover:text-white"
           >
             <Trophy size={16}/> Leaderboard
           </button>
@@ -164,18 +165,18 @@ const ProblemDetailPage = () => {
 
       </div>
 
-      {/* RESIZABLE WORKSPACE */}
+      {/* WORKSPACE */}
 
       <PanelGroup
         direction="horizontal"
         className="
         flex-1
-        border border-gray-200
-        dark:border-gray-800
+        border border-neutral-200
+        dark:border-neutral-800
         rounded-lg
         overflow-hidden
         bg-white
-        dark:bg-gray-900
+        dark:bg-neutral-900
         "
       >
 
@@ -183,15 +184,15 @@ const ProblemDetailPage = () => {
 
         <Panel defaultSize={45} minSize={30}>
 
-          <div className="h-full overflow-y-auto border-r border-gray-200 dark:border-gray-800">
+          <div className="h-full overflow-y-auto border-r border-neutral-200 dark:border-neutral-800">
 
-            <div className="p-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800">
+            <div className="p-4 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800">
 
               <h2 className="font-semibold text-sm mb-2">
                 Description
               </h2>
 
-              <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-line">
+              <p className="text-sm text-neutral-600 dark:text-neutral-300 whitespace-pre-line">
                 {problem.description}
               </p>
 
@@ -206,29 +207,29 @@ const ProblemDetailPage = () => {
               {problem.publicTestCases.map((tc, i) => (
                 <div key={i} className="mb-5">
 
-                  <div className="text-xs mb-1 text-gray-500">
+                  <div className="text-xs mb-1 text-neutral-500">
                     Input
                   </div>
 
                   <pre className="
-                  bg-gray-100
-                  dark:bg-gray-800
-                  border border-gray-200
-                  dark:border-gray-700
+                  bg-neutral-100
+                  dark:bg-neutral-800
+                  border border-neutral-200
+                  dark:border-neutral-700
                   p-3 rounded text-sm
                   ">
                     {formatJSONInput(tc.input)}
                   </pre>
 
-                  <div className="text-xs mt-3 mb-1 text-gray-500">
+                  <div className="text-xs mt-3 mb-1 text-neutral-500">
                     Expected Output
                   </div>
 
                   <pre className="
-                  bg-gray-100
-                  dark:bg-gray-800
-                  border border-gray-200
-                  dark:border-gray-700
+                  bg-neutral-100
+                  dark:bg-neutral-800
+                  border border-neutral-200
+                  dark:border-neutral-700
                   p-3 rounded text-sm
                   ">
                     {tc.expectedOutput}
@@ -248,9 +249,9 @@ const ProblemDetailPage = () => {
         <PanelResizeHandle
           className="
           w-[4px]
-          bg-gray-200
-          dark:bg-gray-700
-          hover:bg-gray-400
+          bg-neutral-200
+          dark:bg-neutral-700
+          hover:bg-neutral-400
           cursor-col-resize
           transition-colors
           "
@@ -267,15 +268,15 @@ const ProblemDetailPage = () => {
             <div className="
             flex items-center justify-between
             px-3 py-2
-            border-b border-gray-200
-            dark:border-gray-800
-            bg-gray-100
-            dark:bg-gray-800
+            border-b border-neutral-200
+            dark:border-neutral-800
+            bg-neutral-100
+            dark:bg-neutral-800
             ">
 
               <div className="flex items-center gap-2 text-sm">
 
-                <span className="text-gray-500 dark:text-gray-300">
+                <span className="text-neutral-500">
                   Language
                 </span>
 
@@ -286,9 +287,9 @@ const ProblemDetailPage = () => {
                   }
                   className="
                   bg-white
-                  dark:bg-gray-900
-                  border border-gray-300
-                  dark:border-gray-700
+                  dark:bg-neutral-900
+                  border border-neutral-300
+                  dark:border-neutral-700
                   px-2 py-1 rounded text-sm
                   "
                 >
@@ -322,10 +323,10 @@ const ProblemDetailPage = () => {
                   disabled={submitting}
                   className="
                   flex items-center gap-1
-                  bg-indigo-600
+                  bg-neutral-700
                   px-3 py-1 rounded
                   text-white text-sm
-                  hover:bg-indigo-700
+                  hover:bg-neutral-800
                   "
                 >
                   <Send size={14}/>
@@ -346,12 +347,13 @@ const ProblemDetailPage = () => {
                 language={language === "cpp" ? "cpp" : language}
                 value={code}
                 onChange={(v) => setCode(v || "")}
-                theme={theme === "dark" ? "vs-dark" : "light"}
+                theme={theme === "dark" ? "vs-dark" : "vs-light"}
                 options={{
                   minimap: { enabled: false },
                   fontSize: 14,
                   automaticLayout: true,
                   scrollBeyondLastLine: false,
+                  fontFamily: "JetBrains Mono, monospace",
                 }}
               />
 
@@ -369,9 +371,9 @@ const ProblemDetailPage = () => {
 
         {!runResult && !submitResult && (
           <div className="
-          border border-gray-200
-          dark:border-gray-800
-          rounded p-4 text-sm text-gray-500
+          border border-neutral-200
+          dark:border-neutral-800
+          rounded p-4 text-sm text-neutral-500
           ">
             Run your code to see output here.
           </div>
@@ -383,7 +385,7 @@ const ProblemDetailPage = () => {
             {runResult.detailedResults.map((r: any) => (
               <div
                 key={r.testCase}
-                className="border border-gray-200 dark:border-gray-800 rounded p-3 text-sm"
+                className="border border-neutral-200 dark:border-neutral-800 rounded p-3 text-sm"
               >
 
                 <div className="flex justify-between mb-2">
@@ -406,19 +408,19 @@ const ProblemDetailPage = () => {
 
                 </div>
 
-                <div className="text-xs text-gray-500">
+                <div className="text-xs text-neutral-500">
                   Expected
                 </div>
 
-                <pre className="bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-2 rounded mb-2">
+                <pre className="bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 p-2 rounded mb-2">
                   {r.expected}
                 </pre>
 
-                <div className="text-xs text-gray-500">
+                <div className="text-xs text-neutral-500">
                   Your Output
                 </div>
 
-                <pre className="bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-2 rounded">
+                <pre className="bg-neutral-100 dark:bg-neutral-800 border border-neutral-200 dark:border-neutral-700 p-2 rounded">
                   {r.output}
                 </pre>
 
@@ -429,7 +431,7 @@ const ProblemDetailPage = () => {
         )}
 
         {submitResult && (
-          <div className="border border-gray-200 dark:border-gray-800 rounded p-4 text-sm">
+          <div className="border border-neutral-200 dark:border-neutral-800 rounded p-4 text-sm">
 
             <div className="font-semibold mb-1">
               Verdict: {submitResult.verdict}
