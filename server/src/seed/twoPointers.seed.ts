@@ -1,27 +1,67 @@
 import Problem from "../models/Problem";
 
 export const seedTwoPointers = async (adminId: string) => {
-
   const problems = [
-
     /* =====================================================
-       1. Two Sum II - Input Array Is Sorted
-    ====================================================== */
+1. Two Sum II - Input Array Is Sorted
+===================================================== */
+
     {
       title: "Two Sum II - Input Array Is Sorted",
+
       description: `
-Given a 1-indexed array of integers numbers that is already sorted in non-decreasing order,
-find two numbers such that they add up to a specific target number.
+  You are given a **1-indexed array of integers** called numbers that is sorted in **non-decreasing order**.
 
-Return the indices of the two numbers (1-indexed).
+  Your task is to find two numbers such that their sum equals a given **target value**.
 
-Constraints:
-- Exactly one solution exists.
-- You may not use the same element twice.
-- Must run in O(n) time.
+  Return the **indices of the two numbers (1-indexed)**.
 
-This problem introduces the classic opposite-direction two-pointer pattern.
-      `,
+  You may assume that **exactly one valid pair exists**, and you may not use the same element twice.
+
+  Because the array is sorted, an efficient algorithm exists that can solve the problem in **linear time**.
+
+  Your goal is to determine the correct pair of indices.
+  `,
+
+      inputFormat: `
+  First line: integer n — size of the array.
+
+  Second line: n space-separated integers representing the sorted array.
+
+  Third line: integer target.
+  `,
+
+      outputFormat: `
+  Print two integers representing the 1-indexed positions of the numbers
+  whose sum equals the target.
+  `,
+
+      constraints: `
+  2 ≤ n ≤ 100000
+  -10^9 ≤ numbers[i] ≤ 10^9
+  Array is sorted in non-decreasing order
+  Exactly one valid solution exists
+  `,
+
+      examples: [
+        {
+          input: "4\n2 7 11 15\n9",
+          output: "1 2",
+          explanation: "2 + 7 = 9 so indices 1 and 2 form the answer.",
+        },
+        {
+          input: "3\n2 3 4\n6",
+          output: "1 3",
+          explanation: "2 + 4 = 6.",
+        },
+      ],
+
+      hints: [
+        "Think about how the sorted property of the array can help reduce comparisons.",
+        "Instead of checking all pairs, consider starting from both ends.",
+        "Adjust the pointers depending on whether the sum is too large or too small.",
+      ],
+
       difficulty: "easy",
       tags: ["array", "two-pointers"],
       createdBy: adminId,
@@ -31,38 +71,76 @@ This problem introduces the classic opposite-direction two-pointer pattern.
       orderInPattern: 1,
       estimatedTime: 20,
       evaluationType: "strict",
+
       publicTestCases: [
-        {
-          input: JSON.stringify({ numbers: [2,7,11,15], target: 9 }),
-          expectedOutput: JSON.stringify([1,2])
-        },
-        {
-          input: JSON.stringify({ numbers: [2,3,4], target: 6 }),
-          expectedOutput: JSON.stringify([1,3])
-        }
+        { input: "4\n2 7 11 15\n9", expectedOutput: "1 2" },
+        { input: "3\n2 3 4\n6", expectedOutput: "1 3" },
+        { input: "2\n3 3\n6", expectedOutput: "1 2" },
       ],
+
       privateTestCases: [
-        { input: JSON.stringify({ numbers: [-1,0], target: -1 }), expectedOutput: JSON.stringify([1,2]) },
-        { input: JSON.stringify({ numbers: [1,2,3,4,4,9], target: 8 }), expectedOutput: JSON.stringify([4,5]) },
-        { input: JSON.stringify({ numbers: [-5,-2,1,3,7], target: 2 }), expectedOutput: JSON.stringify([2,5]) },
-        { input: JSON.stringify({ numbers: [1,2,3,4,5], target: 9 }), expectedOutput: JSON.stringify([4,5]) },
-        { input: JSON.stringify({ numbers: [0,0,3,4], target: 0 }), expectedOutput: JSON.stringify([1,2]) }
-      ]
+        { input: "2\n-1 0\n-1", expectedOutput: "1 2" },
+        { input: "6\n1 2 3 4 4 9\n8", expectedOutput: "4 5" },
+        { input: "5\n-5 -2 1 3 7\n2", expectedOutput: "2 5" },
+        { input: "5\n1 2 3 4 5\n9", expectedOutput: "4 5" },
+        { input: "4\n0 0 3 4\n0", expectedOutput: "1 2" },
+      ],
     },
 
     /* =====================================================
-       2. Remove Duplicates from Sorted Array
-    ====================================================== */
+  2. Remove Duplicates from Sorted Array
+  ===================================================== */
+
     {
       title: "Remove Duplicates from Sorted Array",
+
       description: `
-Given a sorted array nums, remove the duplicates in-place 
-such that each element appears only once and return the new length.
+  You are given a **sorted array of integers**.
 
-You must modify the array in-place using O(1) extra memory.
+  Your task is to remove duplicate values such that each element appears only once.
 
-This problem introduces the slow-fast pointer technique.
-      `,
+  Return the **number of unique elements** that remain after removing duplicates.
+
+  Because the array is already sorted, duplicate values appear **next to each other**.
+
+  Your algorithm should run in **O(n)** time.
+  `,
+
+      inputFormat: `
+  First line: integer n
+
+  Second line: n space-separated integers (sorted array)
+  `,
+
+      outputFormat: `
+  Print a single integer representing the number of unique elements.
+  `,
+
+      constraints: `
+  0 ≤ n ≤ 100000
+  -10^9 ≤ nums[i] ≤ 10^9
+  Array is sorted in non-decreasing order
+  `,
+
+      examples: [
+        {
+          input: "3\n1 1 2",
+          output: "2",
+          explanation: "Unique elements are [1,2].",
+        },
+        {
+          input: "10\n0 0 1 1 1 2 2 3 3 4",
+          output: "5",
+          explanation: "Unique elements are [0,1,2,3,4].",
+        },
+      ],
+
+      hints: [
+        "The array is already sorted.",
+        "Duplicates appear next to each other.",
+        "Try tracking the position of the last unique element.",
+      ],
+
       difficulty: "easy",
       tags: ["array", "two-pointers"],
       createdBy: adminId,
@@ -72,40 +150,75 @@ This problem introduces the slow-fast pointer technique.
       orderInPattern: 2,
       estimatedTime: 20,
       evaluationType: "strict",
+
       publicTestCases: [
-        {
-          input: JSON.stringify({ nums: [1,1,2] }),
-          expectedOutput: "2"
-        },
-        {
-          input: JSON.stringify({ nums: [0,0,1,1,1,2,2,3,3,4] }),
-          expectedOutput: "5"
-        }
+        { input: "3\n1 1 2", expectedOutput: "2" },
+        { input: "10\n0 0 1 1 1 2 2 3 3 4", expectedOutput: "5" },
+        { input: "3\n1 2 3", expectedOutput: "3" },
       ],
+
       privateTestCases: [
-        { input: JSON.stringify({ nums: [1] }), expectedOutput: "1" },
-        { input: JSON.stringify({ nums: [] }), expectedOutput: "0" },
-        { input: JSON.stringify({ nums: [1,2,3] }), expectedOutput: "3" },
-        { input: JSON.stringify({ nums: [-3,-3,-2,-1,-1] }), expectedOutput: "3" },
-        { input: JSON.stringify({ nums: [2,2,2,2] }), expectedOutput: "1" }
-      ]
+        { input: "1\n1", expectedOutput: "1" },
+        { input: "0\n", expectedOutput: "0" },
+        { input: "5\n2 2 2 2 2", expectedOutput: "1" },
+        { input: "5\n-3 -3 -2 -1 -1", expectedOutput: "3" },
+        { input: "4\n1 1 1 2", expectedOutput: "2" },
+      ],
     },
 
     /* =====================================================
-       3. Valid Palindrome
-    ====================================================== */
+  3. Valid Palindrome
+  ===================================================== */
+
     {
       title: "Valid Palindrome",
+
       description: `
-Given a string s, determine if it is a palindrome,
-considering only alphanumeric characters and ignoring cases.
+  Given a string s, determine whether it is a **palindrome**.
 
-Use two-pointer technique from both ends.
+  A palindrome reads the same forward and backward.
 
-Examples:
-"A man, a plan, a canal: Panama" -> true
-"race a car" -> false
-      `,
+  For this problem:
+
+  • Ignore all **non-alphanumeric characters**  
+  • Ignore **case differences**
+
+  Only letters and digits should be considered when checking the palindrome property.
+  `,
+
+      inputFormat: `
+  Single line containing string s.
+  `,
+
+      outputFormat: `
+  Print true if the string is a palindrome, otherwise print false.
+  `,
+
+      constraints: `
+  0 ≤ length of s ≤ 200000
+  `,
+
+      examples: [
+        {
+          input: "A man, a plan, a canal: Panama",
+          output: "true",
+          explanation:
+            "After removing punctuation and converting to lowercase the string becomes 'amanaplanacanalpanama'.",
+        },
+        {
+          input: "race a car",
+          output: "false",
+          explanation:
+            "Processed string is 'raceacar', which is not symmetric.",
+        },
+      ],
+
+      hints: [
+        "Ignore punctuation and spaces.",
+        "Compare characters from both ends of the string.",
+        "Move inward while skipping non-alphanumeric characters.",
+      ],
+
       difficulty: "easy",
       tags: ["string", "two-pointers"],
       createdBy: adminId,
@@ -115,34 +228,81 @@ Examples:
       orderInPattern: 3,
       estimatedTime: 20,
       evaluationType: "strict",
-      publicTestCases: [
-        {
-          input: JSON.stringify({ s: "A man, a plan, a canal: Panama" }),
-          expectedOutput: "true"
-        }
-      ],
-      privateTestCases: [
-        { input: JSON.stringify({ s: "race a car" }), expectedOutput: "false" },
-        { input: JSON.stringify({ s: "" }), expectedOutput: "true" },
-        { input: JSON.stringify({ s: "a." }), expectedOutput: "true" },
-        { input: JSON.stringify({ s: "0P" }), expectedOutput: "false" },
-        { input: JSON.stringify({ s: "madam" }), expectedOutput: "true" }
-      ]
-    },
 
+      publicTestCases: [
+        { input: "A man, a plan, a canal: Panama", expectedOutput: "true" },
+        { input: "race a car", expectedOutput: "false" },
+        { input: "madam", expectedOutput: "true" },
+      ],
+
+      privateTestCases: [
+        { input: "a", expectedOutput: "true" },
+        { input: "a.", expectedOutput: "true" },
+        { input: "0P", expectedOutput: "false" },
+        { input: "abba", expectedOutput: "true" },
+        { input: "abca", expectedOutput: "false" },
+      ],
+    },
     /* =====================================================
-       4. Container With Most Water
-    ====================================================== */
+4. Container With Most Water
+===================================================== */
+
     {
       title: "Container With Most Water",
-      description: `
-You are given an integer array height.
-Find two lines that together with the x-axis form a container,
-such that the container contains the most water.
 
-You must use two-pointer optimization.
-Brute force O(n²) will not pass constraints.
-      `,
+      description: `
+You are given an array height of n non-negative integers.
+
+Each element represents the height of a vertical line drawn on the x-axis.
+
+Your task is to find two lines that together with the x-axis form a container
+that can hold the **maximum amount of water**.
+
+The container is formed by choosing two different indices i and j.
+
+The amount of water that can be stored depends on:
+
+• the **distance between the two lines**
+• the **shorter of the two heights**
+
+Return the **maximum water** that can be stored between any two lines.
+`,
+
+      inputFormat: `
+First line: integer n
+
+Second line: n space separated integers representing height array
+`,
+
+      outputFormat: `
+Print a single integer representing the maximum amount of water.
+`,
+
+      constraints: `
+2 ≤ n ≤ 100000
+0 ≤ height[i] ≤ 10000
+`,
+
+      examples: [
+        {
+          input: "9\n1 8 6 2 5 4 8 3 7",
+          output: "49",
+          explanation:
+            "The best container is between heights 8 and 7 which are 7 units apart.",
+        },
+        {
+          input: "2\n1 1",
+          output: "1",
+          explanation: "Only one possible container.",
+        },
+      ],
+
+      hints: [
+        "Brute force checking every pair would be O(n²).",
+        "The water stored depends on the shorter height.",
+        "Try evaluating containers from both ends of the array.",
+      ],
+
       difficulty: "medium",
       tags: ["array", "two-pointers"],
       createdBy: adminId,
@@ -152,35 +312,82 @@ Brute force O(n²) will not pass constraints.
       orderInPattern: 4,
       estimatedTime: 25,
       evaluationType: "strict",
+
       publicTestCases: [
-        {
-          input: JSON.stringify({ height: [1,8,6,2,5,4,8,3,7] }),
-          expectedOutput: "49"
-        }
+        { input: "9\n1 8 6 2 5 4 8 3 7", expectedOutput: "49" },
+        { input: "2\n1 1", expectedOutput: "1" },
+        { input: "3\n1 2 1", expectedOutput: "2" },
       ],
+
       privateTestCases: [
-        { input: JSON.stringify({ height: [1,1] }), expectedOutput: "1" },
-        { input: JSON.stringify({ height: [4,3,2,1,4] }), expectedOutput: "16" },
-        { input: JSON.stringify({ height: [1,2,1] }), expectedOutput: "2" },
-        { input: JSON.stringify({ height: [2,3,10,5,7,8,9] }), expectedOutput: "36" },
-        { input: JSON.stringify({ height: [1,2,4,3] }), expectedOutput: "4" }
-      ]
+        { input: "5\n4 3 2 1 4", expectedOutput: "16" },
+        { input: "7\n2 3 10 5 7 8 9", expectedOutput: "36" },
+        { input: "4\n1 2 4 3", expectedOutput: "4" },
+        { input: "6\n2 3 4 5 18 17", expectedOutput: "17" },
+        { input: "5\n5 5 5 5 5", expectedOutput: "20" },
+      ],
     },
 
     /* =====================================================
-       5. 3Sum
-    ====================================================== */
+5. 3Sum
+===================================================== */
+
     {
       title: "3Sum",
+
       description: `
-Given an integer array nums,
-return all unique triplets [nums[i], nums[j], nums[k]]
-such that i != j != k and nums[i] + nums[j] + nums[k] == 0.
+Given an integer array nums, return all unique triplets
+[nums[i], nums[j], nums[k]] such that:
 
-The solution set must not contain duplicate triplets.
+nums[i] + nums[j] + nums[k] = 0
 
-This problem combines sorting + two pointers.
-      `,
+The triplets must satisfy:
+
+• i ≠ j
+• i ≠ k
+• j ≠ k
+
+The result must **not contain duplicate triplets**.
+
+Triplets can be returned in any order.
+`,
+
+      inputFormat: `
+First line: integer n
+
+Second line: n space separated integers
+`,
+
+      outputFormat: `
+Print all valid triplets separated by "|".
+
+Each triplet should be printed in sorted order.
+`,
+
+      constraints: `
+0 ≤ n ≤ 3000
+-100000 ≤ nums[i] ≤ 100000
+`,
+
+      examples: [
+        {
+          input: "6\n-1 0 1 2 -1 -4",
+          output: "-1 -1 2 | -1 0 1",
+          explanation: "Two unique triplets sum to zero.",
+        },
+        {
+          input: "3\n0 0 0",
+          output: "0 0 0",
+          explanation: "Only one unique triplet exists.",
+        },
+      ],
+
+      hints: [
+        "Sorting the array can simplify duplicate handling.",
+        "Fix one element and search for two others.",
+        "Be careful to avoid duplicate triplets.",
+      ],
+
       difficulty: "medium",
       tags: ["array", "two-pointers", "sorting"],
       createdBy: adminId,
@@ -190,39 +397,74 @@ This problem combines sorting + two pointers.
       orderInPattern: 5,
       estimatedTime: 30,
       evaluationType: "strict",
+
       publicTestCases: [
-        {
-          input: JSON.stringify({ nums: [-1,0,1,2,-1,-4] }),
-          expectedOutput: JSON.stringify([[-1,-1,2],[-1,0,1]])
-        }
+        { input: "6\n-1 0 1 2 -1 -4", expectedOutput: "-1 -1 2 | -1 0 1" },
+        { input: "3\n0 0 0", expectedOutput: "0 0 0" },
       ],
+
       privateTestCases: [
-        { input: JSON.stringify({ nums: [] }), expectedOutput: JSON.stringify([]) },
-        { input: JSON.stringify({ nums: [0,0,0] }), expectedOutput: JSON.stringify([[0,0,0]]) },
-        { input: JSON.stringify({ nums: [-2,0,1,1,2] }), expectedOutput: JSON.stringify([[-2,0,2],[-2,1,1]]) },
-        { input: JSON.stringify({ nums: [1,2,-2,-1] }), expectedOutput: JSON.stringify([]) },
-        { input: JSON.stringify({ nums: [-4,-2,-2,-2,0,1,2,2,2,3,3,4,4,6,6] }), expectedOutput: JSON.stringify([[-4,-2,6],[-4,0,4],[-4,1,3],[-4,2,2],[-2,-2,4],[-2,0,2]]) }
-      ]
+        { input: "3\n-1 0 1", expectedOutput: "-1 0 1" },
+        { input: "5\n-2 0 1 1 2", expectedOutput: "-2 0 2 | -2 1 1" },
+        { input: "4\n-2 -1 1 2", expectedOutput: "-2 -1 1 | -1 1 2" },
+        { input: "5\n-4 -2 0 2 4", expectedOutput: "-4 0 4 | -2 0 2" },
+        { input: "6\n-3 -2 -1 1 2 3", expectedOutput: "-3 1 2 | -2 -1 3 | -1 1 2" },
+      ],
     },
-        /* =====================================================
-       6. Sort Colors
-    ====================================================== */
+
+    /* =====================================================
+6. Sort Colors
+===================================================== */
+
     {
       title: "Sort Colors",
+
       description: `
-Given an array nums containing n objects colored red (0), white (1), or blue (2),
-sort them in-place so that objects of the same color are adjacent.
+You are given an array nums containing only three values:
 
-You must solve it without using library sort.
-This is the classic Dutch National Flag problem.
+0 → red  
+1 → white  
+2 → blue  
 
-Use three pointers:
-- left boundary
-- current pointer
-- right boundary
-      `,
+Your task is to **sort the array in-place** so that objects of the same
+color are adjacent and appear in the order:
+
+0 → 1 → 2
+
+You must solve this problem **without using a library sort function**.
+`,
+
+      inputFormat: `
+First line: integer n
+
+Second line: n space separated integers (values are only 0,1,2)
+`,
+
+      outputFormat: `
+Print the sorted array.
+`,
+
+      constraints: `
+1 ≤ n ≤ 100000
+nums[i] ∈ {0,1,2}
+`,
+
+      examples: [
+        {
+          input: "6\n2 0 2 1 1 0",
+          output: "0 0 1 1 2 2",
+          explanation: "All values grouped by color.",
+        },
+      ],
+
+      hints: [
+        "There are only three possible values.",
+        "Try partitioning the array into three regions.",
+        "Think about maintaining boundaries for sorted sections.",
+      ],
+
       difficulty: "medium",
-      tags: ["array", "two-pointers", "partitioning"],
+      tags: ["array", "two-pointers"],
       createdBy: adminId,
       isOfficial: true,
       visibility: "public",
@@ -230,36 +472,68 @@ Use three pointers:
       orderInPattern: 6,
       estimatedTime: 25,
       evaluationType: "strict",
+
       publicTestCases: [
-        {
-          input: JSON.stringify({ nums: [2,0,2,1,1,0] }),
-          expectedOutput: JSON.stringify([0,0,1,1,2,2])
-        }
+        { input: "6\n2 0 2 1 1 0", expectedOutput: "0 0 1 1 2 2" },
+        { input: "3\n2 0 1", expectedOutput: "0 1 2" },
       ],
+
       privateTestCases: [
-        { input: JSON.stringify({ nums: [2,0,1] }), expectedOutput: JSON.stringify([0,1,2]) },
-        { input: JSON.stringify({ nums: [0] }), expectedOutput: JSON.stringify([0]) },
-        { input: JSON.stringify({ nums: [1] }), expectedOutput: JSON.stringify([1]) },
-        { input: JSON.stringify({ nums: [1,2,0] }), expectedOutput: JSON.stringify([0,1,2]) },
-        { input: JSON.stringify({ nums: [2,2,2,1,1,0,0] }), expectedOutput: JSON.stringify([0,0,1,1,2,2,2]) }
-      ]
+        { input: "1\n0", expectedOutput: "0" },
+        { input: "1\n1", expectedOutput: "1" },
+        { input: "3\n1 2 0", expectedOutput: "0 1 2" },
+        { input: "7\n2 2 2 1 1 0 0", expectedOutput: "0 0 1 1 2 2 2" },
+        { input: "5\n0 1 2 0 1", expectedOutput: "0 0 1 1 2" },
+      ],
     },
 
     /* =====================================================
-       7. Trapping Rain Water
-    ====================================================== */
+7. Trapping Rain Water
+===================================================== */
+
     {
       title: "Trapping Rain Water",
+
       description: `
-Given n non-negative integers representing an elevation map,
-compute how much water it can trap after raining.
+You are given an array height representing an elevation map
+where the width of each bar is 1.
 
-You must solve it in O(n) time using the two-pointer method.
+Compute how much water can be trapped after raining.
 
-Key Idea:
-Use left and right pointers while maintaining left_max and right_max.
-Water trapped at each step depends on the smaller boundary.
-      `,
+Water can only be trapped between bars that create boundaries.
+
+Your goal is to determine the **total units of water trapped**.
+`,
+
+      inputFormat: `
+First line: integer n
+
+Second line: n space separated integers representing height array
+`,
+
+      outputFormat: `
+Print the total units of water trapped.
+`,
+
+      constraints: `
+1 ≤ n ≤ 200000
+0 ≤ height[i] ≤ 100000
+`,
+
+      examples: [
+        {
+          input: "12\n0 1 0 2 1 0 1 3 2 1 2 1",
+          output: "6",
+          explanation: "Water accumulates between taller bars.",
+        },
+      ],
+
+      hints: [
+        "Water trapped depends on the tallest bars to the left and right.",
+        "For each position, consider the minimum of the two boundaries.",
+        "Try scanning from both ends of the array.",
+      ],
+
       difficulty: "hard",
       tags: ["array", "two-pointers"],
       createdBy: adminId,
@@ -269,24 +543,23 @@ Water trapped at each step depends on the smaller boundary.
       orderInPattern: 7,
       estimatedTime: 35,
       evaluationType: "strict",
-      publicTestCases: [
-        {
-          input: JSON.stringify({ height: [0,1,0,2,1,0,1,3,2,1,2,1] }),
-          expectedOutput: "6"
-        }
-      ],
-      privateTestCases: [
-        { input: JSON.stringify({ height: [4,2,0,3,2,5] }), expectedOutput: "9" },
-        { input: JSON.stringify({ height: [1,1,1,1] }), expectedOutput: "0" },
-        { input: JSON.stringify({ height: [5,4,1,2] }), expectedOutput: "1" },
-        { input: JSON.stringify({ height: [2,0,2] }), expectedOutput: "2" },
-        { input: JSON.stringify({ height: [3,0,0,2,0,4] }), expectedOutput: "10" }
-      ]
-    }
 
+      publicTestCases: [
+        { input: "12\n0 1 0 2 1 0 1 3 2 1 2 1", expectedOutput: "6" },
+        { input: "3\n2 0 2", expectedOutput: "2" },
+      ],
+
+      privateTestCases: [
+        { input: "6\n4 2 0 3 2 5", expectedOutput: "9" },
+        { input: "4\n1 1 1 1", expectedOutput: "0" },
+        { input: "4\n5 4 1 2", expectedOutput: "1" },
+        { input: "6\n3 0 0 2 0 4", expectedOutput: "10" },
+        { input: "5\n5 2 1 2 1", expectedOutput: "1" },
+      ],
+    },
   ];
 
   await Problem.insertMany(problems);
 
-  console.log("✅ Two Pointers problems seeded successfully");
+  console.log("✅ Two Pointers seeded successfully");
 };

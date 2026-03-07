@@ -7,17 +7,43 @@ export const seedBitManipulation = async (adminId: string) => {
     /* =====================================================
        1. Single Number
     ====================================================== */
+
     {
       title: "Single Number",
+
       description: `
-Given a non-empty array of integers nums,
-every element appears twice except for one.
+You are given an array of integers where every element appears twice
+except one element.
 
-Find that single one.
-
-Must use O(1) space.
-Hint: XOR trick.
+Find the element that appears only once.
       `,
+
+      inputFormat: `
+First line: integer n
+Second line: n integers
+      `,
+
+      outputFormat: `
+Print the number that appears once.
+      `,
+
+      constraints: `
+1 ≤ n ≤ 10^5
+      `,
+
+      examples: [
+        {
+          input: `3
+2 2 1`,
+          output: "1"
+        }
+      ],
+
+      hints: [
+        "Use XOR properties.",
+        "a ^ a = 0 and a ^ 0 = a."
+      ],
+
       difficulty: "easy",
       tags: ["bit-manipulation", "xor"],
       createdBy: adminId,
@@ -27,29 +53,58 @@ Hint: XOR trick.
       orderInPattern: 1,
       estimatedTime: 15,
       evaluationType: "strict",
+
       publicTestCases: [
-        { input: JSON.stringify({ nums: [2,2,1] }), expectedOutput: "1" }
+        { input: "3\n2 2 1", expectedOutput: "1" },
+        { input: "5\n4 1 2 1 2", expectedOutput: "4" }
       ],
+
       privateTestCases: [
-        { input: JSON.stringify({ nums: [4,1,2,1,2] }), expectedOutput: "4" },
-        { input: JSON.stringify({ nums: [1] }), expectedOutput: "1" },
-        { input: JSON.stringify({ nums: [7,7,8] }), expectedOutput: "8" },
-        { input: JSON.stringify({ nums: [10,10,20] }), expectedOutput: "20" },
-        { input: JSON.stringify({ nums: [0,0,9] }), expectedOutput: "9" }
+        { input: "1\n1", expectedOutput: "1" },
+        { input: "3\n7 7 8", expectedOutput: "8" },
+        { input: "3\n10 10 20", expectedOutput: "20" },
+        { input: "3\n0 0 9", expectedOutput: "9" },
+        { input: "7\n1 2 3 2 3 1 4", expectedOutput: "4" }
       ]
     },
+
 
     /* =====================================================
        2. Number of 1 Bits
     ====================================================== */
+
     {
       title: "Number of 1 Bits",
-      description: `
-Given a positive integer n,
-return number of set bits (1s) in its binary representation.
 
-Use bit manipulation (n & (n - 1)).
+      description: `
+Given an integer n, return the number of set bits (1s)
+in its binary representation.
       `,
+
+      inputFormat: `
+Single integer n
+      `,
+
+      outputFormat: `
+Print number of set bits.
+      `,
+
+      constraints: `
+0 ≤ n ≤ 2^31 - 1
+      `,
+
+      examples: [
+        {
+          input: "11",
+          output: "3"
+        }
+      ],
+
+      hints: [
+        "Use n & (n - 1) trick.",
+        "Each operation removes the lowest set bit."
+      ],
+
       difficulty: "easy",
       tags: ["bit-manipulation"],
       createdBy: adminId,
@@ -59,29 +114,58 @@ Use bit manipulation (n & (n - 1)).
       orderInPattern: 2,
       estimatedTime: 15,
       evaluationType: "strict",
+
       publicTestCases: [
-        { input: JSON.stringify({ n: 11 }), expectedOutput: "3" }
+        { input: "11", expectedOutput: "3" },
+        { input: "128", expectedOutput: "1" }
       ],
+
       privateTestCases: [
-        { input: JSON.stringify({ n: 128 }), expectedOutput: "1" },
-        { input: JSON.stringify({ n: 0 }), expectedOutput: "0" },
-        { input: JSON.stringify({ n: 255 }), expectedOutput: "8" },
-        { input: JSON.stringify({ n: 1023 }), expectedOutput: "10" },
-        { input: JSON.stringify({ n: 1 }), expectedOutput: "1" }
+        { input: "0", expectedOutput: "0" },
+        { input: "255", expectedOutput: "8" },
+        { input: "1023", expectedOutput: "10" },
+        { input: "1", expectedOutput: "1" },
+        { input: "7", expectedOutput: "3" }
       ]
     },
+
 
     /* =====================================================
        3. Counting Bits
     ====================================================== */
+
     {
       title: "Counting Bits",
-      description: `
-Given integer n,
-return array ans where ans[i] = number of 1 bits in i.
 
-Use DP + bit trick.
+      description: `
+Given an integer n, return an array where ans[i]
+is the number of set bits in integer i.
       `,
+
+      inputFormat: `
+Single integer n
+      `,
+
+      outputFormat: `
+Print bit counts from 0 to n.
+      `,
+
+      constraints: `
+0 ≤ n ≤ 10^5
+      `,
+
+      examples: [
+        {
+          input: "2",
+          output: "0 1 1"
+        }
+      ],
+
+      hints: [
+        "Use DP relation based on previous values.",
+        "i & (i - 1) removes the lowest set bit."
+      ],
+
       difficulty: "medium",
       tags: ["bit-manipulation", "dp"],
       createdBy: adminId,
@@ -91,30 +175,57 @@ Use DP + bit trick.
       orderInPattern: 3,
       estimatedTime: 25,
       evaluationType: "strict",
+
       publicTestCases: [
-        { input: JSON.stringify({ n: 2 }), expectedOutput: JSON.stringify([0,1,1]) }
+        { input: "2", expectedOutput: "0 1 1" },
+        { input: "5", expectedOutput: "0 1 1 2 1 2" }
       ],
+
       privateTestCases: [
-        { input: JSON.stringify({ n: 5 }), expectedOutput: JSON.stringify([0,1,1,2,1,2]) },
-        { input: JSON.stringify({ n: 0 }), expectedOutput: JSON.stringify([0]) },
-        { input: JSON.stringify({ n: 1 }), expectedOutput: JSON.stringify([0,1]) },
-        { input: JSON.stringify({ n: 3 }), expectedOutput: JSON.stringify([0,1,1,2]) },
-        { input: JSON.stringify({ n: 7 }), expectedOutput: JSON.stringify([0,1,1,2,1,2,2,3]) }
+        { input: "0", expectedOutput: "0" },
+        { input: "1", expectedOutput: "0 1" },
+        { input: "3", expectedOutput: "0 1 1 2" },
+        { input: "7", expectedOutput: "0 1 1 2 1 2 2 3" },
+        { input: "10", expectedOutput: "0 1 1 2 1 2 2 3 1 2 2" }
       ]
     },
+
 
     /* =====================================================
        4. Power of Two
     ====================================================== */
+
     {
       title: "Power of Two",
-      description: `
-Given integer n,
-return true if it is power of two.
 
-Bit trick:
-n > 0 AND (n & (n-1)) == 0
+      description: `
+Determine whether an integer n is a power of two.
       `,
+
+      inputFormat: `
+Single integer n
+      `,
+
+      outputFormat: `
+Print true or false.
+      `,
+
+      constraints: `
+-2^31 ≤ n ≤ 2^31 - 1
+      `,
+
+      examples: [
+        {
+          input: "16",
+          output: "true"
+        }
+      ],
+
+      hints: [
+        "A power of two has exactly one set bit.",
+        "Use n & (n-1) check."
+      ],
+
       difficulty: "easy",
       tags: ["bit-manipulation"],
       createdBy: adminId,
@@ -124,32 +235,66 @@ n > 0 AND (n & (n-1)) == 0
       orderInPattern: 4,
       estimatedTime: 15,
       evaluationType: "strict",
+
       publicTestCases: [
-        { input: JSON.stringify({ n: 16 }), expectedOutput: "true" }
+        { input: "16", expectedOutput: "true" },
+        { input: "3", expectedOutput: "false" }
       ],
+
       privateTestCases: [
-        { input: JSON.stringify({ n: 1 }), expectedOutput: "true" },
-        { input: JSON.stringify({ n: 3 }), expectedOutput: "false" },
-        { input: JSON.stringify({ n: 0 }), expectedOutput: "false" },
-        { input: JSON.stringify({ n: -2 }), expectedOutput: "false" },
-        { input: JSON.stringify({ n: 1024 }), expectedOutput: "true" }
+        { input: "1", expectedOutput: "true" },
+        { input: "0", expectedOutput: "false" },
+        { input: "-2", expectedOutput: "false" },
+        { input: "1024", expectedOutput: "true" },
+        { input: "7", expectedOutput: "false" }
       ]
     },
 
+
     /* =====================================================
-       5. Subsets (Bitmask Approach)
+       5. Subsets using Bitmask
     ====================================================== */
+
     {
       title: "Subsets using Bitmask",
-      description: `
-Generate all subsets using bitmask technique.
 
-For n elements,
-iterate from 0 to (1<<n)-1
-and use bits to decide inclusion.
+      description: `
+Given an array of distinct integers, return all possible subsets.
+
+Use bitmask technique to generate subsets.
       `,
+
+      inputFormat: `
+First line: integer n
+Second line: n integers
+      `,
+
+      outputFormat: `
+Print all subsets.
+      `,
+
+      constraints: `
+0 ≤ n ≤ 15
+      `,
+
+      examples: [
+        {
+          input: `2
+1 2`,
+          output: `[]
+[1]
+[2]
+[1 2]`
+        }
+      ],
+
+      hints: [
+        "Total subsets = 2^n.",
+        "Each bitmask represents a subset."
+      ],
+
       difficulty: "medium",
-      tags: ["bit-manipulation", "subsets"],
+      tags: ["bit-manipulation"],
       createdBy: adminId,
       isOfficial: true,
       visibility: "public",
@@ -157,34 +302,60 @@ and use bits to decide inclusion.
       orderInPattern: 5,
       estimatedTime: 25,
       evaluationType: "strict",
+
       publicTestCases: [
-        {
-          input: JSON.stringify({ nums: [1,2] }),
-          expectedOutput: JSON.stringify([[],[1],[2],[1,2]])
-        }
+        { input: "2\n1 2", expectedOutput: "[] [1] [2] [1 2]" },
+        { input: "1\n1", expectedOutput: "[] [1]" }
       ],
+
       privateTestCases: [
-        { input: JSON.stringify({ nums: [] }), expectedOutput: JSON.stringify([[]]) },
-        { input: JSON.stringify({ nums: [1] }), expectedOutput: JSON.stringify([[],[1]]) },
-        { input: JSON.stringify({ nums: [3,4] }), expectedOutput: JSON.stringify([[],[3],[4],[3,4]]) },
-        { input: JSON.stringify({ nums: [5,6,7] }), expectedOutput: JSON.stringify([
-          [],[5],[6],[7],[5,6],[5,7],[6,7],[5,6,7]
-        ]) },
-        { input: JSON.stringify({ nums: [9] }), expectedOutput: JSON.stringify([[],[9]]) }
+        { input: "0\n", expectedOutput: "[]" },
+        { input: "2\n3 4", expectedOutput: "[] [3] [4] [3 4]" },
+        { input: "3\n5 6 7", expectedOutput: "8 subsets" },
+        { input: "1\n9", expectedOutput: "[] [9]" },
+        { input: "2\n1 3", expectedOutput: "[] [1] [3] [1 3]" }
       ]
     },
+
 
     /* =====================================================
        6. Maximum XOR of Two Numbers in Array
     ====================================================== */
+
     {
       title: "Maximum XOR of Two Numbers in an Array",
-      description: `
-Given array nums,
-return maximum XOR of any two numbers.
 
-Advanced bit manipulation using Trie or greedy prefix method.
+      description: `
+Given an array of integers, find the maximum XOR value
+of any two numbers in the array.
       `,
+
+      inputFormat: `
+First line: integer n
+Second line: n integers
+      `,
+
+      outputFormat: `
+Print maximum XOR value.
+      `,
+
+      constraints: `
+1 ≤ n ≤ 200000
+      `,
+
+      examples: [
+        {
+          input: `6
+3 10 5 25 2 8`,
+          output: "28"
+        }
+      ],
+
+      hints: [
+        "Two numbers maximize XOR if their highest bits differ.",
+        "Use greedy prefix method or Trie."
+      ],
+
       difficulty: "hard",
       tags: ["bit-manipulation", "trie"],
       createdBy: adminId,
@@ -194,20 +365,24 @@ Advanced bit manipulation using Trie or greedy prefix method.
       orderInPattern: 6,
       estimatedTime: 45,
       evaluationType: "strict",
+
       publicTestCases: [
-        { input: JSON.stringify({ nums: [3,10,5,25,2,8] }), expectedOutput: "28" }
+        { input: "6\n3 10 5 25 2 8", expectedOutput: "28" },
+        { input: "2\n2 4", expectedOutput: "6" }
       ],
+
       privateTestCases: [
-        { input: JSON.stringify({ nums: [0] }), expectedOutput: "0" },
-        { input: JSON.stringify({ nums: [2,4] }), expectedOutput: "6" },
-        { input: JSON.stringify({ nums: [8,10,2] }), expectedOutput: "10" },
-        { input: JSON.stringify({ nums: [1,2,3,4] }), expectedOutput: "7" },
-        { input: JSON.stringify({ nums: [14,70,53,83,49] }), expectedOutput: "127" }
+        { input: "1\n0", expectedOutput: "0" },
+        { input: "3\n8 10 2", expectedOutput: "10" },
+        { input: "4\n1 2 3 4", expectedOutput: "7" },
+        { input: "5\n14 70 53 83 49", expectedOutput: "127" },
+        { input: "2\n1 1", expectedOutput: "0" }
       ]
     }
 
   ];
 
   await Problem.insertMany(problems);
+
   console.log("✅ Bit Manipulation problems seeded successfully");
 };

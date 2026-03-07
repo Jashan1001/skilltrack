@@ -31,12 +31,31 @@ interface ITestCase {
 }
 
 /* ======================================================
+   EXAMPLE INTERFACE
+====================================================== */
+
+interface IExample {
+  input: string;
+  output: string;
+  explanation?: string;
+}
+
+/* ======================================================
    PROBLEM INTERFACE
 ====================================================== */
 
 export interface IProblem extends Document {
   title: string;
+
   description: string;
+
+  inputFormat: string;
+  outputFormat: string;
+  constraints: string;
+
+  examples: IExample[];
+
+  hints: string[];
 
   difficulty: "easy" | "medium" | "hard";
   tags: string[];
@@ -75,6 +94,19 @@ const TestCaseSchema = new Schema<ITestCase>(
 );
 
 /* ======================================================
+   EXAMPLE SCHEMA
+====================================================== */
+
+const ExampleSchema = new Schema<IExample>(
+  {
+    input: { type: String, required: true },
+    output: { type: String, required: true },
+    explanation: { type: String },
+  },
+  { _id: false }
+);
+
+/* ======================================================
    PROBLEM SCHEMA
 ====================================================== */
 
@@ -89,6 +121,35 @@ const ProblemSchema = new Schema<IProblem>(
     description: {
       type: String,
       required: true,
+    },
+
+    /* ===============================
+       PROBLEM DETAILS
+    =============================== */
+
+    inputFormat: {
+      type: String,
+      required: true,
+    },
+
+    outputFormat: {
+      type: String,
+      required: true,
+    },
+
+    constraints: {
+      type: String,
+      required: true,
+    },
+
+    examples: {
+      type: [ExampleSchema],
+      default: [],
+    },
+
+    hints: {
+      type: [String],
+      default: [],
     },
 
     difficulty: {
@@ -189,6 +250,7 @@ const ProblemSchema = new Schema<IProblem>(
 ====================================================== */
 
 /* 1️⃣ Unique protection for official roadmap problems */
+
 ProblemSchema.index(
   { pattern: 1, orderInPattern: 1 },
   {
@@ -200,15 +262,19 @@ ProblemSchema.index(
 );
 
 /* 2️⃣ Fast guided roadmap loading */
+
 ProblemSchema.index({ isOfficial: 1, pattern: 1, orderInPattern: 1 });
 
 /* 3️⃣ Filtering by difficulty */
+
 ProblemSchema.index({ difficulty: 1 });
 
 /* 4️⃣ Recruiter dashboard queries */
+
 ProblemSchema.index({ createdBy: 1, visibility: 1 });
 
 /* 5️⃣ Latest problems sorting */
+
 ProblemSchema.index({ createdAt: -1 });
 
 export default mongoose.model<IProblem>("Problem", ProblemSchema);
