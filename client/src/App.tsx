@@ -1,12 +1,14 @@
 import { Routes, Route } from "react-router-dom";
 
+import { ThemeProvider } from "./context/themeContext";
+
 import LoginPage from "./pages/LoginPage";
 import RegisterPage from "./pages/RegisterPage";
 import HomePage from "./pages/HomePage";
 
 import PatternsPage from "./pages/PatternsPage";
 import PatternDetailPage from "./pages/PatternDetailPage";
-import ProblemsPage from "./pages/ProblemsPage"; // Master Sheet
+import ProblemsPage from "./pages/ProblemsPage";
 import ProblemDetailPage from "./pages/ProblemDetailPage";
 import ProblemLeaderboardPage from "./pages/ProblemLeaderboardPage";
 import SubmissionHistoryPage from "./pages/SubmissionHistoryPage";
@@ -21,42 +23,74 @@ import GlobalLeaderboardPage from "./pages/GlobalLeaderboardPage";
 
 function App() {
   return (
-    <Routes>
+    <ThemeProvider>
 
-      {/* PUBLIC ROUTES */}
-      <Route path="/" element={<HomePage />} />
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
+      <Routes>
 
-      {/* AUTHENTICATED ROUTES */}
-      <Route element={<ProtectedRoute />}>
-        <Route element={<AppLayout />}>
+        {/* PUBLIC ROUTES */}
+        <Route path="/" element={<HomePage />} />
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
 
-          {/* Core Structure */}
-          <Route path="/dashboard" element={<DashboardPage />} />
-          <Route path="/patterns" element={<PatternsPage />} />
-          <Route path="/patterns/:patternName" element={<PatternDetailPage />} />
-          <Route path="/problems" element={<ProblemsPage />} />
-          <Route path="/problems/:problemId" element={<ProblemDetailPage />} />
+        {/* AUTHENTICATED ROUTES */}
+        <Route element={<ProtectedRoute />}>
+          <Route element={<AppLayout />}>
 
-          <Route path="/submissions" element={<SubmissionHistoryPage />} />
+            {/* Core Structure */}
 
-          <Route path="/leaderboard" element={<GlobalLeaderboardPage />} />
-          <Route path="/leaderboard/:problemId" element={<ProblemLeaderboardPage />} />
-          
-          {/* ADMIN ONLY */}
-          <Route element={<ProtectedRoute requiredRole="admin" />}>
-            <Route path="/admin/create" element={<CreateProblemPage />} />
-            <Route path="/admin/edit/:id" element={<EditProblemPage />} />
+            <Route path="/dashboard" element={<DashboardPage />} />
+
+            <Route path="/patterns" element={<PatternsPage />} />
+            <Route
+              path="/patterns/:patternName"
+              element={<PatternDetailPage />}
+            />
+
+            <Route path="/problems" element={<ProblemsPage />} />
+            <Route
+              path="/problems/:problemId"
+              element={<ProblemDetailPage />}
+            />
+
+            <Route
+              path="/submissions"
+              element={<SubmissionHistoryPage />}
+            />
+
+            <Route
+              path="/leaderboard"
+              element={<GlobalLeaderboardPage />}
+            />
+
+            <Route
+              path="/leaderboard/:problemId"
+              element={<ProblemLeaderboardPage />}
+            />
+
+            {/* ADMIN ONLY */}
+
+            <Route element={<ProtectedRoute requiredRole="admin" />}>
+              <Route
+                path="/admin/create"
+                element={<CreateProblemPage />}
+              />
+
+              <Route
+                path="/admin/edit/:id"
+                element={<EditProblemPage />}
+              />
+            </Route>
+
           </Route>
-
         </Route>
-      </Route>
 
-      {/* Catch All */}
-      <Route path="*" element={<h1>404 Not Found</h1>} />
+        {/* 404 */}
 
-    </Routes>
+        <Route path="*" element={<h1>404 Not Found</h1>} />
+
+      </Routes>
+
+    </ThemeProvider>
   );
 }
 
