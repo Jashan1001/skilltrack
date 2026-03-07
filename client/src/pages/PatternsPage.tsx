@@ -10,10 +10,6 @@ interface Problem {
   visibility: "public" | "private";
 }
 
-// interface ProgressResponse {
-//   solvedProblemIds: string[];
-// }
-
 interface PatternGroup {
   name: string;
   total: number;
