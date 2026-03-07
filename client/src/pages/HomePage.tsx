@@ -1,7 +1,7 @@
 import { Link, Navigate } from "react-router-dom";
 import { useAuth } from "../context/authContext";
 import { Sun, Moon } from "lucide-react";
-import { useTheme } from "../hooks/useTheme";
+import { useTheme } from "../context/themeContext";
 
 const HomePage: React.FC = () => {
   const { user } = useAuth();
