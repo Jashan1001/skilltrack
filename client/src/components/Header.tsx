@@ -1,6 +1,6 @@
 import { Link } from "react-router-dom";
 import { Sun, Moon } from "lucide-react";
-import { useTheme } from "../hooks/useTheme";
+import { useTheme } from "../context/themeContext";
 
 const Header = ({ showAuthButtons = true }) => {
   const { theme, toggleTheme } = useTheme();
