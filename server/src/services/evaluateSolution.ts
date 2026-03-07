@@ -56,13 +56,20 @@ export const evaluateTestCases = async (
     }
 
     // Normalize outputs safely
-    const actualOutput =
-      result?.stdout?.toString().trim() || "";
+    const normalize = (str: string) =>
+      str
+        .replace(/\r/g, "")       // remove windows CR
+        .trim()
+        .replace(/\s+/g, " ");    // normalize spaces
 
-    const expectedOutput =
-      testCase.expectedOutput
-        ?.toString()
-        .trim() || "";
+    const actualOutput = normalize(
+      result?.stdout?.toString() || ""
+    );
+
+    const expectedOutput = normalize(
+      testCase.expectedOutput?.toString() || ""
+    );
+
 
     // If execution failed at docker level
     if (result?.status && result.status !== "accepted") {
@@ -71,7 +78,7 @@ export const evaluateTestCases = async (
         passed: false,
         runtime,
         expected: expectedOutput,
-        output: actualOutput,
+        output: actualOutput || result?.stderr || "",
       });
 
       finalStatus = result.status;
@@ -88,10 +95,10 @@ export const evaluateTestCases = async (
 
     detailedResults.push({
       testCase: index + 1,
-      passed: isPassed,
+      passed: false,
       runtime,
       expected: expectedOutput,
-      output: actualOutput,
+      output: actualOutput || result?.stderr || "",
     });
 
     if (evaluationType === "strict" && !isPassed) {
