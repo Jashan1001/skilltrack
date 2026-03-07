@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import Editor from "@monaco-editor/react";
 import axios from "../api/axios";
 import { Play, Send, ArrowLeft, Trophy } from "lucide-react";
+import { motion } from "framer-motion";
 
 interface TestCase {
   input: string;
@@ -23,6 +24,7 @@ const ProblemDetailPage = () => {
 
   const [problem, setProblem] = useState<Problem | null>(null);
   const [loading, setLoading] = useState(true);
+
   const [code, setCode] = useState("");
   const [language, setLanguage] = useState("javascript");
 
@@ -33,19 +35,16 @@ const ProblemDetailPage = () => {
   const [submitResult, setSubmitResult] = useState<any>(null);
 
   const [theme, setTheme] = useState(
-    document.documentElement.classList.contains("dark")
-      ? "dark"
-      : "light"
+    document.documentElement.classList.contains("dark") ? "dark" : "light"
   );
 
   const resultRef = useRef<HTMLDivElement | null>(null);
-  const editorRef = useRef<any>(null);
 
   /* ---------------- THEME OBSERVER ---------------- */
+
   useEffect(() => {
     const observer = new MutationObserver(() => {
-      const isDark =
-        document.documentElement.classList.contains("dark");
+      const isDark = document.documentElement.classList.contains("dark");
       setTheme(isDark ? "dark" : "light");
     });
 
@@ -58,16 +57,19 @@ const ProblemDetailPage = () => {
   }, []);
 
   /* ---------------- FETCH PROBLEM ---------------- */
+
   useEffect(() => {
     const fetchProblem = async () => {
       const res = await axios.get(`/problems/${problemId}`);
       setProblem(res.data.data);
       setLoading(false);
     };
+
     fetchProblem();
   }, [problemId]);
 
   /* ---------------- AUTO SCROLL AFTER RUN ---------------- */
+
   useEffect(() => {
     if (runResult) {
       setTimeout(() => {
@@ -79,7 +81,8 @@ const ProblemDetailPage = () => {
     }
   }, [runResult]);
 
-  /* ---------------- HANDLE RUN ---------------- */
+  /* ---------------- RUN CODE ---------------- */
+
   const handleRun = async () => {
     if (!code.trim()) return;
 
@@ -96,7 +99,8 @@ const ProblemDetailPage = () => {
     setRunning(false);
   };
 
-  /* ---------------- HANDLE SUBMIT ---------------- */
+  /* ---------------- SUBMIT CODE ---------------- */
+
   const handleSubmit = async () => {
     if (!code.trim()) return;
 
@@ -134,14 +138,22 @@ const ProblemDetailPage = () => {
       : "bg-rose-500/10 text-rose-500";
 
   return (
-    <div className="flex flex-col px-8 py-6 space-y-6 min-h-screen">
+    <motion.div
+      initial={{ opacity: 0, y: 12 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.35 }}
+      className="max-w-[1600px] mx-auto flex flex-col px-8 py-6 space-y-6 min-h-screen"
+    >
 
       {/* HEADER */}
+
       <div className="flex justify-between items-start">
+
         <div>
           <h1 className="text-3xl font-semibold tracking-tight">
             {problem.title}
           </h1>
+
           <span
             className={`mt-3 inline-block px-3 py-1 rounded-full text-xs font-medium capitalize ${difficultyColor}`}
           >
@@ -150,41 +162,48 @@ const ProblemDetailPage = () => {
         </div>
 
         <div className="flex gap-6 text-sm text-gray-500 dark:text-gray-400">
+
           <button
             onClick={() => navigate(-1)}
-            className="flex items-center gap-2 hover:text-gray-900 dark:hover:text-white"
+            className="flex items-center gap-2 hover:text-gray-900 dark:hover:text-white transition"
           >
             <ArrowLeft size={16} /> Back
           </button>
 
           <button
-            onClick={() =>
-              navigate(`/leaderboard/${problem._id}`)
-            }
-            className="flex items-center gap-2 hover:text-gray-900 dark:hover:text-white"
+            onClick={() => navigate(`/leaderboard/${problem._id}`)}
+            className="flex items-center gap-2 hover:text-gray-900 dark:hover:text-white transition"
           >
             <Trophy size={16} /> Leaderboard
           </button>
+
         </div>
+
       </div>
 
       {/* MAIN LAYOUT */}
-      <div className="flex gap-8">
+
+      <div className="flex gap-6 border-t border-gray-200 dark:border-gray-800 pt-6">
 
         {/* LEFT PANEL */}
-        <div className="w-[45%] overflow-y-auto pr-6 space-y-8">
 
-          <div>
-            <h2 className="text-lg font-semibold mb-3">
+        <div className="w-[45%] overflow-y-auto space-y-6 pr-4">
+
+          <div className="p-6 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm">
+
+            <h2 className="text-lg font-semibold mb-4">
               Description
             </h2>
+
             <p className="leading-7 whitespace-pre-line text-gray-600 dark:text-gray-400">
               {problem.description}
             </p>
+
           </div>
 
-          <div>
-            <h2 className="text-lg font-semibold mb-4">
+          <div className="p-6 rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 shadow-sm">
+
+            <h2 className="text-lg font-semibold mb-6">
               Sample Test Cases
             </h2>
 
@@ -196,6 +215,7 @@ const ProblemDetailPage = () => {
                 <div className="text-sm font-medium mb-2">
                   Input
                 </div>
+
                 <pre className="bg-gray-100 dark:bg-gray-800 p-4 rounded-md text-sm whitespace-pre-wrap">
                   {formatJSONInput(tc.input)}
                 </pre>
@@ -203,49 +223,50 @@ const ProblemDetailPage = () => {
                 <div className="text-sm font-medium mt-4 mb-2">
                   Expected Output
                 </div>
+
                 <pre className="bg-gray-100 dark:bg-gray-800 p-4 rounded-md text-sm whitespace-pre-wrap">
                   {tc.expectedOutput}
                 </pre>
+
               </div>
             ))}
+
           </div>
+
         </div>
 
         {/* RIGHT PANEL */}
-        <div className="w-[55%] flex flex-col space-y-5">
 
-          {/* EDITOR HEADER */}
-          <div className="flex justify-between items-center">
+        <div className="w-[55%] flex flex-col space-y-4">
 
-            <select
-              value={language}
-              onChange={(e) => setLanguage(e.target.value)}
-              className="
-                appearance-none
-                px-3 py-2 text-sm rounded-md
-                border border-gray-300 dark:border-gray-700
-                bg-white dark:bg-gray-900
-                text-gray-900 dark:text-gray-100
-                focus:outline-none
-              "
-            >
-              <option value="javascript">JavaScript</option>
-              <option value="python">Python</option>
-              <option value="cpp">C++</option>
-            </select>
+          {/* EDITOR TOOLBAR */}
+
+          <div className="flex justify-between items-center px-4 py-2 rounded-t-xl border border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-[#020617]">
+
+            <div className="flex items-center gap-3">
+
+              <span className="text-xs text-gray-500">
+                Language
+              </span>
+
+              <select
+                value={language}
+                onChange={(e) => setLanguage(e.target.value)}
+                className="text-sm px-2 py-1 rounded border border-gray-300 dark:border-gray-700 bg-white dark:bg-gray-900"
+              >
+                <option value="javascript">JavaScript</option>
+                <option value="python">Python</option>
+                <option value="cpp">C++</option>
+              </select>
+
+            </div>
 
             <div className="flex gap-3">
+
               <button
                 onClick={handleRun}
                 disabled={running}
-                className="
-                  flex items-center gap-2
-                  px-4 py-2 rounded-md text-sm
-                  border border-emerald-500/40
-                  text-emerald-500
-                  hover:bg-emerald-500/10
-                  disabled:opacity-50
-                "
+                className="flex items-center gap-2 px-4 py-1.5 rounded-md text-sm border border-emerald-500/40 text-emerald-500 hover:bg-emerald-500/10 hover:-translate-y-0.5 transition-all"
               >
                 <Play size={16} />
                 {running ? "Running..." : "Run"}
@@ -254,45 +275,49 @@ const ProblemDetailPage = () => {
               <button
                 onClick={handleSubmit}
                 disabled={submitting}
-                className="
-                  flex items-center gap-2
-                  px-5 py-2 rounded-md text-sm font-medium
-                  bg-blue-600 hover:bg-blue-700
-                  text-white
-                  disabled:opacity-50
-                "
+                className="flex items-center gap-2 px-4 py-1.5 rounded-md text-sm bg-blue-600 hover:bg-blue-700 text-white hover:-translate-y-0.5 transition-all"
               >
                 <Send size={16} />
                 {submitting ? "Submitting..." : "Submit"}
               </button>
+
             </div>
+
           </div>
 
-          {/* MONACO */}
-          <div className="flex-1 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+          {/* EDITOR */}
+
+          <div className="flex-1 rounded-b-xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-lg bg-white dark:bg-[#0f172a]">
+
             <Editor
-              height="100%"
+              height="520px"
               language={language === "cpp" ? "cpp" : language}
               value={code}
               onChange={(v) => setCode(v || "")}
-              onMount={(editor) => {
-                editorRef.current = editor;
-              }}
               theme={theme === "dark" ? "vs-dark" : "light"}
               options={{
                 minimap: { enabled: false },
                 automaticLayout: true,
                 scrollBeyondLastLine: false,
                 fontSize: 14,
+                fontLigatures: true,
+                smoothScrolling: true,
+                cursorBlinking: "smooth",
               }}
             />
+
           </div>
 
           {/* RESULTS */}
+
           <div ref={resultRef} className="space-y-4">
 
             {runResult && (
-              <div className="grid gap-4">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="grid gap-4"
+              >
                 {runResult.detailedResults.map((r: any) => (
                   <div
                     key={r.testCase}
@@ -315,7 +340,7 @@ const ProblemDetailPage = () => {
                       <div className="text-xs mb-1">
                         Expected
                       </div>
-                      <pre className="bg-gray-100 dark:bg-gray-800 p-3 rounded whitespace-pre-wrap text-sm">
+                      <pre className="bg-gray-100 dark:bg-gray-800 p-3 rounded text-sm whitespace-pre-wrap">
                         {r.expected}
                       </pre>
                     </div>
@@ -324,35 +349,46 @@ const ProblemDetailPage = () => {
                       <div className="text-xs mb-1">
                         Your Output
                       </div>
-                      <pre className="bg-gray-100 dark:bg-gray-800 p-3 rounded whitespace-pre-wrap text-sm">
+                      <pre className="bg-gray-100 dark:bg-gray-800 p-3 rounded text-sm whitespace-pre-wrap">
                         {r.output}
                       </pre>
                     </div>
+
                   </div>
                 ))}
-              </div>
+              </motion.div>
             )}
 
             {submitResult && (
-              <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-5 text-sm space-y-2">
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="border border-gray-200 dark:border-gray-700 rounded-lg p-5 text-sm space-y-2"
+              >
                 <div className="text-lg font-semibold">
                   Verdict: {submitResult.verdict}
                 </div>
+
                 <div>Score: {submitResult.score}</div>
+
                 <div>
-                  Passed: {submitResult.passed}/
-                  {submitResult.total}
+                  Passed: {submitResult.passed}/{submitResult.total}
                 </div>
+
                 <div>
                   Runtime: {submitResult.runtime} ms
                 </div>
-              </div>
+
+              </motion.div>
             )}
 
           </div>
+
         </div>
+
       </div>
-    </div>
+
+    </motion.div>
   );
 };
 
