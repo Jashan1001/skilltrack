@@ -3,6 +3,7 @@ import Problem from "../models/Problem";
 import { asyncHandler } from "../utils/asyncHandler";
 import { AppError } from "../utils/AppError";
 import { evaluateTestCases } from "../services/evaluateSolution";
+import { startExecutionEngine } from "../services/awsEC2Service";
 
 /*
 =============================
@@ -12,6 +13,7 @@ RUN SOLUTION (Public Only)
 
 export const runSolution = asyncHandler(
   async (req: any, res: Response, next: NextFunction) => {
+
     const { problemId, code, language } = req.body;
 
     if (!problemId || !code || !language) {
@@ -22,6 +24,12 @@ export const runSolution = asyncHandler(
         )
       );
     }
+
+    // Start EC2 execution engine
+    await startExecutionEngine();
+
+    // wait for EC2 to fully boot (very important)
+    await new Promise((resolve) => setTimeout(resolve, 30000));
 
     const problem = await Problem.findById(problemId);
 
@@ -42,9 +50,6 @@ export const runSolution = asyncHandler(
       language,
       problem.evaluationType
     );
-
-    // DO NOT store in DB
-    // DO NOT update leaderboard
 
     res.status(200).json({
       success: true,
