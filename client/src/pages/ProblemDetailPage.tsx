@@ -66,8 +66,6 @@ const ProblemDetailPage = () => {
     }
   }, [runResult, submitResult]);
 
-  /* RUN CODE */
-
   const handleRun = async () => {
     if (!code.trim()) return;
 
@@ -83,8 +81,6 @@ const ProblemDetailPage = () => {
     setRunResult(res.data.data);
     setRunning(false);
   };
-
-  /* SUBMIT CODE */
 
   const handleSubmit = async () => {
     if (!code.trim()) return;
@@ -135,7 +131,6 @@ const ProblemDetailPage = () => {
       <div className="flex items-center justify-between mb-4">
 
         <div className="flex items-center gap-4">
-
           <h1 className="text-2xl font-semibold">
             {problem.title}
           </h1>
@@ -145,7 +140,6 @@ const ProblemDetailPage = () => {
           >
             {problem.difficulty}
           </span>
-
         </div>
 
         <div className="flex gap-5 text-sm text-gray-500 dark:text-gray-400">
@@ -154,7 +148,7 @@ const ProblemDetailPage = () => {
             onClick={() => navigate(-1)}
             className="flex items-center gap-1 hover:text-gray-900 dark:hover:text-white"
           >
-            <ArrowLeft size={16} /> Back
+            <ArrowLeft size={16}/> Back
           </button>
 
           <button
@@ -163,7 +157,7 @@ const ProblemDetailPage = () => {
             }
             className="flex items-center gap-1 hover:text-gray-900 dark:hover:text-white"
           >
-            <Trophy size={16} /> Leaderboard
+            <Trophy size={16}/> Leaderboard
           </button>
 
         </div>
@@ -181,30 +175,27 @@ const ProblemDetailPage = () => {
         rounded-lg
         overflow-hidden
         bg-white
-        dark:bg-[#020617]
+        dark:bg-gray-900
         "
       >
+
         {/* LEFT PANEL */}
 
         <Panel defaultSize={45} minSize={30}>
 
           <div className="h-full overflow-y-auto border-r border-gray-200 dark:border-gray-800">
 
-            {/* DESCRIPTION */}
-
-            <div className="p-4 border-b border-gray-200 dark:border-gray-800">
+            <div className="p-4 border-b border-gray-200 dark:border-gray-800 bg-gray-50 dark:bg-gray-800">
 
               <h2 className="font-semibold text-sm mb-2">
                 Description
               </h2>
 
-              <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-line">
+              <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-line">
                 {problem.description}
               </p>
 
             </div>
-
-            {/* TEST CASES */}
 
             <div className="p-4">
 
@@ -221,9 +212,9 @@ const ProblemDetailPage = () => {
 
                   <pre className="
                   bg-gray-100
-                  dark:bg-gray-900
+                  dark:bg-gray-800
                   border border-gray-200
-                  dark:border-gray-800
+                  dark:border-gray-700
                   p-3 rounded text-sm
                   ">
                     {formatJSONInput(tc.input)}
@@ -235,9 +226,9 @@ const ProblemDetailPage = () => {
 
                   <pre className="
                   bg-gray-100
-                  dark:bg-gray-900
+                  dark:bg-gray-800
                   border border-gray-200
-                  dark:border-gray-800
+                  dark:border-gray-700
                   p-3 rounded text-sm
                   ">
                     {tc.expectedOutput}
@@ -258,8 +249,8 @@ const ProblemDetailPage = () => {
           className="
           w-[4px]
           bg-gray-200
-          dark:bg-gray-800
-          hover:bg-blue-500
+          dark:bg-gray-700
+          hover:bg-gray-400
           cursor-col-resize
           transition-colors
           "
@@ -279,12 +270,12 @@ const ProblemDetailPage = () => {
             border-b border-gray-200
             dark:border-gray-800
             bg-gray-100
-            dark:bg-[#020617]
+            dark:bg-gray-800
             ">
 
               <div className="flex items-center gap-2 text-sm">
 
-                <span className="text-gray-500 dark:text-gray-400">
+                <span className="text-gray-500 dark:text-gray-300">
                   Language
                 </span>
 
@@ -301,12 +292,8 @@ const ProblemDetailPage = () => {
                   px-2 py-1 rounded text-sm
                   "
                 >
-                  <option value="javascript">
-                    JavaScript
-                  </option>
-                  <option value="python">
-                    Python
-                  </option>
+                  <option value="javascript">JavaScript</option>
+                  <option value="python">Python</option>
                   <option value="cpp">C++</option>
                 </select>
 
@@ -335,10 +322,10 @@ const ProblemDetailPage = () => {
                   disabled={submitting}
                   className="
                   flex items-center gap-1
-                  bg-blue-600
+                  bg-indigo-600
                   px-3 py-1 rounded
                   text-white text-sm
-                  hover:bg-blue-700
+                  hover:bg-indigo-700
                   "
                 >
                   <Send size={14}/>
@@ -354,6 +341,7 @@ const ProblemDetailPage = () => {
             <div className="flex-1">
 
               <Editor
+                key={theme}
                 height="100%"
                 language={language === "cpp" ? "cpp" : language}
                 value={code}
@@ -422,7 +410,7 @@ const ProblemDetailPage = () => {
                   Expected
                 </div>
 
-                <pre className="bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-2 rounded mb-2">
+                <pre className="bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-2 rounded mb-2">
                   {r.expected}
                 </pre>
 
@@ -430,7 +418,7 @@ const ProblemDetailPage = () => {
                   Your Output
                 </div>
 
-                <pre className="bg-gray-100 dark:bg-gray-900 border border-gray-200 dark:border-gray-800 p-2 rounded">
+                <pre className="bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 p-2 rounded">
                   {r.output}
                 </pre>
 
