@@ -27,10 +27,12 @@ interface Problem {
   title: string;
   description: string;
   difficulty: string;
+  pattern?: string;
 
   inputFormat?: string;
   outputFormat?: string;
   constraints?: string;
+
   examples?: Example[];
   hints?: string[];
   tags?: string[];
@@ -68,6 +70,7 @@ const ProblemDetailPage = () => {
   /* FETCH PROBLEM */
 
   useEffect(() => {
+
     const fetchProblem = async () => {
       try {
         const res = await axios.get(`/problems/${problemId}`);
@@ -80,6 +83,7 @@ const ProblemDetailPage = () => {
     };
 
     fetchProblem();
+
   }, [problemId]);
 
   /* MONACO THEME */
@@ -91,37 +95,6 @@ const ProblemDetailPage = () => {
       );
     }
   }, [theme]);
-
-  /* KEYBOARD SHORTCUTS */
-
-  useEffect(() => {
-
-    const handleKey = (e: KeyboardEvent) => {
-
-      if (e.ctrlKey && e.key === "Enter") {
-        e.preventDefault();
-        handleRun();
-      }
-
-      if (e.ctrlKey && e.shiftKey && e.key === "Enter") {
-        e.preventDefault();
-        handleSubmit();
-      }
-
-    };
-
-    window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
-
-  }, [code]);
-
-  /* SCROLL TO OUTPUT */
-
-  useEffect(() => {
-    if (runResult || submitResult) {
-      resultRef.current?.scrollIntoView({ behavior: "smooth" });
-    }
-  }, [runResult, submitResult]);
 
   /* RUN */
 
@@ -200,26 +173,15 @@ const ProblemDetailPage = () => {
               {problem.title}
             </h1>
 
-            <span
-              className={`px-2 py-0.5 rounded text-xs font-medium capitalize ${difficultyStyle}`}
-            >
+            <span className={`px-2 py-0.5 rounded text-xs font-medium capitalize ${difficultyStyle}`}>
               {problem.difficulty}
             </span>
 
           </div>
 
-          {/* TAGS */}
-
-          {problem.tags && (
-            <div className="flex gap-2 mt-1">
-              {problem.tags.map(tag => (
-                <span
-                  key={tag}
-                  className="text-xs px-2 py-0.5 rounded bg-neutral-200 dark:bg-neutral-800"
-                >
-                  {tag}
-                </span>
-              ))}
+          {problem.pattern && (
+            <div className="text-xs text-neutral-500 mt-1">
+              {problem.pattern}
             </div>
           )}
 
@@ -235,9 +197,7 @@ const ProblemDetailPage = () => {
           </button>
 
           <button
-            onClick={() =>
-              navigate(`/leaderboard/${problem._id}`)
-            }
+            onClick={() => navigate(`/leaderboard/${problem._id}`)}
             className="flex items-center gap-1 hover:text-neutral-900 dark:hover:text-white"
           >
             <Trophy size={16}/> Leaderboard
@@ -258,149 +218,179 @@ const ProblemDetailPage = () => {
 
         <Panel defaultSize={45} minSize={30}>
 
-          <div className="h-full overflow-y-auto border-r border-neutral-200 dark:border-neutral-800">
+          <div className="h-full overflow-y-auto border-r border-neutral-200 dark:border-neutral-800 p-4 space-y-6">
 
-            <div className="p-4">
+            {/* DESCRIPTION */}
 
-              {/* DESCRIPTION */}
-
-              <h2 className="font-semibold text-sm mb-2">Description</h2>
+            <section>
+              <h2 className="text-sm font-semibold text-neutral-900 dark:text-white mb-2">
+                Description
+              </h2>
 
               <p className="text-sm text-neutral-600 dark:text-neutral-300 whitespace-pre-line">
                 {problem.description}
               </p>
+            </section>
 
-              {/* INPUT FORMAT */}
+            {/* INPUT FORMAT */}
 
-              {problem.inputFormat && (
-                <>
-                  <h3 className="mt-4 font-semibold text-sm">Input Format</h3>
-                  <pre className="text-sm whitespace-pre-line">
-                    {problem.inputFormat}
-                  </pre>
-                </>
-              )}
+            {problem.inputFormat && (
+              <section>
+                <h3 className="text-sm font-semibold mb-2">Input Format</h3>
+                <pre className="text-sm whitespace-pre-line text-neutral-600 dark:text-neutral-300">
+                  {problem.inputFormat}
+                </pre>
+              </section>
+            )}
 
-              {/* OUTPUT FORMAT */}
+            {/* OUTPUT FORMAT */}
 
-              {problem.outputFormat && (
-                <>
-                  <h3 className="mt-4 font-semibold text-sm">Output Format</h3>
-                  <pre className="text-sm whitespace-pre-line">
-                    {problem.outputFormat}
-                  </pre>
-                </>
-              )}
+            {problem.outputFormat && (
+              <section>
+                <h3 className="text-sm font-semibold mb-2">Output Format</h3>
+                <pre className="text-sm whitespace-pre-line text-neutral-600 dark:text-neutral-300">
+                  {problem.outputFormat}
+                </pre>
+              </section>
+            )}
 
-              {/* CONSTRAINTS */}
+            {/* CONSTRAINTS */}
 
-              {problem.constraints && (
-                <>
-                  <h3 className="mt-4 font-semibold text-sm">Constraints</h3>
-                  <pre className="text-sm whitespace-pre-line">
-                    {problem.constraints}
-                  </pre>
-                </>
-              )}
+            {problem.constraints && (
+              <section>
+                <h3 className="text-sm font-semibold mb-2">Constraints</h3>
+                <pre className="text-sm whitespace-pre-line text-neutral-600 dark:text-neutral-300">
+                  {problem.constraints}
+                </pre>
+              </section>
+            )}
 
-              {/* EXAMPLES */}
+            {/* EXAMPLES */}
 
-              {problem.examples && problem.examples.length > 0 && (
-                <div className="mt-4">
+            {problem.examples && problem.examples.length > 0 && (
+              <section>
 
-                  <h3 className="font-semibold text-sm mb-2">Examples</h3>
+                <h3 className="text-sm font-semibold mb-3">Examples</h3>
 
-                  {problem.examples.map((ex, i) => (
-                    <div key={i} className="mb-4">
+                {problem.examples.map((ex, i) => (
+                  <div key={i} className="mb-4">
 
-                      <div className="text-xs mb-1 text-neutral-500">
-                        Input
-                      </div>
-
-                      <pre className="bg-neutral-100 dark:bg-neutral-800 border p-3 rounded text-sm font-mono whitespace-pre-wrap">
-                        {ex.input}
-                      </pre>
-
-                      <div className="text-xs mt-2 mb-1 text-neutral-500">
-                        Output
-                      </div>
-
-                      <pre className="bg-neutral-100 dark:bg-neutral-800 border p-3 rounded text-sm font-mono whitespace-pre-wrap">
-                        {ex.output}
-                      </pre>
-
+                    <div className="text-xs text-neutral-500 mb-1">
+                      Example {i + 1} Input
                     </div>
-                  ))}
 
-                </div>
-              )}
+                    <pre className="bg-neutral-100 dark:bg-neutral-800 border p-3 rounded text-sm font-mono">
+                      {ex.input}
+                    </pre>
 
-              {/* HINTS */}
+                    <div className="text-xs text-neutral-500 mt-2 mb-1">
+                      Output
+                    </div>
 
-              {problem.hints && problem.hints.length > 0 && (
-                <div className="mt-4">
+                    <pre className="bg-neutral-100 dark:bg-neutral-800 border p-3 rounded text-sm font-mono">
+                      {ex.output}
+                    </pre>
 
-                  <button
-                    onClick={() => setShowHints(!showHints)}
-                    className="text-sm font-medium text-emerald-500 hover:underline"
-                  >
-                    {showHints ? "Hide Hints" : "Show Hints"}
-                  </button>
+                  </div>
+                ))}
 
-                  {showHints && (
-                    <ul className="mt-2 text-sm list-disc pl-5 space-y-1">
-                      {problem.hints.map((hint, i) => (
-                        <li key={i}>{hint}</li>
-                      ))}
-                    </ul>
-                  )}
+              </section>
+            )}
 
-                </div>
-              )}
+            {/* SAMPLE TEST CASES */}
 
-              {/* SAMPLE TEST CASES */}
+            <section>
 
-              <h2 className="font-semibold text-sm mt-6 mb-3">
-                Sample Test Cases
-              </h2>
+              <h3 className="text-sm font-semibold mb-3">Sample Test Cases</h3>
 
               {problem.publicTestCases.map((tc, i) => (
-                <div key={i} className="mb-5">
+                <div key={i} className="mb-4">
 
-                  <div className="text-xs mb-1 text-neutral-500">
+                  <div className="text-xs text-neutral-500 mb-1">
                     Input
                   </div>
 
-                  <pre className="bg-neutral-100 dark:bg-neutral-800 border p-3 rounded text-sm font-mono whitespace-pre-wrap">
+                  <pre className="bg-neutral-100 dark:bg-neutral-800 border p-3 rounded text-sm font-mono">
                     {tc.input}
                   </pre>
 
-                  <div className="text-xs mt-3 mb-1 text-neutral-500">
+                  <div className="text-xs text-neutral-500 mt-2 mb-1">
                     Expected Output
                   </div>
 
-                  <pre className="bg-neutral-100 dark:bg-neutral-800 border p-3 rounded text-sm font-mono whitespace-pre-wrap">
+                  <pre className="bg-neutral-100 dark:bg-neutral-800 border p-3 rounded text-sm font-mono">
                     {tc.expectedOutput}
                   </pre>
 
                 </div>
               ))}
 
-            </div>
+            </section>
+
+            {/* HINTS */}
+
+            {problem.hints && problem.hints.length > 0 && (
+              <section>
+
+                <button
+                  onClick={() => setShowHints(!showHints)}
+                  className="text-sm font-semibold text-emerald-500 hover:underline"
+                >
+                  {showHints ? "Hide Hints" : "Show Hints"}
+                </button>
+
+                {showHints && (
+                  <ul className="mt-3 space-y-2 text-sm text-neutral-600 dark:text-neutral-300">
+
+                    {problem.hints.map((hint, i) => (
+                      <li
+                        key={i}
+                        className="bg-neutral-100 dark:bg-neutral-800 border rounded p-2"
+                      >
+                        Hint {i + 1}: {hint}
+                      </li>
+                    ))}
+
+                  </ul>
+                )}
+
+              </section>
+            )}
+
+            {/* TAGS */}
+
+            {problem.tags && problem.tags.length > 0 && (
+              <section>
+
+                <h3 className="text-sm font-semibold mb-2">Tags</h3>
+
+                <div className="flex flex-wrap gap-2">
+
+                  {problem.tags.map(tag => (
+                    <span
+                      key={tag}
+                      className="text-xs px-2 py-1 rounded bg-neutral-200 dark:bg-neutral-800"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+
+                </div>
+
+              </section>
+            )}
 
           </div>
 
         </Panel>
 
-        <PanelResizeHandle className="w-[4px] bg-neutral-200 dark:bg-neutral-700 hover:bg-neutral-400 cursor-col-resize transition"/>
+        <PanelResizeHandle className="w-[4px] bg-neutral-200 dark:bg-neutral-700 cursor-col-resize"/>
 
-        {/* RIGHT PANEL */}
+        {/* RIGHT PANEL (EDITOR) */}
 
         <Panel defaultSize={55} minSize={35}>
 
           <div className="flex flex-col h-full">
-
-            {/* TOOLBAR */}
 
             <div className="flex items-center justify-between px-3 py-2 border-b bg-neutral-100 dark:bg-neutral-900">
 
@@ -421,8 +411,7 @@ const ProblemDetailPage = () => {
                   disabled={running}
                   className="flex items-center gap-1 text-emerald-500 border border-emerald-500 px-3 py-1 rounded-md"
                 >
-                  <Play size={14}/>
-                  {running ? "Running..." : "Run"}
+                  <Play size={14}/> Run
                 </button>
 
                 <button
@@ -430,15 +419,12 @@ const ProblemDetailPage = () => {
                   disabled={submitting}
                   className="flex items-center gap-1 bg-emerald-600 px-3 py-1 rounded-md text-white"
                 >
-                  <Send size={14}/>
-                  {submitting ? "Submitting..." : "Submit"}
+                  <Send size={14}/> Submit
                 </button>
 
               </div>
 
             </div>
-
-            {/* EDITOR */}
 
             <Editor
               height="100%"
