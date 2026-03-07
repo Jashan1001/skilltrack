@@ -4,7 +4,7 @@ import Editor from "@monaco-editor/react";
 import axios from "../api/axios";
 import { Play, Send, ArrowLeft, Trophy } from "lucide-react";
 import { motion } from "framer-motion";
-import { useTheme } from "../hooks/useTheme";
+import { useTheme } from "../context/themeContext";
 
 import {
   Panel,
@@ -49,9 +49,14 @@ const ProblemDetailPage = () => {
 
   useEffect(() => {
     const fetchProblem = async () => {
-      const res = await axios.get(`/problems/${problemId}`);
-      setProblem(res.data.data);
-      setLoading(false);
+      try {
+        const res = await axios.get(`/problems/${problemId}`);
+        setProblem(res.data.data);
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
     };
 
     fetchProblem();
@@ -67,15 +72,15 @@ const ProblemDetailPage = () => {
     }
   }, [theme]);
 
-  /* AUTO SCROLL */
+  /* SCROLL TO OUTPUT */
 
   useEffect(() => {
     if (runResult || submitResult) {
-      resultRef.current?.scrollIntoView({
-        behavior: "smooth",
-      });
+      resultRef.current?.scrollIntoView({ behavior: "smooth" });
     }
   }, [runResult, submitResult]);
+
+  /* RUN */
 
   const handleRun = async () => {
     if (!code.trim()) return;
@@ -92,6 +97,8 @@ const ProblemDetailPage = () => {
     setRunResult(res.data.data);
     setRunning(false);
   };
+
+  /* SUBMIT */
 
   const handleSubmit = async () => {
     if (!code.trim()) return;
@@ -120,7 +127,14 @@ const ProblemDetailPage = () => {
     }
   };
 
-  if (loading || !problem) return null;
+  if (loading)
+    return (
+      <div className="flex items-center justify-center h-full text-neutral-500">
+        Loading problem...
+      </div>
+    );
+
+  if (!problem) return null;
 
   const difficultyStyle =
     problem.difficulty === "easy"
@@ -135,7 +149,6 @@ const ProblemDetailPage = () => {
       animate={{ opacity: 1 }}
       className="flex flex-col h-full px-6 py-4 bg-neutral-100 dark:bg-neutral-950"
     >
-
       {/* HEADER */}
 
       <div className="flex items-center justify-between mb-4">
@@ -195,7 +208,7 @@ const ProblemDetailPage = () => {
 
           <div className="h-full overflow-y-auto border-r border-neutral-200 dark:border-neutral-800">
 
-            <div className="p-4 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-800">
+            <div className="p-4 border-b border-neutral-200 dark:border-neutral-800 bg-neutral-50 dark:bg-neutral-900">
 
               <h2 className="font-semibold text-sm mb-2">
                 Description
@@ -272,7 +285,7 @@ const ProblemDetailPage = () => {
 
           <div className="flex flex-col h-full">
 
-            {/* EDITOR TOOLBAR */}
+            {/* TOOLBAR */}
 
             <div className="
             flex items-center justify-between
@@ -280,7 +293,7 @@ const ProblemDetailPage = () => {
             border-b border-neutral-200
             dark:border-neutral-800
             bg-neutral-100
-            dark:bg-neutral-800
+            dark:bg-neutral-900
             ">
 
               <div className="flex items-center gap-2 text-sm">
@@ -296,7 +309,7 @@ const ProblemDetailPage = () => {
                   }
                   className="
                   bg-white
-                  dark:bg-neutral-900
+                  dark:bg-neutral-800
                   border border-neutral-300
                   dark:border-neutral-700
                   px-2 py-1 rounded text-sm
@@ -349,7 +362,7 @@ const ProblemDetailPage = () => {
 
             </div>
 
-            {/* MONACO EDITOR */}
+            {/* EDITOR */}
 
             <div className="flex-1">
 
@@ -419,9 +432,7 @@ const ProblemDetailPage = () => {
                         : "text-red-500"
                     }
                   >
-                    {r.passed
-                      ? "Passed"
-                      : "Failed"}
+                    {r.passed ? "Passed" : "Failed"}
                   </span>
 
                 </div>

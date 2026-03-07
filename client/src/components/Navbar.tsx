@@ -1,6 +1,6 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { useAuth } from "../context/authContext";
-import { useTheme } from "../hooks/useTheme";
+import { useTheme } from "../context/themeContext";
 import { Sun, Moon, LogOut } from "lucide-react";
 
 const Navbar: React.FC = () => {
