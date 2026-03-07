@@ -6,43 +6,59 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 
 import authRoutes from "./routes/authRoutes";
-import { protect, allowRoles } from "./middleware/authMiddleware";
 import problemRoutes from "./routes/problemRoutes";
 import submissionRoutes from "./routes/submissionRoutes";
-import { globalErrorHandler } from "./middleware/errorHandler";
 import leaderboardRoutes from "./routes/leaderboardRoutes";
 import userRoutes from "./routes/userRoutes";
 import runRoutes from "./routes/runRoutes";
+
+import { protect } from "./middleware/authMiddleware";
+import { globalErrorHandler } from "./middleware/errorHandler";
 
 dotenv.config();
 
 const app = express();
 
 /* ============================= */
-/* Security & Production Setup  */
+/* Trust Proxy (Render support) */
 /* ============================= */
 
 app.set("trust proxy", 1);
 
+/* ============================= */
+/* CORS Configuration           */
+/* ============================= */
 
 const allowedOrigins = [
   "http://localhost:5173",
   "https://skilltrack-delta.vercel.app",
-  "https://skilltrack-gan3kx5g0-jashan1001s-projects.vercel.app"
 ];
 
 app.use(
   cors({
-    origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error("Not allowed by CORS"));
+    origin: (origin, callback) => {
+      // allow server-to-server or curl requests
+      if (!origin) return callback(null, true);
+
+      // allow localhost
+      if (allowedOrigins.includes(origin)) {
+        return callback(null, true);
       }
+
+      // allow ANY vercel preview deployment
+      if (origin.endsWith(".vercel.app")) {
+        return callback(null, true);
+      }
+
+      return callback(new Error("Not allowed by CORS"));
     },
-    credentials: true
+    credentials: true,
   })
 );
+
+/* ============================= */
+/* Security Middleware          */
+/* ============================= */
 
 app.use(helmet());
 
@@ -52,6 +68,10 @@ app.use(
     max: 100,
   })
 );
+
+/* ============================= */
+/* Body Parser                  */
+/* ============================= */
 
 app.use(express.json({ limit: "50kb" }));
 
@@ -66,9 +86,15 @@ app.use("/api/leaderboard", leaderboardRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/run", runRoutes);
 
+/* ============================= */
+/* Health Check Route           */
+/* ============================= */
+
 app.get("/", (req, res) => {
-  res.send("InterviewSphere API is running 🚀");
+  res.send("SkillTrack API is running 🚀");
 });
+
+/* Example protected route */
 
 app.get("/api/test/protected", protect, (req: any, res) => {
   res.json({
@@ -78,13 +104,13 @@ app.get("/api/test/protected", protect, (req: any, res) => {
 });
 
 /* ============================= */
-/* Error Handler (Last)         */
+/* Global Error Handler         */
 /* ============================= */
 
 app.use(globalErrorHandler);
 
 /* ============================= */
-/* DB + Server Start            */
+/* Database + Server Start      */
 /* ============================= */
 
 const PORT = process.env.PORT || 5000;
