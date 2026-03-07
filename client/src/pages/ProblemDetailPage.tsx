@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Editor from "@monaco-editor/react";
 import axios from "../api/axios";
@@ -41,7 +41,9 @@ interface Problem {
   publicTestCases: TestCase[];
 }
 
-const codeTemplates: Record<string, string> = {
+/* Default Templates */
+
+const templates: Record<string, string> = {
   javascript: `function solve() {
 
 }
@@ -69,11 +71,14 @@ const ProblemDetailPage = () => {
   const navigate = useNavigate();
   const { theme } = useTheme();
 
+  const monacoRef = useRef<any>(null);
+  const resultRef = useRef<HTMLDivElement | null>(null);
+
   const [problem, setProblem] = useState<Problem | null>(null);
   const [loading, setLoading] = useState(true);
 
   const [language, setLanguage] = useState("javascript");
-  const [code, setCode] = useState(codeTemplates.javascript);
+  const [code, setCode] = useState(templates.javascript);
 
   const [running, setRunning] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -87,7 +92,7 @@ const ProblemDetailPage = () => {
   const [activeTab, setActiveTab] =
     useState<"console" | "testcases" | "result">("console");
 
-  /* Fetch problem */
+  /* FETCH PROBLEM */
 
   useEffect(() => {
     const fetchProblem = async () => {
@@ -104,13 +109,23 @@ const ProblemDetailPage = () => {
     fetchProblem();
   }, [problemId]);
 
-  /* Change template when language changes */
+  /* Set Template when language changes */
 
   useEffect(() => {
-    setCode(codeTemplates[language]);
+    setCode(templates[language]);
   }, [language]);
 
-  /* Keyboard shortcuts */
+  /* MONACO THEME */
+
+  useEffect(() => {
+    if (monacoRef.current) {
+      monacoRef.current.editor.setTheme(
+        theme === "dark" ? "vs-dark" : "vs-light"
+      );
+    }
+  }, [theme]);
+
+  /* KEYBOARD SHORTCUTS */
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => {
@@ -126,10 +141,19 @@ const ProblemDetailPage = () => {
     };
 
     window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
-  });
 
-  /* Run solution */
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [code]);
+
+  /* AUTO SCROLL */
+
+  useEffect(() => {
+    if (runResult || submitResult) {
+      resultRef.current?.scrollIntoView({ behavior: "smooth" });
+    }
+  }, [runResult, submitResult]);
+
+  /* RUN */
 
   const handleRun = async () => {
     if (!code.trim()) return;
@@ -137,23 +161,18 @@ const ProblemDetailPage = () => {
     setRunning(true);
     setSubmitResult(null);
 
-    try {
-      const res = await axios.post("/run", {
-        problemId,
-        code,
-        language,
-      });
+    const res = await axios.post("/run", {
+      problemId,
+      code,
+      language,
+    });
 
-      setRunResult(res.data.data);
-      setActiveTab("testcases");
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setRunning(false);
-    }
+    setRunResult(res.data.data);
+    setRunning(false);
+    setActiveTab("testcases");
   };
 
-  /* Submit solution */
+  /* SUBMIT */
 
   const handleSubmit = async () => {
     if (!code.trim()) return;
@@ -161,20 +180,15 @@ const ProblemDetailPage = () => {
     setSubmitting(true);
     setRunResult(null);
 
-    try {
-      const res = await axios.post("/submissions", {
-        problemId,
-        code,
-        language,
-      });
+    const res = await axios.post("/submissions", {
+      problemId,
+      code,
+      language,
+    });
 
-      setSubmitResult(res.data.data);
-      setActiveTab("result");
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setSubmitting(false);
-    }
+    setSubmitResult(res.data.data);
+    setSubmitting(false);
+    setActiveTab("result");
   };
 
   if (loading)
@@ -199,9 +213,10 @@ const ProblemDetailPage = () => {
       animate={{ opacity: 1 }}
       className="flex flex-col h-full px-6 py-4 bg-neutral-100 dark:bg-neutral-950"
     >
-      {/* Header */}
+      {/* HEADER */}
 
       <div className="flex items-center justify-between mb-4">
+
         <div>
 
           <div className="flex items-center gap-4">
@@ -241,9 +256,10 @@ const ProblemDetailPage = () => {
           </button>
 
         </div>
+
       </div>
 
-      {/* Workspace */}
+      {/* WORKSPACE */}
 
       <PanelGroup
         direction="horizontal"
@@ -254,14 +270,18 @@ const ProblemDetailPage = () => {
 
         <Panel defaultSize={45} minSize={30}>
 
-          <div className="h-full overflow-y-auto p-5 space-y-6">
+          <div className="h-full overflow-y-auto border-r border-neutral-200 dark:border-neutral-800 p-5 space-y-6">
+
+            {/* Description */}
 
             <section>
               <h2 className="text-sm font-semibold mb-2">Description</h2>
-              <p className="text-sm whitespace-pre-line text-neutral-600 dark:text-neutral-300">
+              <p className="text-sm text-neutral-600 dark:text-neutral-300 whitespace-pre-line">
                 {problem.description}
               </p>
             </section>
+
+            {/* Input Format */}
 
             {problem.inputFormat && (
               <section>
@@ -270,6 +290,8 @@ const ProblemDetailPage = () => {
               </section>
             )}
 
+            {/* Output Format */}
+
             {problem.outputFormat && (
               <section>
                 <h3 className="text-sm font-semibold mb-2">Output Format</h3>
@@ -277,23 +299,146 @@ const ProblemDetailPage = () => {
               </section>
             )}
 
-            {problem.examples?.map((ex, i) => (
+            {/* Constraints */}
 
+            {problem.constraints && (
+              <section>
+                <h3 className="text-sm font-semibold mb-2">Constraints</h3>
+                <pre className="text-sm whitespace-pre-line">{problem.constraints}</pre>
+              </section>
+            )}
+
+            {/* Examples */}
+
+            {problem.examples?.map((ex, i) => (
               <div key={i}>
 
-                <div className="text-xs text-neutral-500">Example {i+1}</div>
+                <div className="text-xs text-neutral-500 mb-1">
+                  Example {i + 1} Input
+                </div>
 
-                <pre className="bg-neutral-100 dark:bg-neutral-800 p-3 rounded">
+                <pre className="bg-neutral-100 dark:bg-neutral-800 p-3 rounded font-mono text-sm">
                   {ex.input}
                 </pre>
 
-                <pre className="bg-neutral-100 dark:bg-neutral-800 p-3 rounded mt-2">
+                <div className="text-xs text-neutral-500 mt-3 mb-1">
+                  Output
+                </div>
+
+                <pre className="bg-neutral-100 dark:bg-neutral-800 p-3 rounded font-mono text-sm">
                   {ex.output}
                 </pre>
 
-              </div>
+                {ex.explanation && (
+                  <div className="text-sm mt-2 text-neutral-600 dark:text-neutral-300">
+                    {ex.explanation}
+                  </div>
+                )}
 
+              </div>
             ))}
+
+            //test cases
+            {/* RUN TEST CASES */}
+
+            <section>
+
+              <h3 className="text-sm font-semibold mb-3">
+                Run Test Cases
+              </h3>
+
+              {problem.publicTestCases.map((tc, i) => (
+
+                <div
+                  key={i}
+                  className="mb-5 border border-neutral-200 dark:border-neutral-800 rounded-lg p-3"
+                >
+
+                  <div className="text-xs font-medium text-neutral-500 mb-2">
+                    Test Case {i + 1}
+                  </div>
+
+                  <div className="text-xs text-neutral-500 mb-1">
+                    Input
+                  </div>
+
+                  <pre className="bg-neutral-100 dark:bg-neutral-800 p-2 rounded font-mono text-sm whitespace-pre-wrap">
+                    {tc.input}
+                  </pre>
+
+                  <div className="text-xs text-neutral-500 mt-3 mb-1">
+                    Expected Output
+                  </div>
+
+                  <pre className="bg-neutral-100 dark:bg-neutral-800 p-2 rounded font-mono text-sm whitespace-pre-wrap">
+                    {tc.expectedOutput}
+                  </pre>
+
+                </div>
+
+              ))}
+
+            </section>
+
+            {/* Hints */}
+
+            {problem.hints && problem.hints.length > 0 && (
+              <section>
+
+                <button
+                  onClick={() => setShowHints(!showHints)}
+                  className="text-sm font-semibold text-emerald-500 hover:underline"
+                >
+                  {showHints ? "Hide Hints" : "Show Hints"}
+                </button>
+
+                {showHints && (
+                  <ul className="mt-3 space-y-2 text-sm text-neutral-600 dark:text-neutral-300">
+
+                    {problem.hints.map((hint, i) => (
+                      <li
+                        key={i}
+                        className="bg-neutral-100 dark:bg-neutral-800 p-2 rounded"
+                      >
+                        Hint {i + 1}: {hint}
+                      </li>
+                    ))}
+
+                  </ul>
+                )}
+
+              </section>
+            )}
+
+            {/* Tags */}
+
+            {problem.tags && problem.tags.length > 0 && (
+              <section>
+
+                <button
+                  onClick={() => setShowTags(!showTags)}
+                  className="text-sm font-semibold text-emerald-500 hover:underline"
+                >
+                  {showTags ? "Hide Tags" : "Show Tags"}
+                </button>
+
+                {showTags && (
+                  <div className="flex flex-wrap gap-2 mt-3">
+
+                    {problem.tags.map((tag) => (
+                      <span
+                        key={tag}
+                        className="text-xs px-2 py-1 rounded bg-neutral-200 dark:bg-neutral-800"
+                      >
+                        {tag}
+                      </span>
+                    ))}
+
+                  </div>
+                )}
+
+              </section>
+            )}
 
           </div>
 
@@ -307,7 +452,7 @@ const ProblemDetailPage = () => {
 
           <PanelGroup direction="vertical">
 
-            {/* Editor */}
+            {/* EDITOR */}
 
             <Panel defaultSize={70}>
 
@@ -317,7 +462,7 @@ const ProblemDetailPage = () => {
 
                   <select
                     value={language}
-                    onChange={(e)=>setLanguage(e.target.value)}
+                    onChange={(e) => setLanguage(e.target.value)}
                     className="border px-2 py-1 rounded text-sm"
                   >
                     <option value="javascript">JavaScript</option>
@@ -330,10 +475,9 @@ const ProblemDetailPage = () => {
                     <button
                       onClick={handleRun}
                       disabled={running}
-                      className="flex items-center gap-1 border border-emerald-500 text-emerald-500 px-3 py-1 rounded"
+                      className="flex items-center gap-1 text-emerald-500 border border-emerald-500 px-3 py-1 rounded"
                     >
-                      <Play size={14}/>
-                      {running ? "Running..." : "Run"}
+                      <Play size={14}/> Run
                     </button>
 
                     <button
@@ -341,8 +485,7 @@ const ProblemDetailPage = () => {
                       disabled={submitting}
                       className="flex items-center gap-1 bg-emerald-600 text-white px-3 py-1 rounded"
                     >
-                      <Send size={14}/>
-                      {submitting ? "Submitting..." : "Submit"}
+                      <Send size={14}/> Submit
                     </button>
 
                   </div>
@@ -351,14 +494,14 @@ const ProblemDetailPage = () => {
 
                 <Editor
                   height="100%"
-                  language={language}
+                  language={language === "cpp" ? "cpp" : language}
                   value={code}
-                  onChange={(v)=>setCode(v || "")}
+                  onChange={(v) => setCode(v || "")}
                   theme={theme === "dark" ? "vs-dark" : "vs-light"}
                   options={{
-                    minimap:{enabled:false},
-                    fontSize:14,
-                    automaticLayout:true
+                    minimap: { enabled: false },
+                    fontSize: 14,
+                    automaticLayout: true
                   }}
                 />
 
@@ -372,70 +515,76 @@ const ProblemDetailPage = () => {
 
             <Panel defaultSize={30}>
 
-              <div className="h-full overflow-auto p-4">
+              <div
+                ref={resultRef}
+                className="h-full border-t border-neutral-200 dark:border-neutral-800 overflow-auto"
+              >
 
-                <div className="flex gap-4 text-sm mb-3">
+                <div className="flex border-b border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-900 text-sm">
 
-                  {["console","testcases","result"].map((tab)=>(
+                  {["Console","Testcases","Result"].map((tab) => (
+
                     <button
                       key={tab}
-                      onClick={()=>setActiveTab(tab as any)}
-                      className={activeTab===tab?"text-emerald-500":"text-neutral-500"}
+                      onClick={() => setActiveTab(tab.toLowerCase() as any)}
+                      className={`px-4 py-2 ${
+                        activeTab === tab.toLowerCase()
+                          ? "text-emerald-500 border-b-2 border-emerald-500"
+                          : "text-neutral-500"
+                      }`}
                     >
                       {tab}
                     </button>
+
                   ))}
 
                 </div>
 
-                {activeTab==="console" && (
-                  <div className="font-mono text-sm">
-                    Run your code to see output
-                  </div>
-                )}
+                <div className="p-4 text-sm">
 
-                {activeTab==="testcases" && runResult && (
+                  {activeTab === "console" && (
+                    <pre className="text-neutral-500 font-mono whitespace-pre-wrap">
+                      Run your code to see output
+                    </pre>
+                  )}
 
-                  <div className="space-y-3">
+                  {activeTab === "testcases" && runResult && (
+                    <div className="space-y-3">
 
-                    {runResult.detailedResults.map((r:any)=>(
-                      <div key={r.testCase} className="border p-3 rounded">
+                      {runResult.detailedResults.map((r: any) => (
 
-                        <div className="flex justify-between mb-2">
+                        <div key={r.testCase} className="border p-3 rounded">
 
-                          <span>Test {r.testCase}</span>
+                          <div className="flex justify-between mb-2">
 
-                          <span className={r.passed?"text-emerald-500":"text-red-500"}>
-                            {r.passed?"Passed":"Failed"}
-                          </span>
+                            <span>Test Case {r.testCase}</span>
+
+                            <span className={r.passed ? "text-emerald-500" : "text-red-500"}>
+                              {r.passed ? "Passed" : "Failed"}
+                            </span>
+
+                          </div>
+
+                          <pre>{r.expected}</pre>
+                          <pre>{r.output}</pre>
 
                         </div>
 
-                        <pre>{r.expected}</pre>
-                        <pre>{r.output}</pre>
+                      ))}
 
-                      </div>
-                    ))}
-
-                  </div>
-
-                )}
-
-                {activeTab==="result" && submitResult && (
-
-                  <div>
-
-                    <div className="text-lg font-semibold">
-                      {submitResult.verdict}
                     </div>
+                  )}
 
-                    <div>Passed: {submitResult.passed}/{submitResult.total}</div>
-                    <div>Runtime: {submitResult.runtime} ms</div>
-                    <div>Score: {submitResult.score}</div>
+                  {activeTab === "result" && submitResult && (
+                    <div className="space-y-2">
+                      <div className="font-semibold text-lg">{submitResult.verdict}</div>
+                      <div>Passed: {submitResult.passed}/{submitResult.total}</div>
+                      <div>Runtime: {submitResult.runtime} ms</div>
+                      <div>Score: {submitResult.score}</div>
+                    </div>
+                  )}
 
-                  </div>
-
-                )}
+                </div>
 
               </div>
 
