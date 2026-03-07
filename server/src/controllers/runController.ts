@@ -51,9 +51,9 @@ export const runSolution = asyncHandler(
       message: "Run completed",
       data: {
         verdict: evaluation.verdict,
-        passed: evaluation.passedCount,
-        total: evaluation.totalCases,
-        runtime: evaluation.totalRuntime,
+        passed: evaluation.passed,
+        total: evaluation.total,
+        runtime: evaluation.runtime,
         detailedResults: evaluation.detailedResults,
       },
     });

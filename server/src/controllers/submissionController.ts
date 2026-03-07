@@ -42,9 +42,9 @@ export const submitSolution = asyncHandler(
       language,
       status: evaluation.verdict,
       // score: evaluation.score,
-      totalTestCases: evaluation.totalCases,
-      passedTestCases: evaluation.passedCount,
-      runtime: evaluation.totalRuntime,
+      totalTestCases: evaluation.total,
+      passedTestCases: evaluation.passed,
+      runtime: evaluation.runtime,
       publicResults: [],
     });
 
@@ -54,9 +54,9 @@ export const submitSolution = asyncHandler(
       data: {
         verdict: evaluation.verdict,
         // score: evaluation.score,
-        passed: evaluation.passedCount,
-        total: evaluation.totalCases,
-        runtime: evaluation.totalRuntime,
+        passed: evaluation.passed,
+        total: evaluation.total,
+        runtime: evaluation.runtime,
       },
     });
   }

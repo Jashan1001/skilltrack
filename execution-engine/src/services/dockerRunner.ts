@@ -16,59 +16,63 @@ export interface ExecutionResult {
   executionTime: number;
 }
 
+const MAX_OUTPUT = 1024 * 1024; // 1MB
+const TIME_LIMIT = 3000; // 3 seconds
+
 export const runCode = (
   language: string,
   code: string,
   input: string
 ): Promise<ExecutionResult> => {
   return new Promise((resolveOuter) => {
-    enqueue(() => {
-      return new Promise<void>((resolveQueue) => {
-        const jobId = uuidv4();
-        const jobDir = path.join(__dirname, "..", "..", "jobs", jobId);
-        fs.mkdirSync(jobDir, { recursive: true });
+    enqueue(async () => {
+      const jobId = uuidv4();
+      const jobDir = path.join(__dirname, "..", "..", "jobs", jobId);
 
-        const cleanup = () => {
-          try {
-            fs.rmSync(jobDir, { recursive: true, force: true });
-          } catch {}
-        };
+      fs.mkdirSync(jobDir, { recursive: true });
 
-        const resolveOnce = (result: ExecutionResult) => {
-          cleanup();
-          resolveOuter(result);
-          resolveQueue();
-        };
+      const cleanup = () => {
+        try {
+          fs.rmSync(jobDir, { recursive: true, force: true });
+        } catch {}
+      };
 
-        let filename = "";
-        let dockerImage = "";
+      const resolveOnce = (result: ExecutionResult) => {
+        cleanup();
+        resolveOuter(result);
+      };
 
-        if (language === "javascript") {
-          filename = "code.js";
-          dockerImage = "node:20-alpine";
-        } else if (language === "python") {
-          filename = "code.py";
-          dockerImage = "python:3.11-alpine";
-        } else if (language === "cpp") {
-          filename = "code.cpp";
-          dockerImage = "gcc:13";
-        } else {
-          resolveOnce({
-            status: "internal_error",
-            stdout: "",
-            stderr: "Unsupported language",
-            executionTime: 0,
-          });
-          return;
-        }
+      let filename = "";
+      let dockerImage = "";
 
-        const filePath = path.join(jobDir, filename);
-        fs.writeFileSync(filePath, code);
+      if (language === "javascript") {
+        filename = "code.js";
+        dockerImage = "node:20-alpine";
+      } else if (language === "python") {
+        filename = "code.py";
+        dockerImage = "python:3.11-alpine";
+      } else if (language === "cpp") {
+        filename = "code.cpp";
+        dockerImage = "gcc:13";
+      } else {
+        resolveOnce({
+          status: "internal_error",
+          stdout: "",
+          stderr: "Unsupported language",
+          executionTime: 0,
+        });
+        return;
+      }
 
-        /* =============================== */
-        /* CPP FLOW — Compile then Execute */
-        /* =============================== */
-        if (language === "cpp") {
+      const filePath = path.join(jobDir, filename);
+      fs.writeFileSync(filePath, code);
+
+      /* =============================== */
+      /* C++ COMPILE STEP                */
+      /* =============================== */
+
+      const compileCpp = (): Promise<boolean> => {
+        return new Promise((resolveCompile) => {
           const compileArgs = [
             "run",
             "--rm",
@@ -101,90 +105,19 @@ export const runCode = (
                 stderr: compileError || "Compilation failed",
                 executionTime: 0,
               });
-              return;
+              resolveCompile(false);
+            } else {
+              resolveCompile(true);
             }
-
-            // Execution phase
-            const runArgs = [
-              "run",
-              "--rm",
-              "--memory=128m",
-              "--cpus=0.5",
-              "--pids-limit=64",
-              "--network=none",
-              "-i",
-              "-v",
-              `${jobDir.replace(/\\/g, "/")}:/app`,
-              "-w",
-              "/app",
-              dockerImage,
-              "./main",
-            ];
-
-            const child = spawn("docker", runArgs);
-
-            let stdout = "";
-            let stderr = "";
-            let resolved = false;
-            const MAX_OUTPUT = 1024 * 1024;
-            const TIME_LIMIT = 3000;
-            const startTime = Date.now();
-
-            const timeout = setTimeout(() => {
-              child.kill();
-              if (!resolved) {
-                resolved = true;
-                resolveOnce({
-                  status: "time_limit_exceeded",
-                  stdout: "",
-                  stderr: "Execution timed out",
-                  executionTime: Date.now() - startTime,
-                });
-              }
-            }, TIME_LIMIT);
-
-            if (input) {
-              child.stdin.write(input);
-            }
-            child.stdin.end();
-
-            child.stdout.on("data", (data) => {
-              stdout += data.toString();
-              if (stdout.length > MAX_OUTPUT) {
-                child.kill();
-              }
-            });
-
-            child.stderr.on("data", (data) => {
-              stderr += data.toString();
-            });
-
-            child.on("close", () => {
-              clearTimeout(timeout);
-              if (!resolved) {
-                resolved = true;
-                resolveOnce({
-                  status: stderr ? "runtime_error" : "accepted",
-                  stdout,
-                  stderr,
-                  executionTime: Date.now() - startTime,
-                });
-              }
-            });
           });
+        });
+      };
 
-          return;
-        }
+      /* =============================== */
+      /* RUN PROGRAM                     */
+      /* =============================== */
 
-        /* =============================== */
-        /* JS + PYTHON FLOW */
-        /* =============================== */
-
-        const dockerCommand =
-          language === "javascript"
-            ? ["node", filename]
-            : ["python3", filename];
-
+      const runProgram = (command: string[]) => {
         const dockerArgs = [
           "run",
           "--rm",
@@ -198,7 +131,7 @@ export const runCode = (
           "-w",
           "/app",
           dockerImage,
-          ...dockerCommand,
+          ...command,
         ];
 
         const child = spawn("docker", dockerArgs);
@@ -206,14 +139,14 @@ export const runCode = (
         let stdout = "";
         let stderr = "";
         let resolved = false;
-        const MAX_OUTPUT = 1024 * 1024;
-        const TIME_LIMIT = 3000;
         const startTime = Date.now();
 
         const timeout = setTimeout(() => {
-          child.kill();
+          child.kill("SIGKILL");
+
           if (!resolved) {
             resolved = true;
+
             resolveOnce({
               status: "time_limit_exceeded",
               stdout: "",
@@ -224,14 +157,16 @@ export const runCode = (
         }, TIME_LIMIT);
 
         if (input) {
-          child.stdin.write(input);
+          child.stdin.write(input.endsWith("\n") ? input : input + "\n");
         }
+
         child.stdin.end();
 
         child.stdout.on("data", (data) => {
           stdout += data.toString();
+
           if (stdout.length > MAX_OUTPUT) {
-            child.kill();
+            child.kill("SIGKILL");
           }
         });
 
@@ -241,8 +176,10 @@ export const runCode = (
 
         child.on("close", () => {
           clearTimeout(timeout);
+
           if (!resolved) {
             resolved = true;
+
             resolveOnce({
               status: stderr ? "runtime_error" : "accepted",
               stdout,
@@ -254,8 +191,10 @@ export const runCode = (
 
         child.on("error", () => {
           clearTimeout(timeout);
+
           if (!resolved) {
             resolved = true;
+
             resolveOnce({
               status: "internal_error",
               stdout: "",
@@ -264,7 +203,25 @@ export const runCode = (
             });
           }
         });
-      });
+      };
+
+      /* =============================== */
+      /* EXECUTION FLOW                  */
+      /* =============================== */
+
+      if (language === "cpp") {
+        const compiled = await compileCpp();
+        if (!compiled) return;
+
+        runProgram(["./main"]);
+      } else {
+        const cmd =
+          language === "javascript"
+            ? ["node", filename]
+            : ["python3", filename];
+
+        runProgram(cmd);
+      }
     });
   });
 };

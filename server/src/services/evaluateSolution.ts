@@ -26,15 +26,13 @@ export const evaluateTestCases = async (
     let result;
     let runtime = 0;
 
+    const EXECUTOR_URL = process.env.EXECUTION_ENGINE_URL || "http://localhost:5001";
     try {
-      const response = await axios.post(
-        "http://localhost:5001/execute",
-        {
-          code,
-          language,
-          input: testCase.input,
-        }
-      );
+      const response = await axios.post(`${EXECUTOR_URL}/execute`, {
+        code,
+        language,
+        input: testCase.input,
+      });
 
       const endTime = Date.now();
       runtime = endTime - startTime;
@@ -42,36 +40,30 @@ export const evaluateTestCases = async (
 
       result = response.data;
     } catch (error) {
-      // Execution engine failure
       detailedResults.push({
         testCase: index + 1,
         passed: false,
         runtime,
         expected: testCase.expectedOutput?.toString().trim() || "",
-        output: "",
+        output: "Execution failed",
       });
 
       finalStatus = "runtime_error";
       break;
     }
 
-    // Normalize outputs safely
     const normalize = (str: string) =>
       str
-        .replace(/\r/g, "")       // remove windows CR
+        .replace(/\r/g, "")
         .trim()
-        .replace(/\s+/g, " ");    // normalize spaces
+        .replace(/\s+/g, " ");
 
-    const actualOutput = normalize(
-      result?.stdout?.toString() || ""
-    );
+    const actualOutput = normalize(result?.stdout?.toString() || "");
 
     const expectedOutput = normalize(
       testCase.expectedOutput?.toString() || ""
     );
 
-
-    // If execution failed at docker level
     if (result?.status && result.status !== "accepted") {
       detailedResults.push({
         testCase: index + 1,
@@ -95,7 +87,7 @@ export const evaluateTestCases = async (
 
     detailedResults.push({
       testCase: index + 1,
-      passed: false,
+      passed: isPassed,
       runtime,
       expected: expectedOutput,
       output: actualOutput || result?.stderr || "",
@@ -108,7 +100,6 @@ export const evaluateTestCases = async (
 
   const totalCases = testCases.length;
 
-  // Final verdict logic
   if (evaluationType === "partial") {
     if (passedCount === totalCases) {
       finalStatus = "accepted";
@@ -118,17 +109,14 @@ export const evaluateTestCases = async (
       finalStatus = "wrong_answer";
     }
   } else {
-    finalStatus =
-      passedCount === totalCases
-        ? "accepted"
-        : finalStatus;
+    finalStatus = passedCount === totalCases ? "accepted" : finalStatus;
   }
 
   return {
     verdict: finalStatus,
-    passedCount,
-    totalCases,
-    totalRuntime,
+    passed: passedCount,
+    total: totalCases,
+    runtime: totalRuntime,
     detailedResults,
   };
 };

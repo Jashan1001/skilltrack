@@ -1,11 +1,11 @@
 const MAX_CONCURRENT = 5;
 
 let activeExecutions = 0;
-const queue: (() => void)[] = [];
+const queue: (() => Promise<void>)[] = [];
 
-export const enqueue = (task: () => Promise<void>) => {
+export const enqueue = async (task: () => Promise<void>) => {
   return new Promise<void>((resolve, reject) => {
-    const runTask = async () => {
+    const wrappedTask = async () => {
       activeExecutions++;
 
       try {
@@ -20,16 +20,21 @@ export const enqueue = (task: () => Promise<void>) => {
     };
 
     if (activeExecutions < MAX_CONCURRENT) {
-      runTask();
+      wrappedTask();
     } else {
-      queue.push(runTask);
+      queue.push(wrappedTask);
     }
   });
 };
 
 const processQueue = () => {
-  if (queue.length > 0 && activeExecutions < MAX_CONCURRENT) {
-    const nextTask = queue.shift();
-    if (nextTask) nextTask();
+  if (queue.length === 0) return;
+
+  if (activeExecutions >= MAX_CONCURRENT) return;
+
+  const nextTask = queue.shift();
+
+  if (nextTask) {
+    nextTask();
   }
 };
