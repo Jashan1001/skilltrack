@@ -30,6 +30,9 @@ const ProblemDetailPage = () => {
   const navigate = useNavigate();
   const { theme } = useTheme();
 
+  const monacoRef = useRef<any>(null);
+  const resultRef = useRef<HTMLDivElement | null>(null);
+
   const [problem, setProblem] = useState<Problem | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -41,8 +44,6 @@ const ProblemDetailPage = () => {
 
   const [runResult, setRunResult] = useState<any>(null);
   const [submitResult, setSubmitResult] = useState<any>(null);
-
-  const resultRef = useRef<HTMLDivElement | null>(null);
 
   /* FETCH PROBLEM */
 
@@ -56,15 +57,25 @@ const ProblemDetailPage = () => {
     fetchProblem();
   }, [problemId]);
 
-  /* SCROLL TO OUTPUT */
+  /* MONACO THEME SYNC */
+
+  useEffect(() => {
+    if (monacoRef.current) {
+      monacoRef.current.editor.setTheme(
+        theme === "dark" ? "vs-dark" : "vs-light"
+      );
+    }
+  }, [theme]);
+
+  /* AUTO SCROLL */
 
   useEffect(() => {
     if (runResult || submitResult) {
-      resultRef.current?.scrollIntoView({ behavior: "smooth" });
+      resultRef.current?.scrollIntoView({
+        behavior: "smooth",
+      });
     }
   }, [runResult, submitResult]);
-
-  /* RUN */
 
   const handleRun = async () => {
     if (!code.trim()) return;
@@ -81,8 +92,6 @@ const ProblemDetailPage = () => {
     setRunResult(res.data.data);
     setRunning(false);
   };
-
-  /* SUBMIT */
 
   const handleSubmit = async () => {
     if (!code.trim()) return;
@@ -132,7 +141,7 @@ const ProblemDetailPage = () => {
       <div className="flex items-center justify-between mb-4">
 
         <div className="flex items-center gap-4">
-          <h1 className="text-2xl font-semibold">
+          <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white">
             {problem.title}
           </h1>
 
@@ -177,7 +186,7 @@ const ProblemDetailPage = () => {
         overflow-hidden
         bg-white
         dark:bg-neutral-900
-        "
+      "
       >
 
         {/* LEFT PANEL */}
@@ -253,8 +262,8 @@ const ProblemDetailPage = () => {
           dark:bg-neutral-700
           hover:bg-neutral-400
           cursor-col-resize
-          transition-colors
-          "
+          transition
+        "
         />
 
         {/* RIGHT PANEL */}
@@ -263,7 +272,7 @@ const ProblemDetailPage = () => {
 
           <div className="flex flex-col h-full">
 
-            {/* TOOLBAR */}
+            {/* EDITOR TOOLBAR */}
 
             <div className="
             flex items-center justify-between
@@ -309,13 +318,14 @@ const ProblemDetailPage = () => {
                   flex items-center gap-1
                   text-emerald-500
                   border border-emerald-500
-                  px-3 py-1 rounded
+                  px-3 py-1 rounded-md
                   hover:bg-emerald-500/10
-                  text-sm
-                  "
+                  text-sm font-medium
+                  transition
+                "
                 >
                   <Play size={14}/>
-                  {running ? "Running" : "Run"}
+                  {running ? "Running..." : "Run"}
                 </button>
 
                 <button
@@ -323,14 +333,16 @@ const ProblemDetailPage = () => {
                   disabled={submitting}
                   className="
                   flex items-center gap-1
-                  bg-neutral-700
-                  px-3 py-1 rounded
-                  text-white text-sm
-                  hover:bg-neutral-800
-                  "
+                  bg-emerald-600
+                  px-3 py-1 rounded-md
+                  text-white text-sm font-medium
+                  hover:bg-emerald-700
+                  active:scale-[0.97]
+                  transition
+                "
                 >
                   <Send size={14}/>
-                  {submitting ? "Submitting" : "Submit"}
+                  {submitting ? "Submitting..." : "Submit"}
                 </button>
 
               </div>
@@ -342,18 +354,24 @@ const ProblemDetailPage = () => {
             <div className="flex-1">
 
               <Editor
-                key={theme}
                 height="100%"
                 language={language === "cpp" ? "cpp" : language}
                 value={code}
                 onChange={(v) => setCode(v || "")}
                 theme={theme === "dark" ? "vs-dark" : "vs-light"}
+                onMount={(editor, monaco) => {
+                  monacoRef.current = monaco;
+                  monaco.editor.setTheme(
+                    theme === "dark" ? "vs-dark" : "vs-light"
+                  );
+                }}
                 options={{
                   minimap: { enabled: false },
                   fontSize: 14,
                   automaticLayout: true,
                   scrollBeyondLastLine: false,
                   fontFamily: "JetBrains Mono, monospace",
+                  smoothScrolling: true,
                 }}
               />
 
@@ -365,7 +383,7 @@ const ProblemDetailPage = () => {
 
       </PanelGroup>
 
-      {/* OUTPUT PANEL */}
+      {/* OUTPUT */}
 
       <div ref={resultRef} className="mt-4">
 
