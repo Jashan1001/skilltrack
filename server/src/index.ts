@@ -24,14 +24,16 @@ const app = express();
 
 app.set("trust proxy", 1);
 
+
 const allowedOrigins = [
   "http://localhost:5173",
-  "https://skilltrack-delta.vercel.app"
+  "https://skilltrack-delta.vercel.app",
+  "https://skilltrack-gan3kx5g0-jashan1001s-projects.vercel.app"
 ];
 
 app.use(
   cors({
-    origin: (origin, callback) => {
+    origin: function (origin, callback) {
       if (!origin || allowedOrigins.includes(origin)) {
         callback(null, true);
       } else {
