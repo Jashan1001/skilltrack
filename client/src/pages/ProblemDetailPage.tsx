@@ -463,13 +463,16 @@ const ProblemDetailPage = () => {
                   <select
                     value={language}
                     onChange={(e) => setLanguage(e.target.value)}
-                    className="border px-2 py-1 rounded text-sm"
+                    className="px-3 py-1 rounded-md text-sm font-medium
+                    bg-neutral-100 dark:bg-neutral-800
+                    text-neutral-900 dark:text-white
+                    border border-neutral-300 dark:border-neutral-700
+                    focus:outline-none focus:ring-2 focus:ring-emerald-500"
                   >
                     <option value="javascript">JavaScript</option>
                     <option value="python">Python</option>
                     <option value="cpp">C++</option>
                   </select>
-
                   <div className="flex gap-2">
 
                     <button
