@@ -12,24 +12,14 @@ export const getUserProgress = asyncHandler(
     /* UNIQUE SOLVED PROBLEMS   */
     /* ======================== */
 
-    const solvedProblemsAgg = await Submission.aggregate([
-      {
-        $match: {
-          user: userId,
-          status: "accepted",
-        },
-      },
-      {
-        $group: {
-          _id: "$problem",
-        },
-      },
-    ]);
+    const submissions = await Submission.find({
+      user: userId,
+      status: "accepted",
+    }).select("problem");
 
-    /* Convert ObjectIds -> strings (IMPORTANT for frontend comparison) */
-    const solvedIds = solvedProblemsAgg.map((s) =>
-      s._id.toString()
-    );
+    const solvedIds = [
+      ...new Set(submissions.map((s) => s.problem.toString()))
+    ];
 
     const solvedProblems = await Problem.find({
       _id: { $in: solvedIds },
@@ -49,7 +39,6 @@ export const getUserProgress = asyncHandler(
 
     /* ======================== */
     /* TOTAL PROBLEMS COUNT     */
-    /* (Single Aggregation)     */
     /* ======================== */
 
     const totalsAgg = await Problem.aggregate([
@@ -103,9 +92,7 @@ export const getUserProgress = asyncHandler(
             ? 0
             : Math.round((totalSolved / totalProblems) * 100),
 
-        /* Used by mastery dashboard */
         solvedProblemIds: solvedIds,
-
         solvedProblems,
       },
     });
