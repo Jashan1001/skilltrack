@@ -1,6 +1,6 @@
 import express from "express";
 import { protect, allowRoles } from "../middleware/authMiddleware";
-import { submitSolution, getMySubmissions } from "../controllers/submissionController";
+import { submitSolution, getMySubmissions, getSubmissionByID } from "../controllers/submissionController";
 import { submissionLimiter } from "../middleware/rateLimiter";
 
 const router = express.Router();
@@ -21,5 +21,5 @@ router.get(
   allowRoles("student","admin"),
   getMySubmissions
 );
-
+router.get("/:id", protect, getSubmissionByID);
 export default router;

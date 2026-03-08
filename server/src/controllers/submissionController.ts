@@ -74,12 +74,12 @@ export const submitSolution = asyncHandler(
         code,
         language,
         status: evaluation.verdict as
-      | "accepted"
-      | "runtime_error"
-      | "pending"
-      | "wrong_answer"
-      | "partially_accepted"
-      | "time_limit_exceeded",
+          | "accepted"
+          | "runtime_error"
+          | "pending"
+          | "wrong_answer"
+          | "partially_accepted"
+          | "time_limit_exceeded",
         score,
         runtime: evaluation.runtime,
         totalTestCases: evaluation.total,
@@ -137,6 +137,28 @@ export const getMySubmissions = asyncHandler(
         count: submissions.length,
         submissions,
       },
+    });
+
+  }
+);
+
+/* ============================= */
+/* GET SUBMISSION BY ID */
+/* ============================= */
+
+export const getSubmissionByID = asyncHandler(
+  async (req: Request, res: Response) => {
+
+    const submission = await Submission.findById(req.params.id)
+      .populate("problem", "title difficulty pattern");
+
+    if (!submission) {
+      throw new AppError("Submission not found", 404);
+    }
+
+    res.status(200).json({
+      success: true,
+      data: submission,
     });
 
   }
