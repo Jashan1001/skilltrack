@@ -101,7 +101,7 @@ return (
                 </p>
             </div>
 
-            <div className="bg-card border border-border border-t-2 border-primary rounded-xl p-6 space-y-1">
+            <div className="bg-card border border-border border-t-2 rounded-xl p-6 space-y-1">
                 <p className="text-xs uppercase tracking-wide text-muted-foreground">
                     Highest Score
                 </p>
@@ -110,7 +110,7 @@ return (
                 </p>
             </div>
 
-            <div className="bg-card border border-border border-t-2 border-primary rounded-xl p-6 space-y-1">
+            <div className="bg-card border border-border border-t-2 rounded-xl p-6 space-y-1">
                 <p className="text-xs uppercase tracking-wide text-muted-foreground">
                     Fastest Runtime
                 </p>

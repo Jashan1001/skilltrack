@@ -2,7 +2,8 @@ import { useParams } from "react-router-dom";
 import { useEffect, useState } from "react";
 import axios from "../api/axios";
 import Editor from "@monaco-editor/react";
-
+import { useTheme } from "../context/themeContext";
+const { theme } = useTheme();
 const SubmissionDetailPage = () => {
   const { id } = useParams();
   const [submission, setSubmission] = useState<any>(null);
@@ -35,8 +36,9 @@ const SubmissionDetailPage = () => {
 
       <Editor
         height="500px"
-        language={submission.language}
+        language={submission.language || "cpp"}
         value={submission.code}
+        theme={theme === "dark" ? "vs-dark" : "vs"}
         options={{ readOnly: true }}
       />
 
