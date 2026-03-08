@@ -5,11 +5,13 @@ import { asyncHandler } from "../utils/asyncHandler";
 
 export const getUserProgress = asyncHandler(
   async (req: any, res: Response) => {
+
     const userId = req.user.userId;
 
     /* ======================== */
     /* UNIQUE SOLVED PROBLEMS   */
     /* ======================== */
+
     const solvedProblemsAgg = await Submission.aggregate([
       {
         $match: {
@@ -24,7 +26,10 @@ export const getUserProgress = asyncHandler(
       },
     ]);
 
-    const solvedIds = solvedProblemsAgg.map((s) => s._id);
+    /* Convert ObjectIds -> strings (IMPORTANT for frontend comparison) */
+    const solvedIds = solvedProblemsAgg.map((s) =>
+      s._id.toString()
+    );
 
     const solvedProblems = await Problem.find({
       _id: { $in: solvedIds },
@@ -44,31 +49,44 @@ export const getUserProgress = asyncHandler(
 
     /* ======================== */
     /* TOTAL PROBLEMS COUNT     */
-    /* (Official Public Only)   */
+    /* (Single Aggregation)     */
     /* ======================== */
-    const easyTotal = await Problem.countDocuments({
-      difficulty: "easy",
-      isOfficial: true,
-      visibility: "public",
-    });
 
-    const mediumTotal = await Problem.countDocuments({
-      difficulty: "medium",
-      isOfficial: true,
-      visibility: "public",
-    });
+    const totalsAgg = await Problem.aggregate([
+      {
+        $match: {
+          isOfficial: true,
+          visibility: "public",
+        },
+      },
+      {
+        $group: {
+          _id: "$difficulty",
+          count: { $sum: 1 },
+        },
+      },
+    ]);
 
-    const hardTotal = await Problem.countDocuments({
-      difficulty: "hard",
-      isOfficial: true,
-      visibility: "public",
+    let easyTotal = 0;
+    let mediumTotal = 0;
+    let hardTotal = 0;
+
+    totalsAgg.forEach((item) => {
+      if (item._id === "easy") easyTotal = item.count;
+      if (item._id === "medium") mediumTotal = item.count;
+      if (item._id === "hard") hardTotal = item.count;
     });
 
     const totalProblems = easyTotal + mediumTotal + hardTotal;
 
+    /* ======================== */
+    /* RESPONSE                 */
+    /* ======================== */
+
     res.status(200).json({
       success: true,
       data: {
+
         totalSolved,
         totalProblems,
 
@@ -85,8 +103,9 @@ export const getUserProgress = asyncHandler(
             ? 0
             : Math.round((totalSolved / totalProblems) * 100),
 
-        // 🔥 NEW — used for pattern grouping
+        /* Used by mastery dashboard */
         solvedProblemIds: solvedIds,
+
         solvedProblems,
       },
     });
