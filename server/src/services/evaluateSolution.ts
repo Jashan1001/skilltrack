@@ -1,5 +1,20 @@
 import axios from "axios";
 
+/* ============================= */
+/* STATUS TYPE (shared with DB) */
+/* ============================= */
+
+export type Verdict =
+  | "accepted"
+  | "runtime_error"
+  | "time_limit_exceeded"
+  | "wrong_answer"
+  | "partially_accepted";
+
+/* ============================= */
+/* EVALUATE TEST CASES */
+/* ============================= */
+
 export const evaluateTestCases = async (
   testCases: any[],
   code: string,
@@ -13,7 +28,7 @@ export const evaluateTestCases = async (
   const normalize = (str: string) =>
     str.replace(/\r/g, "").trim().replace(/\s+/g, " ");
 
-  const results = [];
+  const results: any[] = [];
 
   for (let i = 0; i < testCases.length; i++) {
 
@@ -44,7 +59,8 @@ export const evaluateTestCases = async (
         testCase.expectedOutput?.toString() || ""
       );
 
-      const status = executorResult?.status || "internal_error";
+      const status: Verdict =
+        executorResult?.status || "runtime_error";
 
       const passed =
         status === "accepted" &&
@@ -72,10 +88,11 @@ export const evaluateTestCases = async (
           error?.response?.data?.stderr ||
           error?.message ||
           "Execution failed",
-        status: "runtime_error"
+        status: "runtime_error" as Verdict
       });
 
     }
+
   }
 
   let passedCount = 0;
@@ -86,7 +103,7 @@ export const evaluateTestCases = async (
 
   results.forEach((r) => {
 
-    totalRuntime += r.runtime;
+    totalRuntime = Math.max(totalRuntime, r.runtime);
 
     if (r.passed) passedCount++;
 
@@ -98,7 +115,7 @@ export const evaluateTestCases = async (
 
   const totalCases = testCases.length;
 
-  let finalStatus = "accepted";
+  let finalStatus: Verdict = "accepted";
 
   if (hasRuntimeError) finalStatus = "runtime_error";
   else if (hasTLE) finalStatus = "time_limit_exceeded";
@@ -114,4 +131,5 @@ export const evaluateTestCases = async (
     runtime: totalRuntime,
     detailedResults: results
   };
+
 };

@@ -93,7 +93,7 @@ export const runCode = (
             filename,
             "-O2",
             "-std=c++17",
-            "-static",
+            // "-static", // can cause issues in some environments, so omitted for now
             "-o",
             "main",
           ];

@@ -11,6 +11,7 @@ import { evaluateTestCases } from "../services/evaluateSolution";
 
 export const submitSolution = asyncHandler(
   async (req: any, res: Response, next: NextFunction) => {
+
     const { problemId, code, language } = req.body;
 
     if (!problemId || !code || !language) {
@@ -53,30 +54,49 @@ export const submitSolution = asyncHandler(
         : Math.round((evaluation.passed / evaluation.total) * 100);
 
     /* ============================= */
-    /* CHECK USER'S BEST SUBMISSION */
+    /* FETCH EXISTING SUBMISSION */
     /* ============================= */
 
-    const previousBest = await Submission.findOne({
+    const existing = await Submission.findOne({
       user: req.user.userId,
       problem: problemId,
-    }).sort({ score: -1 });
+    });
 
     /* ============================= */
-    /* STORE ONLY IF IMPROVED */
+    /* UPDATE OR CREATE */
     /* ============================= */
 
-    if (!previousBest || score > previousBest.score) {
+    if (!existing) {
+
       await Submission.create({
         user: req.user.userId,
         problem: problemId,
-        code, // stored only for best submission
+        code,
         language,
-        status: evaluation.verdict,
+        status: evaluation.verdict as
+      | "accepted"
+      | "runtime_error"
+      | "pending"
+      | "wrong_answer"
+      | "partially_accepted"
+      | "time_limit_exceeded",
         score,
         runtime: evaluation.runtime,
         totalTestCases: evaluation.total,
         passedTestCases: evaluation.passed,
       });
+
+    } else if (score > existing.score) {
+
+      existing.code = code;
+      existing.language = language;
+      existing.status = evaluation.verdict as typeof existing.status;
+      existing.score = score;
+      existing.runtime = evaluation.runtime;
+      existing.totalTestCases = evaluation.total;
+      existing.passedTestCases = evaluation.passed;
+
+      await existing.save();
     }
 
     /* ============================= */
@@ -103,12 +123,13 @@ export const submitSolution = asyncHandler(
 
 export const getMySubmissions = asyncHandler(
   async (req: any, res: Response) => {
+
     const submissions = await Submission.find({
       user: req.user.userId,
     })
       .populate("problem", "title difficulty")
       .sort({ createdAt: -1 })
-      .limit(50); // prevent large responses
+      .limit(50);
 
     res.status(200).json({
       success: true,
@@ -117,5 +138,6 @@ export const getMySubmissions = asyncHandler(
         submissions,
       },
     });
+
   }
 );
