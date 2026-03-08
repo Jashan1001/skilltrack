@@ -29,15 +29,12 @@ interface Problem {
   description: string;
   difficulty: string;
   pattern?: string;
-
   inputFormat?: string;
   outputFormat?: string;
   constraints?: string;
-
   examples?: Example[];
   hints?: string[];
   tags?: string[];
-
   publicTestCases: TestCase[];
 }
 
@@ -65,6 +62,7 @@ int main() {
 };
 
 const ProblemDetailPage = () => {
+
   const { problemId } = useParams();
   const navigate = useNavigate();
   const { theme } = useTheme();
@@ -74,20 +72,31 @@ const ProblemDetailPage = () => {
   const [problem, setProblem] = useState<Problem | null>(null);
   const [loading, setLoading] = useState(true);
 
+  const storageKey = `skilltrack-${problemId}`;
+
   const [language, setLanguage] = useState("javascript");
-  const [code, setCode] = useState(templates.javascript);
 
-  const [running, setRunning] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
+  const [codes, setCodes] = useState<Record<string,string>>({
+    javascript: templates.javascript,
+    python: templates.python,
+    cpp: templates.cpp
+  });
 
-  const [runResult, setRunResult] = useState<any>(null);
-  const [submitResult, setSubmitResult] = useState<any>(null);
+  const code = codes[language];
 
-  const [showHints, setShowHints] = useState(false);
-  const [showTags, setShowTags] = useState(false);
+  const [customInput,setCustomInput] = useState("");
 
-  const [activeTab, setActiveTab] =
-    useState<"console" | "testcases" | "result">("console");
+  const [running,setRunning] = useState(false);
+  const [submitting,setSubmitting] = useState(false);
+
+  const [runResult,setRunResult] = useState<any>(null);
+  const [submitResult,setSubmitResult] = useState<any>(null);
+
+  const [showHints,setShowHints] = useState(false);
+  const [showTags,setShowTags] = useState(false);
+
+  const [activeTab,setActiveTab] =
+    useState<"console"|"testcases"|"custom"|"result">("console");
 
   /* FETCH PROBLEM */
 
@@ -106,85 +115,129 @@ const ProblemDetailPage = () => {
     fetchProblem();
   }, [problemId]);
 
-  /* TEMPLATE SWITCH */
+  /* LOAD AUTOSAVE */
 
-  useEffect(() => {
-    setCode(templates[language]);
-  }, [language]);
+  useEffect(()=>{
+    const saved = localStorage.getItem(storageKey);
+    if(saved){
+      const parsed = JSON.parse(saved);
+      setCodes(parsed.codes);
+      setLanguage(parsed.language);
+    }
+  },[problemId]);
+
+  /* AUTOSAVE */
+
+  useEffect(()=>{
+    const timer = setTimeout(()=>{
+      localStorage.setItem(storageKey,JSON.stringify({
+        codes,
+        language
+      }));
+    },800);
+
+    return ()=>clearTimeout(timer);
+  },[codes,language]);
+
+  /* CLEAR STALE RUN RESULT */
+
+  useEffect(()=>{
+    setRunResult(null);
+  },[code]);
 
   /* AUTO SCROLL */
 
-  useEffect(() => {
-    if (runResult || submitResult) {
-      resultRef.current?.scrollIntoView({ behavior: "smooth" });
+  useEffect(()=>{
+    if(runResult || submitResult){
+      resultRef.current?.scrollIntoView({behavior:"smooth"});
     }
-  }, [runResult, submitResult]);
+  },[runResult,submitResult]);
 
   /* KEYBOARD SHORTCUTS */
 
-  useEffect(() => {
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.ctrlKey && e.key === "Enter") {
+  useEffect(()=>{
+    const handleKey = (e:KeyboardEvent)=>{
+
+      if(e.ctrlKey && e.key==="Enter"){
         e.preventDefault();
         handleRun();
       }
 
-      if (e.ctrlKey && e.shiftKey && e.key === "Enter") {
+      if(e.ctrlKey && e.shiftKey && e.key==="Enter"){
         e.preventDefault();
         handleSubmit();
       }
+
     };
 
-    window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
-  }, [code]);
+    window.addEventListener("keydown",handleKey);
+    return ()=>window.removeEventListener("keydown",handleKey);
+
+  },[code]);
 
   /* RUN */
 
   const handleRun = async () => {
-    if (!code.trim()) return;
+
+    if(!code.trim() || running) return;
 
     setRunning(true);
     setSubmitResult(null);
 
-    const res = await axios.post("/run", {
-      problemId,
-      code,
-      language,
-    });
+    try{
 
-    setRunResult(res.data.data);
+      const res = await axios.post("/run",{
+        problemId,
+        code,
+        language,
+        customInput
+      });
+
+      setRunResult(res.data.data);
+      setActiveTab("testcases");
+
+    }catch(err){
+      console.error(err);
+    }
+
     setRunning(false);
-    setActiveTab("testcases");
   };
 
   /* SUBMIT */
 
   const handleSubmit = async () => {
-    if (!code.trim()) return;
+
+    if(!code.trim() || submitting) return;
 
     setSubmitting(true);
     setRunResult(null);
 
-    const res = await axios.post("/submissions", {
-      problemId,
-      code,
-      language,
-    });
+    try{
 
-    setSubmitResult(res.data.data);
+      const res = await axios.post("/submissions",{
+        problemId,
+        code,
+        language
+      });
+
+      setSubmitResult(res.data.data);
+      setActiveTab("result");
+
+    }catch(err){
+      console.error(err);
+    }
+
     setSubmitting(false);
-    setActiveTab("result");
   };
 
-  if (loading)
-    return (
+  if(loading)
+    return(
       <div className="flex items-center justify-center h-full text-neutral-500">
         Loading problem...
       </div>
     );
 
-  if (!problem) return null;
+  if(!problem) return null;
 
   const difficultyStyle =
     problem.difficulty === "easy"
@@ -194,457 +247,485 @@ const ProblemDetailPage = () => {
       : "bg-red-500/10 text-red-400 border border-red-500/20";
 
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      className="flex flex-col h-full px-6 py-4 bg-neutral-100 dark:bg-neutral-950"
-    >
-      {/* HEADER */}
 
-      <div className="flex items-center justify-between mb-4">
+<motion.div
+initial={{opacity:0}}
+animate={{opacity:1}}
+className="flex flex-col h-full px-6 py-4 bg-neutral-100 dark:bg-neutral-950"
+>
 
-        <div>
+{/* HEADER */}
 
-          <div className="flex items-center gap-4">
+<div className="flex items-center justify-between mb-4">
 
-            <h1 className="text-2xl font-semibold text-neutral-900 dark:text-white">
-              {problem.title}
-            </h1>
+<div>
 
-            <span className={`px-2 py-0.5 rounded text-xs font-medium capitalize ${difficultyStyle}`}>
-              {problem.difficulty}
-            </span>
+<div className="flex items-center gap-4">
 
-          </div>
-
-          {problem.pattern && (
-            <div className="text-xs text-neutral-500 mt-1">
-              Pattern: {problem.pattern}
-            </div>
-          )}
+<h1 className="text-2xl font-semibold text-neutral-900 dark:text-white">
+{problem.title}
+</h1>
 
-        </div>
-
-        <div className="flex gap-5 text-sm text-neutral-500">
-
-          <button
-            onClick={() => navigate(-1)}
-            className="flex items-center gap-1 hover:text-neutral-900 dark:hover:text-white"
-          >
-            <ArrowLeft size={16}/> Back
-          </button>
+<span className={`px-2 py-0.5 rounded text-xs font-medium capitalize ${difficultyStyle}`}>
+{problem.difficulty}
+</span>
 
-          <button
-            onClick={() => navigate(`/leaderboard/${problem._id}`)}
-            className="flex items-center gap-1 hover:text-neutral-900 dark:hover:text-white"
-          >
-            <Trophy size={16}/> Leaderboard
-          </button>
+</div>
 
-        </div>
+{problem.pattern && (
+<div className="text-xs text-neutral-500 mt-1">
+Pattern: {problem.pattern}
+</div>
+)}
 
-      </div>
+</div>
 
-      {/* MAIN WORKSPACE */}
+<div className="flex gap-5 text-sm text-neutral-500">
 
-      <PanelGroup
-        direction="horizontal"
-        className="flex-1 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden bg-white dark:bg-neutral-900"
-      >
+<button
+onClick={()=>navigate(-1)}
+className="flex items-center gap-1 hover:text-neutral-900 dark:hover:text-white"
+>
+<ArrowLeft size={16}/> Back
+</button>
 
-        {/* LEFT PANEL */}
+<button
+onClick={()=>navigate(`/leaderboard/${problem._id}`)}
+className="flex items-center gap-1 hover:text-neutral-900 dark:hover:text-white"
+>
+<Trophy size={16}/> Leaderboard
+</button>
 
-        <Panel defaultSize={45} minSize={30}>
+</div>
 
-          <div className="h-full overflow-y-auto border-r border-neutral-200 dark:border-neutral-800 p-5 space-y-8">
+</div>
 
-            {/* DESCRIPTION */}
+{/* MAIN WORKSPACE */}
 
-            <section>
-              <h2 className="text-sm font-semibold mb-2">Description</h2>
-              <p className="text-sm text-neutral-600 dark:text-neutral-300 whitespace-pre-wrap leading-relaxed">
-                {problem.description}
-              </p>
-            </section>
+<PanelGroup
+direction="horizontal"
+className="flex-1 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden bg-white dark:bg-neutral-900"
+>
 
-            {/* INPUT FORMAT */}
+{/* LEFT PANEL */}
 
-            {problem.inputFormat && (
-              <section>
-                <h3 className="text-sm font-semibold mb-2">Input Format</h3>
-                <pre className="text-sm whitespace-pre-wrap">
-                  {problem.inputFormat}
-                </pre>
-              </section>
-            )}
+<Panel defaultSize={45} minSize={30}>
 
-            {/* OUTPUT FORMAT */}
+<div className="h-full overflow-y-auto border-r border-neutral-200 dark:border-neutral-800 p-5 space-y-8">
 
-            {problem.outputFormat && (
-              <section>
-                <h3 className="text-sm font-semibold mb-2">Output Format</h3>
-                <pre className="text-sm whitespace-pre-wrap">
-                  {problem.outputFormat}
-                </pre>
-              </section>
-            )}
+{/* DESCRIPTION */}
 
-            {/* CONSTRAINTS */}
+<section>
+<h2 className="text-sm font-semibold mb-2">Description</h2>
+<p className="text-sm text-neutral-600 dark:text-neutral-300 whitespace-pre-wrap leading-relaxed">
+{problem.description}
+</p>
+</section>
 
-            {problem.constraints && (
-              <section>
-                <h3 className="text-sm font-semibold mb-2">Constraints</h3>
-                <pre className="text-sm whitespace-pre-wrap">
-                  {problem.constraints}
-                </pre>
-              </section>
-            )}
+{/* INPUT FORMAT */}
 
-            {/* EXAMPLES */}
+{problem.inputFormat && (
+<section>
+<h3 className="text-sm font-semibold mb-2">Input Format</h3>
+<pre className="text-sm whitespace-pre-wrap">
+{problem.inputFormat}
+</pre>
+</section>
+)}
 
-            {problem.examples?.map((ex, i) => (
-              <div
-                key={i}
-                className="border border-neutral-200 dark:border-neutral-800 rounded-lg p-4"
-              >
+{/* OUTPUT FORMAT */}
 
-                <div className="text-xs text-neutral-500 mb-2">
-                  Example {i + 1}
-                </div>
+{problem.outputFormat && (
+<section>
+<h3 className="text-sm font-semibold mb-2">Output Format</h3>
+<pre className="text-sm whitespace-pre-wrap">
+{problem.outputFormat}
+</pre>
+</section>
+)}
 
-                <div className="text-xs text-neutral-500 mb-1">Input</div>
-                <pre className="bg-neutral-100 dark:bg-neutral-800 p-2 rounded text-sm font-mono whitespace-pre-wrap">
-                  {ex.input}
-                </pre>
+{/* CONSTRAINTS */}
 
-                <div className="text-xs text-neutral-500 mt-3 mb-1">Output</div>
-                <pre className="bg-neutral-100 dark:bg-neutral-800 p-2 rounded text-sm font-mono whitespace-pre-wrap">
-                  {ex.output}
-                </pre>
+{problem.constraints && (
+<section>
+<h3 className="text-sm font-semibold mb-2">Constraints</h3>
+<pre className="text-sm whitespace-pre-wrap">
+{problem.constraints}
+</pre>
+</section>
+)}
 
-                {ex.explanation && (
-                  <div className="text-sm mt-3 text-neutral-600 dark:text-neutral-300">
-                    {ex.explanation}
-                  </div>
-                )}
+{/* EXAMPLES */}
 
-              </div>
-            ))}
+{problem.examples?.map((ex,i)=>(
+<div
+key={i}
+className="border border-neutral-200 dark:border-neutral-800 rounded-lg p-4"
+>
 
-            {/* PUBLIC TESTCASES */}
+<div className="text-xs text-neutral-500 mb-2">
+Example {i+1}
+</div>
 
-            <section>
+<div className="text-xs text-neutral-500 mb-1">Input</div>
 
-              <h3 className="text-sm font-semibold mb-3">
-                Public Test Cases
-              </h3>
+<pre className="bg-neutral-100 dark:bg-neutral-800 p-2 rounded text-sm font-mono whitespace-pre-wrap">
+{ex.input}
+</pre>
 
-              {problem.publicTestCases.map((tc, i) => (
+<div className="text-xs text-neutral-500 mt-3 mb-1">Output</div>
 
-                <div
-                  key={i}
-                  className="border border-neutral-200 dark:border-neutral-800 rounded-lg p-3 mb-4"
-                >
+<pre className="bg-neutral-100 dark:bg-neutral-800 p-2 rounded text-sm font-mono whitespace-pre-wrap">
+{ex.output}
+</pre>
 
-                  <div className="text-xs text-neutral-500 mb-1">
-                    Test Case {i + 1}
-                  </div>
+{ex.explanation && (
+<div className="text-sm mt-3 text-neutral-600 dark:text-neutral-300">
+{ex.explanation}
+</div>
+)}
 
-                  <div className="text-xs text-neutral-500 mb-1">Input</div>
+</div>
+))}
 
-                  <pre className="bg-neutral-100 dark:bg-neutral-800 p-2 rounded text-sm whitespace-pre-wrap">
-                    {tc.input}
-                  </pre>
+{/* PUBLIC TESTCASES */}
 
-                  <div className="text-xs text-neutral-500 mt-3 mb-1">
-                    Expected Output
-                  </div>
+<section>
 
-                  <pre className="bg-neutral-100 dark:bg-neutral-800 p-2 rounded text-sm whitespace-pre-wrap">
-                    {tc.expectedOutput}
-                  </pre>
+<h3 className="text-sm font-semibold mb-3">
+Public Test Cases
+</h3>
 
-                </div>
+{problem.publicTestCases.map((tc,i)=>(
 
-              ))}
+<div
+key={i}
+className="border border-neutral-200 dark:border-neutral-800 rounded-lg p-3 mb-4"
+>
 
-            </section>
+<div className="text-xs text-neutral-500 mb-1">
+Test Case {i+1}
+</div>
 
-            {/* HINTS */}
+<div className="text-xs text-neutral-500 mb-1">Input</div>
 
-            {problem.hints && problem.hints.length > 0 && (
+<pre className="bg-neutral-100 dark:bg-neutral-800 p-2 rounded text-sm whitespace-pre-wrap">
+{tc.input}
+</pre>
 
-              <section>
+<div className="text-xs text-neutral-500 mt-3 mb-1">
+Expected Output
+</div>
 
-                <button
-                  onClick={() => setShowHints(!showHints)}
-                  className="text-sm font-semibold text-emerald-500 hover:underline"
-                >
-                  {showHints ? "Hide Hints" : "Show Hints"}
-                </button>
+<pre className="bg-neutral-100 dark:bg-neutral-800 p-2 rounded text-sm whitespace-pre-wrap">
+{tc.expectedOutput}
+</pre>
 
-                {showHints && (
+</div>
 
-                  <ul className="mt-3 space-y-2 text-sm">
+))}
 
-                    {problem.hints.map((hint, i) => (
-                      <li
-                        key={i}
-                        className="bg-neutral-100 dark:bg-neutral-800 p-2 rounded"
-                      >
-                        Hint {i + 1}: {hint}
-                      </li>
-                    ))}
+</section>
 
-                  </ul>
+{/* HINTS */}
 
-                )}
+{problem.hints && problem.hints.length>0 && (
 
-              </section>
+<section>
 
-            )}
+<button
+onClick={()=>setShowHints(!showHints)}
+className="text-sm font-semibold text-emerald-500 hover:underline"
+>
+{showHints ? "Hide Hints":"Show Hints"}
+</button>
 
-            {/* TAGS */}
+{showHints && (
 
-            {problem.tags && problem.tags.length > 0 && (
+<ul className="mt-3 space-y-2 text-sm">
 
-              <section>
+{problem.hints.map((hint,i)=>(
+<li
+key={i}
+className="bg-neutral-100 dark:bg-neutral-800 p-2 rounded"
+>
+Hint {i+1}: {hint}
+</li>
+))}
 
-                <button
-                  onClick={() => setShowTags(!showTags)}
-                  className="text-sm font-semibold text-emerald-500 hover:underline"
-                >
-                  {showTags ? "Hide Tags" : "Show Tags"}
-                </button>
+</ul>
 
-                {showTags && (
+)}
 
-                  <div className="flex flex-wrap gap-2 mt-3">
+</section>
 
-                    {problem.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        className="text-xs px-2 py-1 rounded bg-neutral-200 dark:bg-neutral-800"
-                      >
-                        {tag}
-                      </span>
-                    ))}
+)}
 
-                  </div>
+{/* TAGS */}
 
-                )}
+{problem.tags && problem.tags.length>0 && (
 
-              </section>
+<section>
 
-            )}
+<button
+onClick={()=>setShowTags(!showTags)}
+className="text-sm font-semibold text-emerald-500 hover:underline"
+>
+{showTags ? "Hide Tags":"Show Tags"}
+</button>
 
-          </div>
+{showTags && (
 
-        </Panel>
+<div className="flex flex-wrap gap-2 mt-3">
 
-        <PanelResizeHandle className="w-[4px] bg-neutral-200 dark:bg-neutral-700"/>
+{problem.tags.map((tag)=>(
+<span
+key={tag}
+className="text-xs px-2 py-1 rounded bg-neutral-200 dark:bg-neutral-800"
+>
+{tag}
+</span>
+))}
 
-        {/* RIGHT PANEL */}
+</div>
 
-        <Panel defaultSize={55} minSize={35}>
+)}
 
-          <PanelGroup direction="vertical">
+</section>
 
-            {/* EDITOR */}
+)}
 
-            <Panel defaultSize={60} minSize={40}>
+</div>
 
-              <div className="flex flex-col h-full">
+</Panel>
 
-                <div className="flex items-center justify-between px-3 py-2 border-b">
+<PanelResizeHandle className="w-[4px] bg-neutral-200 dark:bg-neutral-700"/>
 
-                  <select
-                    value={language}
-                    onChange={(e) => setLanguage(e.target.value)}
-                    className="px-3 py-1 rounded-md text-sm font-medium
-                    bg-neutral-100 dark:bg-neutral-800
-                    text-neutral-900 dark:text-white
-                    border border-neutral-300 dark:border-neutral-700
-                    focus:outline-none focus:ring-2 focus:ring-emerald-500"
-                  >
-                    <option value="javascript">JavaScript</option>
-                    <option value="python">Python</option>
-                    <option value="cpp">C++</option>
-                  </select>
+{/* RIGHT PANEL */}
 
-                  <div className="flex gap-2">
+<Panel defaultSize={55} minSize={35}>
 
-                    <button
-                      onClick={handleRun}
-                      disabled={running}
-                      className="flex items-center gap-1 text-emerald-500 border border-emerald-500 px-3 py-1 rounded"
-                    >
-                      <Play size={14}/> Run
-                    </button>
+<PanelGroup direction="vertical">
 
-                    <button
-                      onClick={handleSubmit}
-                      disabled={submitting}
-                      className="flex items-center gap-1 bg-emerald-600 text-white px-3 py-1 rounded"
-                    >
-                      <Send size={14}/> Submit
-                    </button>
+{/* EDITOR */}
 
-                  </div>
+<Panel defaultSize={60} minSize={40}>
 
-                </div>
+<div className="flex flex-col h-full">
 
-                <Editor
-                  height="100%"
-                  language={language === "cpp" ? "cpp" : language}
-                  value={code}
-                  onChange={(v) => setCode(v || "")}
-                  theme={theme === "dark" ? "vs-dark" : "vs-light"}
-                  options={{
-                    minimap: { enabled: false },
-                    fontSize: 14,
-                    automaticLayout: true,
-                    wordWrap: "on",
-                    scrollBeyondLastLine: false
-                  }}
-                />
+<div className="flex items-center justify-between px-3 py-2 border-b">
 
-              </div>
+<select
+value={language}
+onChange={(e)=>setLanguage(e.target.value)}
+className="px-3 py-1 rounded-md text-sm font-medium
+bg-neutral-100 dark:bg-neutral-800
+text-neutral-900 dark:text-white
+border border-neutral-300 dark:border-neutral-700
+focus:outline-none focus:ring-2 focus:ring-emerald-500"
+>
+<option value="javascript">JavaScript</option>
+<option value="python">Python</option>
+<option value="cpp">C++</option>
+</select>
 
-            </Panel>
+<div className="flex gap-2">
 
-            <PanelResizeHandle className="h-[4px] bg-neutral-200 dark:bg-neutral-700"/>
+<button
+onClick={handleRun}
+disabled={running}
+className="flex items-center gap-1 text-emerald-500 border border-emerald-500 px-3 py-1 rounded"
+>
+<Play size={14}/> {running ? "Running..." : "Run"}
+</button>
 
-            {/* OUTPUT PANEL */}
+<button
+onClick={handleSubmit}
+disabled={submitting}
+className="flex items-center gap-1 bg-emerald-600 text-white px-3 py-1 rounded"
+>
+<Send size={14}/> {submitting ? "Submitting..." : "Submit"}
+</button>
 
-            <Panel defaultSize={40} minSize={30}>
+</div>
 
-              <div
-                ref={resultRef}
-                className="h-full border-t border-neutral-200 dark:border-neutral-800 overflow-auto"
-              >
+</div>
 
-                <div className="flex border-b border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-900 text-sm">
+<Editor
+height="100%"
+language={language==="cpp"?"cpp":language}
+value={code}
+onChange={(v)=>setCodes({...codes,[language]:v || ""})}
+theme={theme==="dark"?"vs-dark":"vs-light"}
+options={{
+minimap:{enabled:false},
+fontSize:14,
+automaticLayout:true,
+wordWrap:"on",
+scrollBeyondLastLine:false
+}}
+/>
 
-                  {["Console","Testcases","Result"].map((tab) => (
+</div>
 
-                    <button
-                      key={tab}
-                      onClick={() => setActiveTab(tab.toLowerCase() as any)}
-                      className={`px-4 py-2 ${
-                        activeTab === tab.toLowerCase()
-                          ? "text-emerald-500 border-b-2 border-emerald-500"
-                          : "text-neutral-500"
-                      }`}
-                    >
-                      {tab}
-                    </button>
+</Panel>
 
-                  ))}
+<PanelResizeHandle className="h-[4px] bg-neutral-200 dark:bg-neutral-700"/>
 
-                </div>
+{/* OUTPUT PANEL */}
 
-                <div className="p-4 text-sm">
+<Panel defaultSize={40} minSize={30}>
 
-                  {activeTab === "console" && (
-                    <pre className="font-mono whitespace-pre-wrap text-neutral-600 dark:text-neutral-300">
-                      {runResult
-                        ? runResult.detailedResults.map((r:any)=>`TC${r.testCase}: ${r.output}`).join("\n")
-                        : "Run your code to see output"}
-                    </pre>
-                  )}
+<div ref={resultRef} className="h-full border-t border-neutral-200 dark:border-neutral-800 overflow-auto">
 
-                  {activeTab === "testcases" && runResult && (
+<div className="flex border-b border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-900 text-sm">
 
-                    <div className="space-y-4">
+{["Console","Testcases","Custom","Result"].map((tab)=>(
+<button
+key={tab}
+onClick={()=>setActiveTab(tab.toLowerCase() as any)}
+className={`px-4 py-2 ${
+activeTab === tab.toLowerCase()
+? "text-emerald-500 border-b-2 border-emerald-500"
+: "text-neutral-500"
+}`}
+>
+{tab}
+</button>
+))}
 
-                      {runResult.detailedResults.map((r: any) => (
+</div>
 
-                        <div
-                          key={r.testCase}
-                          className="border border-neutral-200 dark:border-neutral-800 rounded-lg p-3"
-                        >
+<div className="p-4 text-sm">
 
-                          <div className="flex justify-between mb-3">
+{activeTab==="console" && (
+<pre className="font-mono whitespace-pre-wrap text-neutral-600 dark:text-neutral-300">
+{runResult
+? runResult.detailedResults.map((r:any)=>`TC${r.testCase}: ${r.output}`).join("\n")
+: "Run your code to see output"}
+</pre>
+)}
 
-                            <span className="text-sm font-medium">
-                              Test Case {r.testCase}
-                            </span>
+{activeTab==="testcases" && runResult && (
 
-                            <span className={r.passed ? "text-emerald-500" : "text-red-500"}>
-                              {r.passed ? "✔ Passed" : "✖ Failed"}
-                            </span>
+<div className="space-y-4">
 
-                          </div>
+{runResult.detailedResults.map((r:any)=>(
 
-                          <div className="grid grid-cols-2 gap-4 text-xs font-mono">
+<div
+key={r.testCase}
+className="border border-neutral-200 dark:border-neutral-800 rounded-lg p-3"
+>
 
-                            <div>
-                              <div className="text-neutral-500 mb-1">
-                                Expected
-                              </div>
-                              <pre className="bg-neutral-100 dark:bg-neutral-800 p-2 rounded whitespace-pre-wrap">
-                                {r.expected}
-                              </pre>
-                            </div>
+<div className="flex justify-between mb-3">
 
-                            <div>
-                              <div className="text-neutral-500 mb-1">
-                                Your Output
-                              </div>
-                              <pre className="bg-neutral-100 dark:bg-neutral-800 p-2 rounded whitespace-pre-wrap">
-                                {r.output}
-                              </pre>
-                            </div>
+<span className="text-sm font-medium">
+Test Case {r.testCase}
+</span>
 
-                          </div>
+<span className={r.passed?"text-emerald-500":"text-red-500"}>
+{r.passed ? "✔ Passed":"✖ Failed"}
+</span>
 
-                        </div>
+</div>
 
-                      ))}
+<div className="grid grid-cols-2 gap-4 text-xs font-mono">
 
-                    </div>
+<div>
+<div className="text-neutral-500 mb-1">
+Expected
+</div>
+<pre className="bg-neutral-100 dark:bg-neutral-800 p-2 rounded whitespace-pre-wrap">
+{r.expected}
+</pre>
+</div>
 
-                  )}
+<div>
+<div className="text-neutral-500 mb-1">
+Your Output
+</div>
+<pre className="bg-neutral-100 dark:bg-neutral-800 p-2 rounded whitespace-pre-wrap">
+{r.output}
+</pre>
+</div>
 
-                  {activeTab === "result" && submitResult && (
-                    <div className="space-y-2">
-                      <div className="text-lg font-semibold capitalize">
-                        Verdict:
-                        <span className={
-                          submitResult.verdict === "accepted"
-                            ? "text-emerald-500 ml-2"
-                            : "text-red-500 ml-2"
-                        }>
-                          {submitResult.verdict}
-                        </span>
-                      </div>
+</div>
 
-                      <div>
-                        Passed: {submitResult.passed}/{submitResult.total}
-                      </div>
+</div>
 
-                      <div>
-                        Runtime: {submitResult.runtime} ms
-                      </div>
+))}
 
-                    </div>
-                  )}
+</div>
 
-                </div>
+)}
 
-              </div>
+{activeTab==="custom" && (
 
-            </Panel>
+<div className="space-y-3">
 
-          </PanelGroup>
+<textarea
+value={customInput}
+onChange={(e)=>setCustomInput(e.target.value)}
+placeholder="Enter custom input here..."
+className="w-full h-32 p-3 rounded border border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 font-mono"
+/>
 
-        </Panel>
+<button
+onClick={handleRun}
+className="px-4 py-2 bg-emerald-600 text-white rounded"
+>
+Run Custom Input
+</button>
 
-      </PanelGroup>
+</div>
 
-    </motion.div>
+)}
+
+{activeTab==="result" && submitResult && (
+
+<div className="space-y-2">
+
+<div className="text-lg font-semibold capitalize">
+Verdict:
+<span className={
+submitResult.verdict==="accepted"
+? "text-emerald-500 ml-2"
+: "text-red-500 ml-2"
+}>
+{submitResult.verdict}
+</span>
+</div>
+
+<div>Score: {submitResult.score}</div>
+
+<div>
+Passed: {submitResult.passed}/{submitResult.total}
+</div>
+
+<div>
+Runtime: {submitResult.runtime} ms
+</div>
+
+</div>
+
+)}
+
+</div>
+
+</div>
+
+</Panel>
+
+</PanelGroup>
+
+</Panel>
+
+</PanelGroup>
+
+</motion.div>
+
   );
+
 };
 
 export default ProblemDetailPage;
