@@ -43,17 +43,25 @@ export const runCode = (
       };
 
       let filename = "";
-      let dockerImage = "";
+      let compileImage = "";
+      let runImage = "";
+
+      /* =============================== */
+      /* LANGUAGE CONFIG                 */
+      /* =============================== */
 
       if (language === "javascript") {
         filename = "code.js";
-        dockerImage = "node:20-alpine";
+        compileImage = "node:20-alpine";
+        runImage = "node:20-alpine";
       } else if (language === "python") {
         filename = "code.py";
-        dockerImage = "python:3.11-alpine";
+        compileImage = "python:3.11-alpine";
+        runImage = "python:3.11-alpine";
       } else if (language === "cpp") {
         filename = "code.cpp";
-        dockerImage = "gcc:13";
+        compileImage = "gcc:13";
+        runImage = "gcc:13-bookworm";
       } else {
         resolveOnce({
           status: "internal_error",
@@ -80,7 +88,7 @@ export const runCode = (
             `${jobDir.replace(/\\/g, "/")}:/app`,
             "-w",
             "/app",
-            dockerImage,
+            compileImage,
             "g++",
             filename,
             "-O2",
@@ -130,7 +138,7 @@ export const runCode = (
           `${jobDir.replace(/\\/g, "/")}:/app`,
           "-w",
           "/app",
-          dockerImage,
+          runImage,
           ...command,
         ];
 
@@ -174,18 +182,27 @@ export const runCode = (
           stderr += data.toString();
         });
 
-        child.on("close", () => {
+        child.on("close", (code) => {
           clearTimeout(timeout);
 
           if (!resolved) {
             resolved = true;
 
-            resolveOnce({
-              status: stderr ? "runtime_error" : "accepted",
-              stdout,
-              stderr,
-              executionTime: Date.now() - startTime,
-            });
+            if (code !== 0) {
+              resolveOnce({
+                status: "runtime_error",
+                stdout,
+                stderr,
+                executionTime: Date.now() - startTime,
+              });
+            } else {
+              resolveOnce({
+                status: "accepted",
+                stdout,
+                stderr,
+                executionTime: Date.now() - startTime,
+              });
+            }
           }
         });
 
