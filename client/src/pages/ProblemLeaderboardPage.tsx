@@ -92,7 +92,7 @@ return (
         {/* STATS */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
 
-            <div className="bg-card border border-border border-t-2 border-primary rounded-xl p-6 space-y-1">
+            <div className="bg-card border border-border border-t-2 rounded-xl p-6 space-y-1">
                 <p className="text-xs uppercase tracking-wide text-muted-foreground">
                     Participants
                 </p>
