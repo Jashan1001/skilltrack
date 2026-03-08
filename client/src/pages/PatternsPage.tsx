@@ -27,7 +27,7 @@ const PatternsPage: React.FC = () => {
     const fetchData = async () => {
       try {
         const [problemsRes, progressRes] = await Promise.all([
-          axios.get("/problems/official-all "), //  NEW endpoint for fetching all official problems with patterns
+          axios.get("/problems/official-all"), //  NEW endpoint for fetching all official problems with patterns
           axios.get("/users/progress"),
         ]);
 
@@ -72,7 +72,7 @@ const PatternsPage: React.FC = () => {
       const group = map.get(problem.pattern)!;
       group.total++;
 
-      if (solvedIds.has(problem._id)) {
+      if (solvedIds.has(problem._id.toString())) {
         group.solved++;
       }
     });
