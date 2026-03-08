@@ -34,24 +34,28 @@ export const evaluateTestCases = async (
 
       const runtime = Date.now() - startTime;
 
+      const executorResult = response.data?.data || response.data;
+
       const actualOutput = normalize(
-        response.data?.stdout?.toString() || ""
+        executorResult?.stdout?.toString() || ""
       );
 
       const expectedOutput = normalize(
         testCase.expectedOutput?.toString() || ""
       );
 
-      const status = response.data?.status || "accepted";
+      const status = executorResult?.status || "internal_error";
 
-      const passed = status === "accepted" && actualOutput === expectedOutput;
+      const passed =
+        status === "accepted" &&
+        actualOutput === expectedOutput;
 
       results.push({
         testCase: i + 1,
         passed,
         runtime,
         expected: expectedOutput,
-        output: actualOutput || response.data?.stderr || "",
+        output: actualOutput || executorResult?.stderr || "",
         status
       });
 
@@ -64,7 +68,10 @@ export const evaluateTestCases = async (
         passed: false,
         runtime: 0,
         expected: testCase.expectedOutput || "",
-        output: error?.response?.data?.stderr || "Execution failed",
+        output:
+          error?.response?.data?.stderr ||
+          error?.message ||
+          "Execution failed",
         status: "runtime_error"
       });
 

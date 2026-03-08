@@ -93,6 +93,7 @@ export const runCode = (
             filename,
             "-O2",
             "-std=c++17",
+            "-static",
             "-o",
             "main",
           ];
@@ -110,13 +111,23 @@ export const runCode = (
               resolveOnce({
                 status: "runtime_error",
                 stdout: "",
-                stderr: compileError || "Compilation failed",
+                stderr: compileError.trim() || "Compilation failed",
                 executionTime: 0,
               });
               resolveCompile(false);
             } else {
               resolveCompile(true);
             }
+          });
+
+          compile.on("error", () => {
+            resolveOnce({
+              status: "internal_error",
+              stdout: "",
+              stderr: "Compiler execution failed",
+              executionTime: 0,
+            });
+            resolveCompile(false);
           });
         });
       };
@@ -147,6 +158,7 @@ export const runCode = (
         let stdout = "";
         let stderr = "";
         let resolved = false;
+
         const startTime = Date.now();
 
         const timeout = setTimeout(() => {
@@ -164,20 +176,24 @@ export const runCode = (
           }
         }, TIME_LIMIT);
 
+        /* STDIN */
         if (input) {
           child.stdin.write(input.endsWith("\n") ? input : input + "\n");
         }
 
         child.stdin.end();
 
+        /* STDOUT */
         child.stdout.on("data", (data) => {
           stdout += data.toString();
 
           if (stdout.length > MAX_OUTPUT) {
+            stdout = stdout.slice(0, MAX_OUTPUT);
             child.kill("SIGKILL");
           }
         });
 
+        /* STDERR */
         child.stderr.on("data", (data) => {
           stderr += data.toString();
         });
@@ -185,10 +201,13 @@ export const runCode = (
         child.on("close", (code) => {
           clearTimeout(timeout);
 
+          stdout = stdout.replace(/\r\n/g, "\n").trim();
+          stderr = stderr.replace(/\r\n/g, "\n").trim();
+
           if (!resolved) {
             resolved = true;
 
-            if (code !== 0) {
+            if (code !== 0 && stderr.length > 0) {
               resolveOnce({
                 status: "runtime_error",
                 stdout,
