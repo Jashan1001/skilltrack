@@ -3,7 +3,6 @@ import Problem from "../models/Problem";
 import { asyncHandler } from "../utils/asyncHandler";
 import { AppError } from "../utils/AppError";
 import { evaluateTestCases } from "../services/evaluateSolution";
-import { startExecutionEngine } from "../services/awsEC2Service";
 
 /*
 =============================
@@ -24,12 +23,6 @@ export const runSolution = asyncHandler(
         )
       );
     }
-
-    // Start EC2 execution engine
-    await startExecutionEngine();
-
-    // wait for EC2 to fully boot (very important)
-    await new Promise((resolve) => setTimeout(resolve, 30000));
 
     const problem = await Problem.findById(problemId);
 
