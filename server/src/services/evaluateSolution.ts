@@ -18,28 +18,41 @@ export const evaluateTestCases = async (
 
   const detailedResults: any[] = [];
 
+  const EXECUTOR_URL =
+    process.env.EXECUTION_ENGINE_URL || "http://localhost:5001";
+
+  console.log("Execution engine URL:", EXECUTOR_URL);
+
   for (let index = 0; index < testCases.length; index++) {
     const testCase = testCases[index];
 
     const startTime = Date.now();
 
-    let result;
+    let result: any;
     let runtime = 0;
 
-    const EXECUTOR_URL = process.env.EXECUTION_ENGINE_URL || "http://localhost:5001";
     try {
-      const response = await axios.post(`${EXECUTOR_URL}/execute`, {
-        code,
-        language,
-        input: testCase.input,
-      });
+      const response = await axios.post(
+        `${EXECUTOR_URL}/execute`,
+        {
+          code,
+          language,
+          input: testCase.input,
+        },
+        {
+          timeout: 10000, // prevents hanging requests
+        }
+      );
 
       const endTime = Date.now();
       runtime = endTime - startTime;
       totalRuntime += runtime;
 
       result = response.data;
-    } catch (error) {
+    } catch (error: any) {
+      console.error("EXECUTOR ERROR:", error.message);
+      console.error("URL:", EXECUTOR_URL);
+
       detailedResults.push({
         testCase: index + 1,
         passed: false,
