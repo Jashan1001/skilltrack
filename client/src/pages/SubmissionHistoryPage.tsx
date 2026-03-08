@@ -61,19 +61,14 @@ const SubmissionHistoryPage: React.FC = () => {
             accepted.length
         );
 
-  // Correct avg attempts per solved problem
   const solvedProblemIds = Array.from(
-    new Set(
-      accepted.map((s) => s.problem!._id)
-    )
+    new Set(accepted.map((s) => s.problem!._id))
   );
 
   const avgAttempts =
     solvedProblemIds.length === 0
       ? 0
-      : Math.round(
-          validSubs.length / solvedProblemIds.length
-        );
+      : Math.round(validSubs.length / solvedProblemIds.length);
 
   /* ========================= */
   /* Filtering                 */
@@ -182,6 +177,7 @@ const SubmissionHistoryPage: React.FC = () => {
                 <th className="px-6 py-4">Verdict</th>
                 <th className="px-6 py-4">Runtime</th>
                 <th className="px-6 py-4">Date</th>
+                <th className="px-6 py-4">Code</th>
               </tr>
             </thead>
             <tbody>
@@ -218,10 +214,20 @@ const SubmissionHistoryPage: React.FC = () => {
                   </td>
 
                   <td className="px-6 py-4 text-gray-500 dark:text-neutral-400">
-                    {new Date(
-                      sub.createdAt
-                    ).toLocaleDateString()}
+                    {new Date(sub.createdAt).toLocaleDateString()}
                   </td>
+
+                  <td className="px-6 py-4">
+                    <button
+                      onClick={() =>
+                        navigate(`/submissions/${sub._id}`)
+                      }
+                      className="text-indigo-600 hover:underline text-sm"
+                    >
+                      View
+                    </button>
+                  </td>
+
                 </tr>
               ))}
             </tbody>

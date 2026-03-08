@@ -20,7 +20,7 @@ import EditProblemPage from "./pages/EditProblemPage";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import AppLayout from "./layouts/AppLayout";
 import GlobalLeaderboardPage from "./pages/GlobalLeaderboardPage";
-
+import SubmissionDetailPage from "./pages/SubmissionDetailPage";
 function App() {
   return (
     <ThemeProvider>
@@ -56,6 +56,8 @@ function App() {
               path="/submissions"
               element={<SubmissionHistoryPage />}
             />
+
+            <Route path="/submissions/:id" element={<SubmissionDetailPage />} />
 
             <Route
               path="/leaderboard"
