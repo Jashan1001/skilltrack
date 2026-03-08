@@ -3,22 +3,24 @@ import mongoose, { Schema, Document } from "mongoose";
 /* ============================= */
 /* PUBLIC TEST CASE RESULT TYPE */
 /* ============================= */
+
 interface ITestCaseResult {
   input: string;
   expectedOutput: string;
   actualOutput: string;
   passed: boolean;
-  runtime: number; // milliseconds
+  runtime: number;
 }
 
 /* ============================= */
 /* SUBMISSION DOCUMENT INTERFACE */
 /* ============================= */
+
 export interface ISubmission extends Document {
   user: mongoose.Types.ObjectId;
   problem: mongoose.Types.ObjectId;
 
-  code: string;
+  code?: string; // optional for optimized storage
   language: "javascript" | "python" | "cpp";
 
   status:
@@ -36,7 +38,8 @@ export interface ISubmission extends Document {
 
   publicResults: ITestCaseResult[];
 
-  runtime: number; // total runtime across all executed test cases
+  runtime: number;
+
   errorMessage?: string;
 
   createdAt: Date;
@@ -46,6 +49,7 @@ export interface ISubmission extends Document {
 /* ============================= */
 /* TEST CASE RESULT SCHEMA */
 /* ============================= */
+
 const TestCaseResultSchema = new Schema<ITestCaseResult>(
   {
     input: { type: String, required: true },
@@ -60,6 +64,7 @@ const TestCaseResultSchema = new Schema<ITestCaseResult>(
 /* ============================= */
 /* SUBMISSION SCHEMA */
 /* ============================= */
+
 const SubmissionSchema: Schema<ISubmission> = new Schema(
   {
     user: {
@@ -78,7 +83,7 @@ const SubmissionSchema: Schema<ISubmission> = new Schema(
 
     code: {
       type: String,
-      required: true,
+      required: false, // optional to reduce storage
     },
 
     language: {
@@ -104,6 +109,7 @@ const SubmissionSchema: Schema<ISubmission> = new Schema(
     score: {
       type: Number,
       default: 0,
+      index: true,
     },
 
     totalTestCases: {
@@ -124,6 +130,7 @@ const SubmissionSchema: Schema<ISubmission> = new Schema(
     runtime: {
       type: Number,
       default: 0,
+      index: true,
     },
 
     errorMessage: {
@@ -133,8 +140,18 @@ const SubmissionSchema: Schema<ISubmission> = new Schema(
   { timestamps: true }
 );
 
-/* Helpful compound index */
-SubmissionSchema.index({ user: 1, problem: 1, createdAt: -1 });
+/* ============================= */
+/* PERFORMANCE INDEXES */
+/* ============================= */
+
+/* User submissions lookup */
+SubmissionSchema.index({ user: 1, createdAt: -1 });
+
+/* Leaderboard queries */
+SubmissionSchema.index({ problem: 1, score: -1, runtime: 1 });
+
+/* Best submission lookup */
+SubmissionSchema.index({ user: 1, problem: 1 });
 
 export default mongoose.model<ISubmission>(
   "Submission",
