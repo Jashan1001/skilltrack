@@ -3,9 +3,10 @@ import { useEffect, useState } from "react";
 import axios from "../api/axios";
 import Editor from "@monaco-editor/react";
 import { useTheme } from "../context/themeContext";
-const { theme } = useTheme();
+
 const SubmissionDetailPage = () => {
   const { id } = useParams();
+  const { theme } = useTheme();   // ✅ moved inside component
   const [submission, setSubmission] = useState<any>(null);
 
   useEffect(() => {
@@ -39,7 +40,12 @@ const SubmissionDetailPage = () => {
         language={submission.language || "cpp"}
         value={submission.code}
         theme={theme === "dark" ? "vs-dark" : "vs"}
-        options={{ readOnly: true }}
+        options={{
+          readOnly: true,
+          minimap: { enabled: false },
+          fontSize: 14,
+          scrollBeyondLastLine: false
+        }}
       />
 
     </div>
