@@ -148,7 +148,7 @@ const DashboardPage: React.FC = () => {
         </div>
       )}
 
-      {/* Progress Ring */
+      {/* Progress Ring */}
       <div className="flex justify-center">
         <div className="relative">
           <svg width="220" height="220">
