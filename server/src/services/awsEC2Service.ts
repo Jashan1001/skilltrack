@@ -4,16 +4,26 @@ import axios from "axios";
 const ec2 = new AWS.EC2({
   region: process.env.AWS_REGION,
   accessKeyId: process.env.AWS_ACCESS_KEY_ID,
-  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
+  secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
 });
 
-const ENGINE_URL = process.env.EXECUTION_ENGINE_URL || "http://44.201.99.244:5001";
+// ✅ No hardcoded IP — fail fast if env var is missing
+const ENGINE_URL = process.env.EXECUTION_ENGINE_URL;
+
+if (!ENGINE_URL) {
+  throw new Error(
+    "EXECUTION_ENGINE_URL environment variable is not set. " +
+    "Set it to http://localhost:5001 for local dev or your EC2 URL for production."
+  );
+}
 
 export const startExecutionEngine = async () => {
   try {
-    await ec2.startInstances({
-      InstanceIds: [process.env.EC2_INSTANCE_ID as string]
-    }).promise();
+    await ec2
+      .startInstances({
+        InstanceIds: [process.env.EC2_INSTANCE_ID as string],
+      })
+      .promise();
 
     console.log("EC2 start requested");
   } catch (error) {
@@ -30,10 +40,10 @@ export const waitForExecutionEngine = async () => {
       console.log("Execution engine is ready");
       return;
     } catch {
-      console.log("Waiting for execution engine...");
-      await new Promise(r => setTimeout(r, 3000));
+      console.log(`Waiting for execution engine... (${i + 1}/${MAX_RETRIES})`);
+      await new Promise((r) => setTimeout(r, 3000));
     }
   }
 
-  throw new Error("Execution engine failed to start");
+  throw new Error("Execution engine failed to start after maximum retries");
 };

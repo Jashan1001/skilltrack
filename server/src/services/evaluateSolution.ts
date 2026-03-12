@@ -1,9 +1,5 @@
 import axios from "axios";
 
-/* ============================= */
-/* STATUS TYPE (shared with DB) */
-/* ============================= */
-
 export type Verdict =
   | "accepted"
   | "runtime_error"
@@ -11,112 +7,93 @@ export type Verdict =
   | "wrong_answer"
   | "partially_accepted";
 
-/* ============================= */
-/* EVALUATE TEST CASES */
-/* ============================= */
-
 export const evaluateTestCases = async (
   testCases: any[],
   code: string,
   language: string,
   evaluationType: "strict" | "partial"
 ) => {
-
-  const EXECUTOR_URL =
-    process.env.EXECUTION_ENGINE_URL || "http://localhost:5001";
+  const EXECUTOR_URL = process.env.EXECUTION_ENGINE_URL as string;
 
   const normalize = (str: string) =>
     str.replace(/\r/g, "").trim().replace(/\s+/g, " ");
 
-  const results: any[] = [];
+  // ✅ Run all test cases in parallel instead of serially
+  const results = await Promise.all(
+    testCases.map(async (testCase, i) => {
+      const startTime = Date.now();
 
-  for (let i = 0; i < testCases.length; i++) {
+      try {
+        const response = await axios.post(
+          `${EXECUTOR_URL}/execute`,
+          {
+            code,
+            language,
+            input: testCase.input,
+          },
+          {
+            timeout: 15000,
+            headers: {
+              "x-internal-token": process.env.INTERNAL_SECRET as string,
+            },
+          }
+        );
 
-    const testCase = testCases[i];
-    const startTime = Date.now();
+        const runtime = Date.now() - startTime;
+        const executorResult = response.data?.data || response.data;
 
-    try {
+        const actualOutput = normalize(
+          executorResult?.stdout?.toString() || ""
+        );
+        const expectedOutput = normalize(
+          testCase.expectedOutput?.toString() || ""
+        );
 
-      const response = await axios.post(
-        `${EXECUTOR_URL}/execute`,
-        {
-          code,
-          language,
-          input: testCase.input
-        },
-        { timeout: 15000 }
-      );
+        const status: Verdict = executorResult?.status || "runtime_error";
+        const passed = status === "accepted" && actualOutput === expectedOutput;
 
-      const runtime = Date.now() - startTime;
+        return {
+          testCase: i + 1,
+          passed,
+          runtime,
+          expected: expectedOutput,
+          output: actualOutput || executorResult?.stderr || "",
+          status,
+        };
+      } catch (error: any) {
+        console.error(`Test case ${i + 1} execution error:`, error?.message);
 
-      const executorResult = response.data?.data || response.data;
+        return {
+          testCase: i + 1,
+          passed: false,
+          runtime: 0,
+          expected: testCase.expectedOutput || "",
+          output:
+            error?.response?.data?.stderr ||
+            error?.message ||
+            "Execution failed",
+          status: "runtime_error" as Verdict,
+        };
+      }
+    })
+  );
 
-      const actualOutput = normalize(
-        executorResult?.stdout?.toString() || ""
-      );
-
-      const expectedOutput = normalize(
-        testCase.expectedOutput?.toString() || ""
-      );
-
-      const status: Verdict =
-        executorResult?.status || "runtime_error";
-
-      const passed =
-        status === "accepted" &&
-        actualOutput === expectedOutput;
-
-      results.push({
-        testCase: i + 1,
-        passed,
-        runtime,
-        expected: expectedOutput,
-        output: actualOutput || executorResult?.stderr || "",
-        status
-      });
-
-    } catch (error: any) {
-
-      console.error("EXECUTOR ERROR:", error?.message);
-
-      results.push({
-        testCase: i + 1,
-        passed: false,
-        runtime: 0,
-        expected: testCase.expectedOutput || "",
-        output:
-          error?.response?.data?.stderr ||
-          error?.message ||
-          "Execution failed",
-        status: "runtime_error" as Verdict
-      });
-
-    }
-
-  }
-
+  // Aggregate results
   let passedCount = 0;
   let totalRuntime = 0;
-
   let hasRuntimeError = false;
   let hasTLE = false;
 
   results.forEach((r) => {
-
     totalRuntime = Math.max(totalRuntime, r.runtime);
-
     if (r.passed) passedCount++;
-
     if (r.status === "runtime_error") hasRuntimeError = true;
-
     if (r.status === "time_limit_exceeded") hasTLE = true;
-
   });
 
   const totalCases = testCases.length;
 
   let finalStatus: Verdict = "accepted";
-
   if (hasRuntimeError) finalStatus = "runtime_error";
   else if (hasTLE) finalStatus = "time_limit_exceeded";
   else if (passedCount === totalCases) finalStatus = "accepted";
@@ -129,7 +106,6 @@ export const evaluateTestCases = async (
     passed: passedCount,
     total: totalCases,
     runtime: totalRuntime,
-    detailedResults: results
+    detailedResults: results,
   };
-
 };
