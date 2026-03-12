@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/authContext";
 import axios from "../api/axios";
 import toast from "react-hot-toast";
+import { Skeleton, SkeletonRow } from "../components/Skeleton";
 import ConfirmModal from "../components/ConfirmModal";
 interface Problem {
   _id: string;
@@ -27,14 +28,17 @@ const ProblemsPage: React.FC = () => {
 
   const [loading, setLoading] = useState(true);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [bookmarkedIds, setBookmarkedIds] = useState<Set<string>>(new Set());
+  const [activeTab, setActiveTab] = useState<"all" | "saved">("all");
 
   /* ================= Fetch Data ================= */
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [problemsRes, progressRes] = await Promise.all([
+        const [problemsRes, progressRes, bookmarkRes] = await Promise.all([
           axios.get("/problems/official-all"),
           axios.get("/users/progress"),
+          axios.get("/users/bookmarks"),
         ]);
 
         setProblems(problemsRes.data?.data?.problems || []);
@@ -43,6 +47,9 @@ const ProblemsPage: React.FC = () => {
           progressRes.data?.data?.solvedProblemIds || [];
 
         setSolvedIds(new Set(solvedIdsFromProgress));
+
+        const ids = bookmarkRes.data.data.map((p: any) => p._id);
+        setBookmarkedIds(new Set(ids));
       } catch (err) {
         console.error(err);
       } finally {
@@ -52,6 +59,25 @@ const ProblemsPage: React.FC = () => {
 
     fetchData();
   }, []);
+
+  /* ================= Bookmark ================= */
+  const handleBookmark = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    try {
+      const res = await axios.post(`/users/bookmark/${id}`);
+      setBookmarkedIds((prev) => {
+        const next = new Set(prev);
+        if (res.data.bookmarked) {
+          next.add(id);
+        } else {
+          next.delete(id);
+        }
+        return next;
+      });
+    } catch {
+      toast.error("Failed to update bookmark");
+    }
+  };
 
   /* ================= Delete ================= */
   const handleDelete = async (id: string) => {
@@ -119,7 +145,12 @@ const ProblemsPage: React.FC = () => {
   ];
 
   const sorted = useMemo(() => {
-    return [...filtered].sort((a, b) => {
+    const base =
+      activeTab === "saved"
+        ? filtered.filter((p) => bookmarkedIds.has(p._id))
+        : filtered;
+
+    return [...base].sort((a, b) => {
       const patternDiff =
         masterOrder.indexOf(a.pattern || "") -
         masterOrder.indexOf(b.pattern || "");
@@ -128,12 +159,18 @@ const ProblemsPage: React.FC = () => {
 
       return (a.orderInPattern || 0) - (b.orderInPattern || 0);
     });
-  }, [filtered]);
+  }, [filtered, activeTab, bookmarkedIds]);
 
   if (loading) {
     return (
-      <div className="py-20 text-center text-gray-500 dark:text-neutral-400">
-        Loading master sheet...
+      <div className="space-y-8">
+        <div className="space-y-2">
+          <Skeleton className="h-7 w-36" />
+          <Skeleton className="h-4 w-64" />
+        </div>
+        <div className="border border-border rounded-xl overflow-hidden">
+          {[...Array(8)].map((_, i) => <SkeletonRow key={i} />)}
+        </div>
       </div>
     );
   }
@@ -141,13 +178,31 @@ const ProblemsPage: React.FC = () => {
   return (
     <div className="space-y-8">
 
-      <div>
-        <h1 className="text-2xl font-semibold text-foreground">
-          Master Sheet
-        </h1>
-        <p className="text-sm text-muted-foreground">
-          Browse and filter the complete structured curriculum.
-        </p>
+      <div className="space-y-3">
+        <div>
+          <h1 className="text-2xl font-semibold text-foreground">
+            Master Sheet
+          </h1>
+          <p className="text-sm text-muted-foreground">
+            Browse and filter the complete structured curriculum.
+          </p>
+        </div>
+        <div className="flex gap-1 bg-muted rounded-lg p-1 w-fit">
+          {(["all", "saved"] as const).map((t) => (
+            <button
+              key={t}
+              onClick={() => setActiveTab(t)}
+              className={`px-4 py-1.5 rounded-md text-sm font-medium transition
+                ${
+                  activeTab === t
+                    ? "bg-card text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
+                }`}
+            >
+              {t === "all" ? "All Problems" : "Saved"}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Filters */}
@@ -209,6 +264,7 @@ const ProblemsPage: React.FC = () => {
               <th className="px-4 py-3">Title</th>
               <th className="px-4 py-3">Pattern</th>
               <th className="px-4 py-3">Difficulty</th>
+              <th className="px-4 py-3 w-10"></th>
               {user?.role === "admin" && (
                 <th className="px-4 py-3 text-right">Admin</th>
               )}
@@ -219,7 +275,7 @@ const ProblemsPage: React.FC = () => {
             {sorted.length === 0 ? (
               <tr>
                 <td
-                  colSpan={user?.role === "admin" ? 5 : 4}
+                  colSpan={user?.role === "admin" ? 6 : 5}
                   className="px-4 py-12 text-center text-muted-foreground"
                 >
                   No problems match your filters.
@@ -258,6 +314,24 @@ const ProblemsPage: React.FC = () => {
                         }`}
                     >
                       {problem.difficulty}
+                    </td>
+
+                    <td
+                      className="px-4 py-3"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <button
+                        onClick={(e) => handleBookmark(e, problem._id)}
+                        className={`text-lg transition hover:scale-110
+                          ${
+                            bookmarkedIds.has(problem._id)
+                              ? "text-primary"
+                              : "text-muted-foreground hover:text-foreground"
+                          }`}
+                        title={bookmarkedIds.has(problem._id) ? "Remove bookmark" : "Bookmark"}
+                      >
+                        {bookmarkedIds.has(problem._id) ? "★" : "☆"}
+                      </button>
                     </td>
 
                     {user?.role === "admin" && (
