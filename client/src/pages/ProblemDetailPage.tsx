@@ -37,6 +37,7 @@ interface Problem {
   hints?: string[];
   tags?: string[];
   publicTestCases: TestCase[];
+  editorial?: string;
 }
 
 const templates: Record<string, string> = {
@@ -95,9 +96,10 @@ const ProblemDetailPage = () => {
 
   const [showHints,setShowHints] = useState(false);
   const [showTags,setShowTags] = useState(false);
+  const [hasAttempted, setHasAttempted] = useState(false);
 
-  const [activeTab,setActiveTab] =
-    useState<"console"|"testcases"|"custom"|"result">("console");
+  const [activeTab, setActiveTab] =
+    useState<"console" | "testcases" | "custom" | "result" | "editorial">("console");
 
   /* FETCH PROBLEM */
 
@@ -229,6 +231,7 @@ const ProblemDetailPage = () => {
     } catch {
       toast.error("Submission failed. Please try again.");
     } finally {
+      setHasAttempted(true);
       setSubmitting(false);
     }
   };
@@ -587,7 +590,7 @@ scrollBeyondLastLine:false
 
 <div className="flex border-b border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-900 text-sm">
 
-{["Console","Testcases","Custom","Result"].map((tab)=>(
+{["Console","Testcases","Custom","Result","Editorial"].map((tab)=>(
 <button
 key={tab}
 onClick={()=>setActiveTab(tab.toLowerCase() as any)}
@@ -715,6 +718,26 @@ Runtime: {submitResult.runtime} ms
 
 </div>
 
+)}
+
+{activeTab === "editorial" && (
+  <div className="p-4">
+    {!hasAttempted ? (
+      <div className="text-center py-8 text-muted-foreground text-sm">
+        Submit a solution first to unlock the editorial.
+      </div>
+    ) : !problem.editorial ? (
+      <div className="text-center py-8 text-muted-foreground text-sm">
+        No editorial available for this problem yet.
+      </div>
+    ) : (
+      <div className="prose prose-sm dark:prose-invert max-w-none
+                      prose-code:bg-neutral-100 dark:prose-code:bg-neutral-800
+                      prose-code:px-1 prose-code:rounded">
+        <ReactMarkdown>{problem.editorial}</ReactMarkdown>
+      </div>
+    )}
+  </div>
 )}
 
 </div>

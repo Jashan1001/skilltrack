@@ -56,6 +56,7 @@ export interface IProblem extends Document {
   examples: IExample[];
 
   hints: string[];
+  editorial?: string;
 
   difficulty: "easy" | "medium" | "hard";
   tags: string[];
@@ -150,6 +151,11 @@ const ProblemSchema = new Schema<IProblem>(
     hints: {
       type: [String],
       default: [],
+    },
+
+    editorial: {
+      type: String,
+      default: "",
     },
 
     difficulty: {

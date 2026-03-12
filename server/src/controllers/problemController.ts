@@ -8,7 +8,11 @@ import Submission from "../models/Submission";
 /* CREATE PROBLEM */
 /* ============================= */
 export const createProblem = asyncHandler(
-  async (req: any, res: Response, next: NextFunction) => {
+  async (req: Request, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return next(new AppError("Unauthorized", 401));
+    }
+
     const {
       title,
       description,
@@ -21,6 +25,7 @@ export const createProblem = asyncHandler(
       privateTestCases,
       evaluationType,
       visibility,
+      editorial,
     } = req.body;
 
     const userRole = req.user.role;
@@ -70,6 +75,7 @@ export const createProblem = asyncHandler(
       publicTestCases,
       privateTestCases,
       evaluationType: evaluationType || "strict",
+      editorial: editorial || "",
       createdBy: req.user.userId,
     });
 
@@ -88,7 +94,11 @@ export const createProblem = asyncHandler(
 /* GET ALL PROBLEMS */
 /* ============================= */
 export const getAllProblems = asyncHandler(
-  async (req: any, res: Response) => {
+  async (req: Request, res: Response) => {
+    if (!req.user) {
+      throw new AppError("Unauthorized", 401);
+    }
+
     const {
       difficulty,
       pattern,
@@ -149,7 +159,11 @@ export const getAllProblems = asyncHandler(
 /* GET PROBLEM BY ID */
 /* ============================= */
 export const getProblemById = asyncHandler(
-  async (req: any, res: Response, next: NextFunction) => {
+  async (req: Request, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return next(new AppError("Unauthorized", 401));
+    }
+
     const { id } = req.params;
 
     const problem = await Problem.findById(id).populate(
@@ -185,7 +199,11 @@ export const getProblemById = asyncHandler(
 /* UPDATE PROBLEM */
 /* ============================= */
 export const updateProblem = asyncHandler(
-  async (req: any, res: Response, next: NextFunction) => {
+  async (req: Request, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return next(new AppError("Unauthorized", 401));
+    }
+
     const { id } = req.params;
 
     const problem = await Problem.findById(id);
@@ -216,6 +234,7 @@ export const updateProblem = asyncHandler(
       privateTestCases,
       evaluationType,
       visibility,
+      editorial,
     } = req.body;
 
     if (title) problem.title = title;
@@ -242,6 +261,10 @@ export const updateProblem = asyncHandler(
 
     if (evaluationType && req.user.role === "admin") {
       problem.evaluationType = evaluationType;
+    }
+
+    if (editorial !== undefined && req.user.role === "admin") {
+      problem.editorial = editorial;
     }
 
     await problem.save();
