@@ -95,3 +95,31 @@ export const login = asyncHandler(
     });
   }
 );
+/* ============================= */
+/* GET CURRENT USER (/me)       */
+/* ============================= */
+export const getMe = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return next(new AppError("Unauthorized", 401));
+    }
+
+    const user = await User.findById(req.user.userId).select(
+      "-password"
+    );
+
+    if (!user) {
+      return next(new AppError("User not found", 404));
+    }
+
+    res.status(200).json({
+      success: true,
+      data: {
+        userId: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    });
+  }
+);
