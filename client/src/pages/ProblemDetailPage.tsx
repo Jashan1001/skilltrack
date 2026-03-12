@@ -5,7 +5,8 @@ import axios from "../api/axios";
 import { Play, Send, ArrowLeft, Trophy } from "lucide-react";
 import { motion } from "framer-motion";
 import { useTheme } from "../context/themeContext";
-
+import ReactMarkdown from "react-markdown";
+import toast from "react-hot-toast";
 import {
   Panel,
   PanelGroup,
@@ -178,56 +179,58 @@ const ProblemDetailPage = () => {
   /* RUN */
 
   const handleRun = async () => {
-
-    if(!code.trim() || running) return;
+    if (!code.trim() || running) return;
 
     setRunning(true);
     setSubmitResult(null);
 
-    try{
-
-      const res = await axios.post("/run",{
+    try {
+      const res = await axios.post("/run", {
         problemId,
         code,
         language,
-        customInput
+        customInput,
       });
 
       setRunResult(res.data.data);
       setActiveTab("testcases");
-
-    }catch(err){
-      console.error(err);
+    } catch {
+      toast.error("Failed to run code. Please try again.");
+    } finally {
+      setRunning(false);
     }
-
-    setRunning(false);
   };
 
   /* SUBMIT */
 
   const handleSubmit = async () => {
-
-    if(!code.trim() || submitting) return;
+    if (!code.trim() || submitting) return;
 
     setSubmitting(true);
     setRunResult(null);
 
-    try{
-
-      const res = await axios.post("/submissions",{
+    try {
+      const res = await axios.post("/submissions", {
         problemId,
         code,
-        language
+        language,
       });
+
+      const verdict = res.data.data.verdict;
+
+      if (verdict === "accepted") {
+        toast.success("Accepted! All test cases passed 🎉");
+      } else {
+        toast.error(`${verdict.replace(/_/g, " ")} — check the result tab`);
+      }
 
       setSubmitResult(res.data.data);
       setActiveTab("result");
-
-    }catch(err){
-      console.error(err);
+    } catch {
+      toast.error("Submission failed. Please try again.");
+    } finally {
+      setSubmitting(false);
     }
-
-    setSubmitting(false);
   };
 
   if(loading)
@@ -317,9 +320,13 @@ className="flex-1 border border-neutral-200 dark:border-neutral-800 rounded-lg o
 
 <section>
 <h2 className="text-sm font-semibold mb-2">Description</h2>
-<p className="text-sm text-neutral-600 dark:text-neutral-300 whitespace-pre-wrap leading-relaxed">
-{problem.description}
-</p>
+<div className="prose prose-sm dark:prose-invert max-w-none
+                text-neutral-600 dark:text-neutral-300
+                prose-code:bg-neutral-100 dark:prose-code:bg-neutral-800
+                prose-code:px-1 prose-code:rounded
+                prose-pre:bg-neutral-100 dark:prose-pre:bg-neutral-800">
+<ReactMarkdown>{problem.description}</ReactMarkdown>
+</div>
 </section>
 
 {/* INPUT FORMAT */}
