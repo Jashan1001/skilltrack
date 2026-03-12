@@ -175,7 +175,7 @@ export const toggleBookmark = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     if (!req.user) return next(new AppError("Unauthorized", 401));
 
-    const { problemId } = req.params;
+    const problemId = req.params.problemId as string;
     const u = await User.findById(req.user.userId);
 
     if (!u) return next(new AppError("User not found", 404));
@@ -219,54 +219,3 @@ export const getBookmarks = asyncHandler(
     });
   }
 );
-/* TOGGLE BOOKMARK         */
-/* ======================== */
-
-export const toggleBookmark = asyncHandler(
-  async (req: any, res: Response) => {
-    const { problemId } = req.params;
-    const userId = req.user.userId;
-
-    const user = await User.findById(userId);
-    if (!user) return res.status(404).json({ success: false });
-
-    const alreadySaved = user.savedProblems
-      .map((id) => id.toString())
-      .includes(problemId);
-
-    if (alreadySaved) {
-      user.savedProblems = user.savedProblems.filter(
-        (id) => id.toString() !== problemId
-      ) as any;
-    } else {
-      user.savedProblems.push(new mongoose.Types.ObjectId(problemId) as any);
-    }
-
-    await user.save();
-
-    res.status(200).json({
-      success: true,
-      bookmarked: !alreadySaved,
-    });
-  }
-);
-
-/* ======================== */
-/* GET MY BOOKMARKS        */
-/* ======================== */
-
-export const getBookmarks = asyncHandler(
-  async (req: any, res: Response) => {
-    const user = await User.findById(req.user.userId).populate(
-      "savedProblems",
-      "title difficulty pattern tags"
-    );
-
-    if (!user) return res.status(404).json({ success: false });
-
-    res.status(200).json({
-      success: true,
-      data: user.savedProblems,
-    });
-  }
-)

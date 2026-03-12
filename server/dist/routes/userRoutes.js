@@ -1,0 +1,11 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const express_1 = require("express");
+const userController_1 = require("../controllers/userController");
+const authMiddleware_1 = require("../middleware/authMiddleware");
+const router = (0, express_1.Router)();
+router.get("/progress", authMiddleware_1.protect, userController_1.getUserProgress);
+router.get("/bookmarks", authMiddleware_1.protect, userController_1.getBookmarks);
+router.post("/bookmark/:problemId", authMiddleware_1.protect, userController_1.toggleBookmark);
+router.get("/:userId", authMiddleware_1.protect, userController_1.getPublicProfile);
+exports.default = router;
