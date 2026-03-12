@@ -15,7 +15,7 @@ import runRoutes from "./routes/runRoutes";
 
 import { protect } from "./middleware/authMiddleware";
 import { globalErrorHandler } from "./middleware/errorHandler";
-
+import adminRoutes from "./routes/adminRoutes";
 dotenv.config();
 
 const app = express();
@@ -86,6 +86,7 @@ app.use("/api/submissions", submissionRoutes);
 app.use("/api/leaderboard", leaderboardRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/run", runRoutes);
+app.use("/api/admin", adminRoutes);
 
 /* ============================= */
 /* Health Check Route           */
