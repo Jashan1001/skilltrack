@@ -1,21 +1,60 @@
 import express from "express";
-import executeRoute from "./routes/execute.route";
+import dotenv from "dotenv";
+import executeRouter from "./routes/execute.route";
+
+dotenv.config();
 
 const app = express();
 
-app.use(express.json());
+/* ============================= */
+/* Internal Auth Guard          */
+/* ============================= */
 
-/* Health check */
-app.get("/", (_req, res) => {
-  res.status(200).send("Execution Engine is running");
+const INTERNAL_SECRET = process.env.INTERNAL_SECRET;
+
+if (!INTERNAL_SECRET) {
+  throw new Error(
+    "INTERNAL_SECRET environment variable is not set. " +
+    "Set a strong random string shared between the server and execution engine."
+  );
+}
+
+app.use((req, res, next) => {
+  const token = req.headers["x-internal-token"];
+
+  if (token !== INTERNAL_SECRET) {
+    return res.status(401).json({ error: "Unauthorized" });
+  }
+
+  next();
 });
 
-/* Execute API */
-app.use("/execute", executeRoute);
+/* ============================= */
+/* Body Parser                  */
+/* ============================= */
 
-/* Fix: ensure PORT is number */
-const PORT = Number(process.env.PORT) || 5001;
+app.use(express.json({ limit: "100kb" }));
 
-app.listen(PORT, "0.0.0.0", () => {
-  console.log(`🚀 Execution Engine running on port ${PORT}`);
+/* ============================= */
+/* Routes                       */
+/* ============================= */
+
+app.use("/", executeRouter);
+
+/* ============================= */
+/* Health Check                 */
+/* ============================= */
+
+app.get("/health", (req, res) => {
+  res.json({ status: "ok", service: "execution-engine" });
+});
+
+/* ============================= */
+/* Start                        */
+/* ============================= */
+
+const PORT = process.env.PORT || 5001;
+
+app.listen(PORT, () => {
+  console.log(`Execution engine running on port ${PORT}`);
 });
