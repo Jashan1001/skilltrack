@@ -1,4 +1,5 @@
 import express from "express";
+import { Request, Response } from "express";
 import cors from "cors";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
@@ -94,9 +95,25 @@ app.get("/", (req, res) => {
   res.send("SkillTrack API is running 🚀");
 });
 
+app.get("/health", async (req, res) => {
+  const dbState = mongoose.connection.readyState;
+  // 0 = disconnected, 1 = connected, 2 = connecting, 3 = disconnecting
+  const dbStatus = dbState === 1 ? "connected" : "disconnected";
+
+  const status = dbState === 1 ? "ok" : "degraded";
+
+  res.status(dbState === 1 ? 200 : 503).json({
+    status,
+    timestamp: new Date().toISOString(),
+    services: {
+      database: dbStatus,
+    },
+  });
+});
+
 /* Example protected route */
 
-app.get("/api/test/protected", protect, (req: any, res) => {
+app.get("/api/test/protected", protect, (req: Request, res: Response) => {
   res.json({
     message: "You accessed a protected route",
     user: req.user,
