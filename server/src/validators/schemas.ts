@@ -6,22 +6,19 @@ import { z } from "zod";
 
 export const registerSchema = z.object({
   name: z
-    .string()
-    .min(1, "Name is required")
+    .string({ required_error: "Name is required" })
     .min(2, "Name must be at least 2 characters")
     .max(50, "Name must be under 50 characters")
     .trim(),
 
   email: z
-    .string()
-    .min(1, "Email is required")
+    .string({ required_error: "Email is required" })
     .email("Invalid email format")
     .toLowerCase()
     .trim(),
 
   password: z
-    .string()
-    .min(1, "Password is required")
+    .string({ required_error: "Password is required" })
     .min(6, "Password must be at least 6 characters")
     .max(100, "Password too long"),
 
@@ -141,4 +138,16 @@ export const submitSchema = codeSubmissionBase;
 
 export const runSchema = codeSubmissionBase.extend({
   customInput: z.string().max(10000).optional().default(""),
+});
+export const forgotPasswordSchema = z.object({
+  email: z.string().email("Invalid email format").toLowerCase().trim(),
+});
+
+export const resetPasswordSchema = z.object({
+  token: z.string().min(1),
+  email: z.string().email().toLowerCase().trim(),
+  password: z
+    .string()
+    .min(6, "Password must be at least 6 characters")
+    .max(100),
 });
