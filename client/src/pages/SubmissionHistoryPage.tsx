@@ -209,7 +209,21 @@ const SubmissionHistoryPage: React.FC = () => {
                   </td>
 
                   <td className="px-6 py-4">
-                    <VerdictBadge verdict={sub.status} />
+                    <span
+                      className={`capitalize text-xs font-medium px-2 py-0.5 rounded-full border
+                        ${sub.status === "accepted"
+                          ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
+                          : sub.status === "wrong_answer"
+                          ? "bg-rose-500/10 text-rose-500 border-rose-500/20"
+                          : sub.status === "time_limit_exceeded"
+                          ? "bg-amber-500/10 text-amber-500 border-amber-500/20"
+                          : sub.status === "runtime_error"
+                          ? "bg-orange-500/10 text-orange-500 border-orange-500/20"
+                          : "bg-muted text-muted-foreground border-border"
+                        }`}
+                    >
+                      {sub.status.replace(/_/g, " ")}
+                    </span>
                   </td>
 
                   <td className="px-6 py-4">
