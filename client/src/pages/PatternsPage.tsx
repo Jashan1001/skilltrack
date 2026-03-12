@@ -110,19 +110,16 @@ const PatternsPage: React.FC = () => {
   return (
     <div className="space-y-12">
 
-      {/* Header */}
       <div>
-        <h1 className="text-3xl font-semibold text-gray-900 dark:text-white">
+        <h1 className="text-3xl font-semibold text-foreground">
           Pattern Mastery
         </h1>
-        <p className="text-sm text-gray-500 dark:text-neutral-400 mt-1">
+        <p className="text-sm text-muted-foreground mt-1">
           Structured learning through curated DSA patterns.
         </p>
       </div>
 
-      {/* Pattern Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
-
         {patternGroups.map((pattern) => {
           const percentage =
             pattern.total === 0
@@ -132,37 +129,32 @@ const PatternsPage: React.FC = () => {
           return (
             <div
               key={pattern.name}
-              className="bg-white dark:bg-neutral-900
-                         border border-gray-200 dark:border-neutral-800
-                         rounded-2xl p-6 transition-colors"
+              onClick={() =>
+                navigate(
+                  `/patterns/${pattern.name.toLowerCase().replace(/\s+/g, "-")}`
+                )
+              }
+              className="cursor-pointer bg-card border border-border
+                         rounded-2xl p-6 hover:shadow-lg transition"
             >
-              <h2 className="text-lg font-semibold text-gray-900 dark:text-white capitalize">
+              <h2 className="text-lg font-semibold text-foreground capitalize">
                 {pattern.name}
               </h2>
 
-              <p className="text-sm text-gray-500 dark:text-neutral-400 mt-2 mb-6">
+              <p className="text-sm text-muted-foreground mt-2 mb-6">
                 {pattern.solved} / {pattern.total} solved
               </p>
 
-              {/* Progress Bar */}
-              <div className="w-full h-2 bg-gray-200 dark:bg-neutral-800 rounded-full overflow-hidden">
+              <div className="w-full h-2 bg-muted rounded-full overflow-hidden">
                 <div
-                  className="bg-indigo-600 dark:bg-indigo-400 h-full transition-all duration-700"
+                  className="bg-primary h-full transition-all duration-700"
                   style={{ width: `${percentage}%` }}
                 />
               </div>
 
               <button
-                onClick={() =>
-                  navigate(
-                    `/patterns/${pattern.name
-                      .toLowerCase()
-                      .replace(/\s+/g, "-")}`
-                  )
-                }
                 className="mt-6 w-full py-2 text-sm font-medium rounded-lg
-                           bg-gray-900 dark:bg-white
-                           text-white dark:text-black
+                           bg-primary text-primary-foreground
                            hover:opacity-90 transition"
               >
                 Continue
@@ -170,8 +162,8 @@ const PatternsPage: React.FC = () => {
             </div>
           );
         })}
-
       </div>
+
     </div>
   );
 };

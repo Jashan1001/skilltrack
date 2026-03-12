@@ -145,31 +145,32 @@ const ProblemsPage: React.FC = () => {
   return (
     <div className="space-y-8">
 
-      {/* Header */}
       <div>
-        <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
+        <h1 className="text-2xl font-semibold text-foreground">
           Master Sheet
         </h1>
-        <p className="text-sm text-gray-500 dark:text-neutral-400">
+        <p className="text-sm text-muted-foreground">
           Browse and filter the complete structured curriculum.
         </p>
       </div>
 
       {/* Filters */}
       <div className="flex flex-wrap gap-4">
-
         <input
           type="text"
           placeholder="Search..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="px-4 py-2 rounded-lg border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm focus:outline-none"
+          className="px-4 py-2 rounded-lg border border-border
+                     bg-card text-foreground text-sm
+                     focus:outline-none focus:ring-2 focus:ring-primary"
         />
 
         <select
           value={difficulty}
           onChange={(e) => setDifficulty(e.target.value)}
-          className="px-4 py-2 rounded-lg border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm"
+          className="px-4 py-2 rounded-lg border border-border
+                     bg-card text-foreground text-sm"
         >
           <option value="all">All Difficulty</option>
           <option value="easy">Easy</option>
@@ -180,38 +181,35 @@ const ProblemsPage: React.FC = () => {
         <select
           value={pattern}
           onChange={(e) => setPattern(e.target.value)}
-          className="px-4 py-2 rounded-lg border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm"
+          className="px-4 py-2 rounded-lg border border-border
+                     bg-card text-foreground text-sm"
         >
           <option value="all">All Patterns</option>
           {uniquePatterns.map((p) => (
-            <option key={p} value={p}>
-              {p}
-            </option>
+            <option key={p} value={p}>{p}</option>
           ))}
         </select>
 
         <select
           value={tag}
           onChange={(e) => setTag(e.target.value)}
-          className="px-4 py-2 rounded-lg border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-sm"
+          className="px-4 py-2 rounded-lg border border-border
+                     bg-card text-foreground text-sm"
         >
           <option value="all">All Tags</option>
           {uniqueTags.map((t) => (
-            <option key={t} value={t}>
-              {t}
-            </option>
+            <option key={t} value={t}>{t}</option>
           ))}
         </select>
-
       </div>
 
       {/* Table */}
-      <div className="overflow-x-auto border border-gray-200 dark:border-neutral-800 rounded-xl">
+      <div className="overflow-x-auto border border-border rounded-xl">
         <table className="w-full text-sm">
 
-          <thead className="bg-gray-50 dark:bg-neutral-900 text-gray-600 dark:text-neutral-400">
+          <thead className="bg-muted text-muted-foreground">
             <tr className="text-left">
-              <th className="px-4 py-3">✓</th>
+              <th className="px-4 py-3 w-8">✓</th>
               <th className="px-4 py-3">Title</th>
               <th className="px-4 py-3">Pattern</th>
               <th className="px-4 py-3">Difficulty</th>
@@ -222,74 +220,83 @@ const ProblemsPage: React.FC = () => {
           </thead>
 
           <tbody>
-            {sorted.map((problem) => {
-              const solved = solvedIds.has(problem._id);
-
-              return (
-                <tr
-                  key={problem._id}
-                  className="border-t border-gray-200 dark:border-neutral-800 hover:bg-gray-50 dark:hover:bg-neutral-900 cursor-pointer transition"
-                  onClick={() =>
-                    navigate(`/problems/${problem._id}`)
-                  }
+            {sorted.length === 0 ? (
+              <tr>
+                <td
+                  colSpan={user?.role === "admin" ? 5 : 4}
+                  className="px-4 py-12 text-center text-muted-foreground"
                 >
-                  <td className="px-4 py-3">
-                    {solved ? "✔️" : ""}
-                  </td>
+                  No problems match your filters.
+                </td>
+              </tr>
+            ) : (
+              sorted.map((problem) => {
+                const solved = solvedIds.has(problem._id);
 
-                  <td className="px-4 py-3 font-medium text-gray-900 dark:text-white">
-                    {problem.title}
-                  </td>
+                return (
+                  <tr
+                    key={problem._id}
+                    className="border-t border-border hover:bg-muted/50
+                               cursor-pointer transition"
+                    onClick={() => navigate(`/problems/${problem._id}`)}
+                  >
+                    <td className="px-4 py-3 text-emerald-500">
+                      {solved ? "✔" : ""}
+                    </td>
 
-                  <td className="px-4 py-3 text-gray-500 dark:text-neutral-400">
-                    {problem.pattern || "-"}
-                  </td>
+                    <td className="px-4 py-3 font-medium text-foreground">
+                      {problem.title}
+                    </td>
 
-                  <td
-                    className={`px-4 py-3 capitalize
-                      ${
-                        problem.difficulty === "easy"
+                    <td className="px-4 py-3 text-muted-foreground">
+                      {problem.pattern || "—"}
+                    </td>
+
+                    <td
+                      className={`px-4 py-3 capitalize font-medium
+                        ${problem.difficulty === "easy"
                           ? "text-emerald-500"
                           : problem.difficulty === "medium"
                           ? "text-amber-500"
                           : "text-rose-500"
-                      }`}
-                  >
-                    {problem.difficulty}
-                  </td>
-
-                  {user?.role === "admin" && (
-                    <td
-                      className="px-4 py-3 text-right space-x-3"
-                      onClick={(e) => e.stopPropagation()}
+                        }`}
                     >
-                      <button
-                        onClick={() =>
-                          navigate(`/admin/edit/${problem._id}`)
-                        }
-                        className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
-                      >
-                        Edit
-                      </button>
-
-                      <button
-                        onClick={() => handleDelete(problem._id)}
-                        className="text-xs text-rose-600 dark:text-rose-400 hover:underline"
-                      >
-                        Delete
-                      </button>
+                      {problem.difficulty}
                     </td>
-                  )}
-                </tr>
-              );
-            })}
+
+                    {user?.role === "admin" && (
+                      <td
+                        className="px-4 py-3 text-right space-x-3"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <button
+                          onClick={() =>
+                            navigate(`/admin/edit/${problem._id}`)
+                          }
+                          className="text-xs text-primary hover:underline"
+                        >
+                          Edit
+                        </button>
+
+                        <button
+                          onClick={() => handleDelete(problem._id)}
+                          className="text-xs text-destructive hover:underline"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    )}
+                  </tr>
+                );
+              })
+            )}
           </tbody>
 
         </table>
       </div>
 
-      <div className="text-sm text-gray-500 dark:text-neutral-400">
-        {sorted.length} problems found
+      <div className="text-sm text-muted-foreground">
+        {sorted.length} of {problems.length} problems shown
       </div>
 
     </div>
