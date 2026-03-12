@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import Submission from "../models/Submission";
 import Problem from "../models/Problem";
+import User from "../models/User";
 import { asyncHandler } from "../utils/asyncHandler";
 import { AppError } from "../utils/AppError";
 import { evaluateTestCases } from "../services/evaluateSolution";
@@ -100,6 +101,41 @@ export const submitSolution = asyncHandler(
       existing.passedTestCases = evaluation.passed;
 
       await existing.save();
+    }
+
+    /* ============================= */
+    /* UPDATE STREAK */
+    /* ============================= */
+
+    if (evaluation.verdict === "accepted") {
+      const u = await User.findById(req.user.userId);
+
+      if (u) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        const lastDate = u.lastSubmissionDate
+          ? new Date(u.lastSubmissionDate)
+          : null;
+
+        if (lastDate) lastDate.setHours(0, 0, 0, 0);
+
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+
+        if (!lastDate || lastDate < yesterday) {
+          u.currentStreak = 1;
+        } else if (lastDate.getTime() === yesterday.getTime()) {
+          u.currentStreak += 1;
+        }
+
+        if (u.currentStreak > u.longestStreak) {
+          u.longestStreak = u.currentStreak;
+        }
+
+        u.lastSubmissionDate = new Date();
+        await u.save();
+      }
     }
 
     /* ============================= */

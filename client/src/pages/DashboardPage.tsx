@@ -1,7 +1,8 @@
 import { useEffect, useMemo, useState } from "react";
 import axios from "../api/axios";
 import { useNavigate } from "react-router-dom";
-
+import { useAuth } from "../context/authContext";
+import { Skeleton, SkeletonCard } from "../components/Skeleton";
 interface Problem {
   _id: string;
   difficulty: "easy" | "medium" | "hard";
@@ -39,9 +40,9 @@ const PATTERN_ORDER = [
   "Dynamic Programming",
   "Bit Manipulation",
 ];
-
 const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
+  const { user } = useAuth();
 
   const [progress, setProgress] = useState<Progress | null>(null);
   const [problems, setProblems] = useState<Problem[]>([]);
@@ -96,8 +97,17 @@ const DashboardPage: React.FC = () => {
 
   if (loading || !progress)
     return (
-      <div className="py-20 text-center text-muted-foreground">
-        Loading dashboard...
+      <div className="space-y-16">
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-4 w-72" />
+        </div>
+        <div className="flex justify-center">
+          <Skeleton className="w-56 h-56 rounded-full" />
+        </div>
+        <div className="grid md:grid-cols-3 gap-6">
+          {[...Array(6)].map((_, i) => <SkeletonCard key={i} />)}
+        </div>
       </div>
     );
 
@@ -121,7 +131,24 @@ const DashboardPage: React.FC = () => {
         </p>
       </div>
 
-      {/* Progress Ring */}
+      {/* Streak */}
+      {(user?.currentStreak ?? 0) > 0 && (
+        <div className="flex items-center gap-6">
+          <div className="flex items-center gap-3 bg-card border border-border rounded-xl px-5 py-3">
+            <span className="text-2xl">🔥</span>
+            <div>
+              <p className="text-xl font-bold text-foreground">
+                {user?.currentStreak} day streak
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Longest: {user?.longestStreak} days
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Progress Ring */
       <div className="flex justify-center">
         <div className="relative">
           <svg width="220" height="220">
