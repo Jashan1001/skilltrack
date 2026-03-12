@@ -6,49 +6,36 @@ import {
   getProblemById,
   updateProblem,
   deleteProblem,
-  getAllOfficialProblems
+  getAllOfficialProblems,
 } from "../controllers/problemController";
+import { validate } from "../middleware/validate";
+import {
+  createProblemSchema,
+  updateProblemSchema,
+} from "../validators/schemas";
 
 const router = Router();
 
-/* ========================= */
-/* VIEW ROUTES */
-/* ========================= */
 router.get("/official-all", getAllOfficialProblems);
-// Anyone can view roadmap problems
 router.get("/", getAllProblems);
-
-// Logged in users can view full problem details
 router.get("/:id", protect, getProblemById);
 
-/* ========================= */
-/* ADMIN ONLY ROUTES */
-/* ========================= */
-
-// Only admin can create roadmap problems
 router.post(
   "/",
   protect,
   allowRoles("admin"),
+  validate(createProblemSchema),
   createProblem
 );
 
-// Only admin can update roadmap problems
 router.put(
   "/:id",
   protect,
   allowRoles("admin"),
+  validate(updateProblemSchema),
   updateProblem
 );
 
-// Only admin can delete roadmap problems
-router.delete(
-  "/:id",
-  protect,
-  allowRoles("admin"),
-  deleteProblem
-);
-
-
+router.delete("/:id", protect, allowRoles("admin"), deleteProblem);
 
 export default router;

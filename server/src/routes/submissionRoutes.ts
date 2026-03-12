@@ -1,25 +1,26 @@
 import express from "express";
 import { protect, allowRoles } from "../middleware/authMiddleware";
-import { submitSolution, getMySubmissions, getSubmissionByID } from "../controllers/submissionController";
+import {
+  submitSolution,
+  getMySubmissions,
+  getSubmissionByID,
+} from "../controllers/submissionController";
 import { submissionLimiter } from "../middleware/rateLimiter";
+import { validate } from "../middleware/validate";
+import { submitSchema } from "../validators/schemas";
 
 const router = express.Router();
 
-// Only students can submit (with rate limit)
 router.post(
   "/",
   protect,
-  allowRoles("student","admin"),
+  allowRoles("student", "admin"),
   submissionLimiter,
+  validate(submitSchema),
   submitSolution
 );
 
-// Only students can view their submissions
-router.get(
-  "/me",
-  protect,
-  allowRoles("student","admin"),
-  getMySubmissions
-);
+router.get("/me", protect, allowRoles("student", "admin"), getMySubmissions);
 router.get("/:id", protect, getSubmissionByID);
+
 export default router;
