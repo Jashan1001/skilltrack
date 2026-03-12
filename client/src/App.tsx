@@ -22,6 +22,10 @@ import AppLayout from "./layouts/AppLayout";
 import GlobalLeaderboardPage from "./pages/GlobalLeaderboardPage";
 import SubmissionDetailPage from "./pages/SubmissionDetailPage";
 import ProfilePage from "./pages/ProfilePage";
+import OAuthCallbackPage from "./pages/OAuthCallbackPage";
+import AdminAnalyticsPage from "./pages/AdminAnalyticsPage";
+import ForgotPasswordPage from "./pages/ForgotPasswordPage";
+import ResetPasswordPage from "./pages/ResetPasswordPage";
 function App() {
   return (
     <ThemeProvider>
@@ -32,6 +36,9 @@ function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
+        <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
 
         {/* AUTHENTICATED ROUTES */}
         <Route element={<ProtectedRoute />}>
@@ -84,6 +91,7 @@ function App() {
                 path="/admin/edit/:id"
                 element={<EditProblemPage />}
               />
+              <Route path="/admin/analytics" element={<AdminAnalyticsPage />} />
             </Route>
 
           </Route>

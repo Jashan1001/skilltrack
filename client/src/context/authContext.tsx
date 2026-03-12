@@ -11,6 +11,9 @@ interface User {
   name: string;
   email: string;
   role: string;
+  avatarUrl?: string;
+  currentStreak: number;
+  longestStreak: number;
 }
 
 interface AuthContextType {

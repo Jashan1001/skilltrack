@@ -1,4 +1,4 @@
-import { NavLink } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { useState } from "react";
 import { useAuth } from "../context/authContext";
 import {
@@ -14,6 +14,7 @@ import {
 
 const Sidebar = () => {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
 
   const base =
@@ -107,16 +108,63 @@ const Sidebar = () => {
               {!collapsed && <span>Create</span>}
             </NavLink>
 
+            <NavLink to="/admin/analytics" className={getClass}>
+              <BarChart3 size={iconSize} />
+              {!collapsed && <span>Analytics</span>}
+            </NavLink>
+
           </div>
         )}
 
       </nav>
 
-      {!collapsed && (
-        <div className="p-4 border-t border-neutral-200 dark:border-neutral-800 text-xs text-neutral-400">
-          SkillTrack • v1
-        </div>
-      )}
+      {/* User info at bottom */}
+      <div className="p-4 border-t border-border">
+        {!collapsed ? (
+          <div
+            className="flex items-center gap-3 cursor-pointer hover:bg-muted rounded-lg p-2 transition"
+            onClick={() => navigate(`/profile/${user?.userId}`)}
+          >
+            {user?.avatarUrl ? (
+              <img
+              
+                src={user.avatarUrl}
+                alt={user.name}
+                className="w-8 h-8 rounded-full object-cover shrink-0"
+              />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-sm font-semibold shrink-0">
+                {user?.name?.charAt(0).toUpperCase()}
+              </div>
+            )}
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium text-foreground truncate">
+                {user?.name}
+              </p>
+              <p className="text-xs text-muted-foreground truncate">
+                {user?.role}
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div
+            className="flex justify-center cursor-pointer"
+            onClick={() => navigate(`/profile/${user?.userId}`)}
+          >
+            {user?.avatarUrl ? (
+              <img
+                src={user.avatarUrl}
+                alt={user?.name}
+                className="w-8 h-8 rounded-full object-cover"
+              />
+            ) : (
+              <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-sm font-semibold">
+                {user?.name?.charAt(0).toUpperCase()}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
     </aside>
   );
 };
