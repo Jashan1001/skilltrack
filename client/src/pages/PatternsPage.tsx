@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import axios from "../api/axios";
+import { Skeleton, SkeletonCard } from "../components/Skeleton";
 
 interface Problem {
   _id: string;
@@ -101,8 +102,14 @@ const PatternsPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="py-20 text-center text-gray-500 dark:text-neutral-400">
-        Loading patterns...
+      <div className="space-y-12">
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-4 w-64" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-8">
+          {[...Array(12)].map((_, i) => <SkeletonCard key={i} />)}
+        </div>
       </div>
     );
   }

@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom";
 import axios from "../api/axios";
 import { useAuth } from "../context/authContext";
 import ActivityHeatmap from "../components/ActivityHeatmap";
+import { SkeletonProfile } from "../components/Skeleton";
 
 const PATTERN_ORDER = [
   "Sliding Window", "Two Pointers", "Binary Search", "Stack",
@@ -58,11 +59,7 @@ const ProfilePage: React.FC = () => {
   }, [userId]);
 
   if (loading)
-    return (
-      <div className="py-20 text-center text-muted-foreground">
-        Loading profile...
-      </div>
-    );
+    return <SkeletonProfile />;
 
   if (error || !data)
     return (
