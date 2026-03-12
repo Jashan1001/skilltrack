@@ -48,7 +48,7 @@ export const getProblemLeaderboard = asyncHandler(
     const populated = await User.populate(leaderboard, {
       path: "_id",
       select: "name",
-    });
+    } as any);
 
     const formatted = populated.map((entry: any) => ({
       user: entry._id,
@@ -105,7 +105,7 @@ export const getGlobalLeaderboard = asyncHandler(
     const populated = await User.populate(leaderboard, {
       path: "_id",
       select: "name",
-    });
+    } as any);
 
     const formatted = populated.map((entry: any) => ({
       user: entry._id,
