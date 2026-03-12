@@ -45,12 +45,12 @@ export const getProblemLeaderboard = asyncHandler(
       { $sort: { score: -1, runtime: 1 } },
     ]);
 
-    const populated = await User.populate(leaderboard as any, {
+    const populated = (await (User.populate as Function)(leaderboard, {
       path: "_id",
       select: "name",
-    });
+    })) as any[];
 
-    const formatted = (populated as any[]).map((entry: any) => ({
+    const formatted = populated.map((entry: any) => ({
       user: entry._id,
       score: entry.score,
       runtime: entry.runtime,
@@ -102,12 +102,12 @@ export const getGlobalLeaderboard = asyncHandler(
       { $sort: { totalSolved: -1, totalScore: -1, averageRuntime: 1 } },
     ]);
 
-    const populated = await User.populate(leaderboard as any, {
+    const populated = (await (User.populate as Function)(leaderboard, {
       path: "_id",
       select: "name",
-    });
+    })) as any[];
 
-    const formatted = (populated as any[]).map((entry: any) => ({
+    const formatted = populated.map((entry: any) => ({
       user: entry._id,
       totalSolved: entry.totalSolved,
       totalScore: entry.totalScore,
