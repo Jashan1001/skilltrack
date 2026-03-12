@@ -21,6 +21,7 @@ import ProtectedRoute from "./routes/ProtectedRoute";
 import AppLayout from "./layouts/AppLayout";
 import GlobalLeaderboardPage from "./pages/GlobalLeaderboardPage";
 import SubmissionDetailPage from "./pages/SubmissionDetailPage";
+import ProfilePage from "./pages/ProfilePage";
 function App() {
   return (
     <ThemeProvider>
@@ -68,6 +69,8 @@ function App() {
               path="/leaderboard/:problemId"
               element={<ProblemLeaderboardPage />}
             />
+
+            <Route path="/profile/:userId" element={<ProfilePage />} />
 
             {/* ADMIN ONLY */}
 
