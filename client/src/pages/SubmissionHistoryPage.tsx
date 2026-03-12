@@ -164,8 +164,11 @@ const SubmissionHistoryPage: React.FC = () => {
       {/* Table */}
       <div className="bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 rounded-xl overflow-hidden">
         {filtered.length === 0 ? (
-          <div className="p-10 text-center text-gray-500 dark:text-neutral-400">
-            No matching submissions.
+          <div className="bg-card border border-border rounded-xl px-6 py-16
+                          text-center text-muted-foreground">
+            {submissions.length === 0
+              ? "No submissions yet. Solve a problem to see your history here."
+              : "No submissions match your current filters."}
           </div>
         ) : (
           <table className="w-full text-sm">
