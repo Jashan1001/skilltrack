@@ -2,7 +2,8 @@ import { useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/authContext";
 import axios from "../api/axios";
-
+import toast from "react-hot-toast";
+import ConfirmModal from "../components/ConfirmModal";
 interface Problem {
   _id: string;
   title: string;
@@ -25,6 +26,7 @@ const ProblemsPage: React.FC = () => {
   const [tag, setTag] = useState("all");
 
   const [loading, setLoading] = useState(true);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
 
   /* ================= Fetch Data ================= */
   useEffect(() => {
@@ -54,19 +56,13 @@ const ProblemsPage: React.FC = () => {
   /* ================= Delete ================= */
   const handleDelete = async (id: string) => {
     try {
-      const confirmDelete = window.confirm(
-        "Are you sure you want to delete this problem?"
-      );
-      if (!confirmDelete) return;
-
       await axios.delete(`/problems/${id}`);
 
-      setProblems((prev) =>
-        prev.filter((p) => p._id !== id)
-      );
-    } catch (err) {
-      console.error(err);
-      alert("Delete failed");
+      setProblems((prev) => prev.filter((p) => p._id !== id));
+    } catch {
+      toast.error("Delete failed. Please try again.");
+    } finally {
+      setDeleteTarget(null);
     }
   };
 
@@ -279,7 +275,7 @@ const ProblemsPage: React.FC = () => {
                         </button>
 
                         <button
-                          onClick={() => handleDelete(problem._id)}
+                          onClick={() => setDeleteTarget(problem._id)}
                           className="text-xs text-destructive hover:underline"
                         >
                           Delete
@@ -298,6 +294,16 @@ const ProblemsPage: React.FC = () => {
       <div className="text-sm text-muted-foreground">
         {sorted.length} of {problems.length} problems shown
       </div>
+
+      <ConfirmModal
+        open={deleteTarget !== null}
+        title="Delete Problem"
+        message="This will permanently delete the problem and all related submissions. This cannot be undone."
+        confirmLabel="Delete"
+        danger
+        onConfirm={() => deleteTarget && handleDelete(deleteTarget)}
+        onCancel={() => setDeleteTarget(null)}
+      />
 
     </div>
   );
