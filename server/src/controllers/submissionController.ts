@@ -10,7 +10,10 @@ import { evaluateTestCases } from "../services/evaluateSolution";
 /* ============================= */
 
 export const submitSolution = asyncHandler(
-  async (req: any, res: Response, next: NextFunction) => {
+  async (req: Request, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return next(new AppError("Unauthorized", 401));
+    }
 
     const { problemId, code, language } = req.body;
 
@@ -122,7 +125,10 @@ export const submitSolution = asyncHandler(
 /* ============================= */
 
 export const getMySubmissions = asyncHandler(
-  async (req: any, res: Response) => {
+  async (req: Request, res: Response) => {
+    if (!req.user) {
+      throw new AppError("Unauthorized", 401);
+    }
 
     const submissions = await Submission.find({
       user: req.user.userId,

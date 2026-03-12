@@ -11,7 +11,7 @@ RUN SOLUTION (Public Only)
 */
 
 export const runSolution = asyncHandler(
-  async (req: any, res: Response, next: NextFunction) => {
+  async (req: Request, res: Response, next: NextFunction) => {
 
     const { problemId, code, language } = req.body;
 

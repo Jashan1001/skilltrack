@@ -1,16 +1,12 @@
 import { Request, Response, NextFunction } from "express";
 import jwt from "jsonwebtoken";
 
-interface AuthRequest extends Request {
-  user?: any;
-}
-
 export const protect = (
-  req: AuthRequest,
+  req: Request,
   res: Response,
   next: NextFunction
 ) => {
-  let token;
+  let token: string | undefined;
 
   if (
     req.headers.authorization &&
@@ -29,19 +25,19 @@ export const protect = (
     const decoded = jwt.verify(
       token,
       process.env.JWT_SECRET as string
-    );
+    ) as { userId: string; role: "student" | "admin" | "recruiter" };
 
     req.user = decoded;
     next();
-
-  } catch (error) {
+  } catch {
     return res.status(401).json({
       message: "Not authorized, token failed",
     });
   }
 };
+
 export const allowRoles = (...roles: string[]) => {
-  return (req: any, res: Response, next: NextFunction) => {
+  return (req: Request, res: Response, next: NextFunction) => {
     if (!req.user || !roles.includes(req.user.role)) {
       return res.status(403).json({
         message: "Access forbidden: insufficient permissions",
