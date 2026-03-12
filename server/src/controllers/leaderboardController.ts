@@ -6,26 +6,36 @@ import { asyncHandler } from "../utils/asyncHandler";
 
 const getPeriodStart = (period: string): Date | null => {
   const now = new Date();
+
   if (period === "week") {
     const d = new Date(now);
     d.setDate(d.getDate() - 7);
     return d;
   }
+
   if (period === "month") {
     const d = new Date(now);
     d.setMonth(d.getMonth() - 1);
     return d;
   }
-  return null; // "all" — no date filter
+
+  return null; // "all"
 };
 
 /* ============================= */
-/* PROBLEM LEADERBOARD          */
+/* PROBLEM LEADERBOARD           */
 /* ============================= */
 
 export const getProblemLeaderboard = asyncHandler(
   async (req: Request, res: Response) => {
-    const { problemId } = req.params;
+    const problemId = req.params.problemId as string;
+
+    if (!mongoose.Types.ObjectId.isValid(problemId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid problemId",
+      });
+    }
 
     const leaderboard = await Submission.aggregate([
       {
@@ -56,12 +66,15 @@ export const getProblemLeaderboard = asyncHandler(
       runtime: entry.runtime,
     }));
 
-    res.status(200).json({ success: true, data: formatted });
+    res.status(200).json({
+      success: true,
+      data: formatted,
+    });
   }
 );
 
 /* ============================= */
-/* GLOBAL LEADERBOARD           */
+/* GLOBAL LEADERBOARD            */
 /* ============================= */
 
 export const getGlobalLeaderboard = asyncHandler(
@@ -70,13 +83,16 @@ export const getGlobalLeaderboard = asyncHandler(
     const periodStart = getPeriodStart(period);
 
     const matchStage: any = { status: "accepted" };
+
     if (periodStart) {
       matchStage.createdAt = { $gte: periodStart };
     }
 
     const leaderboard = await Submission.aggregate([
       { $match: matchStage },
+
       { $sort: { score: -1, runtime: 1 } },
+
       {
         $group: {
           _id: { user: "$user", problem: "$problem" },
@@ -84,6 +100,7 @@ export const getGlobalLeaderboard = asyncHandler(
           runtime: { $first: "$runtime" },
         },
       },
+
       {
         $group: {
           _id: "$_id.user",
@@ -92,6 +109,7 @@ export const getGlobalLeaderboard = asyncHandler(
           averageRuntime: { $avg: "$runtime" },
         },
       },
+
       {
         $project: {
           totalSolved: 1,
@@ -99,6 +117,7 @@ export const getGlobalLeaderboard = asyncHandler(
           averageRuntime: { $round: ["$averageRuntime", 0] },
         },
       },
+
       { $sort: { totalSolved: -1, totalScore: -1, averageRuntime: 1 } },
     ]);
 
@@ -114,6 +133,9 @@ export const getGlobalLeaderboard = asyncHandler(
       averageRuntime: entry.averageRuntime,
     }));
 
-    res.status(200).json({ success: true, data: formatted });
+    res.status(200).json({
+      success: true,
+      data: formatted,
+    });
   }
 );
