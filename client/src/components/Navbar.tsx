@@ -61,23 +61,27 @@ const Navbar: React.FC = () => {
           {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
         </button>
 
-        {/* User */}
-        <div
-          className="
-          flex items-center gap-2
-          px-3 py-1.5
-          rounded-md
-          bg-neutral-100
-          dark:bg-neutral-800
-          text-sm
-        "
+        {/* Profile */}
+        <button
+          onClick={() => navigate(`/profile/${user?.userId}`)}
+          className="flex items-center gap-2 px-3 py-1.5 rounded-lg
+             hover:bg-muted transition text-sm text-muted-foreground
+             hover:text-foreground"
         >
-          <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-
-          <span className="font-medium text-neutral-800 dark:text-neutral-200">
-            {user?.name || "User"}
-          </span>
-        </div>
+          {user?.avatarUrl ? (
+            <img
+              src={user.avatarUrl}
+              alt={user.name}
+              className="w-6 h-6 rounded-full object-cover"
+            />
+          ) : (
+            <div className="w-6 h-6 rounded-full bg-primary flex items-center
+                    justify-center text-primary-foreground text-xs font-semibold">
+              {user?.name?.charAt(0).toUpperCase()}
+            </div>
+          )}
+          <span className="hidden md:block">{user?.name}</span>
+        </button>
 
         {/* Logout */}
         <button
