@@ -7,6 +7,12 @@ body {
   color: hsl(var(--foreground));
 }
 
+/* hide sidebar nav scrollbar cross-browser */
+.sidebar-nav {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
 @layer base {
   :root {
     --background: 45 17% 95%;

@@ -38,11 +38,10 @@ const Tooltip: React.FC<TooltipProps> = ({ label, children, show }) => (
   <div className="relative group/tip flex">
     {children}
     {show && (
-      <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2
+      <div className="hidden group-hover/tip:block absolute left-full ml-3 top-1/2 -translate-y-1/2
                       px-2.5 py-1.5 rounded-lg bg-foreground text-background
                       text-xs font-medium whitespace-nowrap
-                      opacity-0 group-hover/tip:opacity-100
-                      pointer-events-none transition-opacity duration-150 z-50
+                      pointer-events-none z-50
                       shadow-lg">
         {label}
         <div className="absolute right-full top-1/2 -translate-y-1/2
@@ -95,7 +94,7 @@ const Sidebar: React.FC = () => {
                        transition-all duration-300
                        ${collapsed ? "px-4 justify-center" : "px-5"}`}>
         {collapsed ? (
-          <span className="text-primary font-bold text-lg">S</span>
+          <Code2 size={20} className="text-primary" />
         ) : (
           <span className="font-bold text-base text-foreground tracking-tight">
             Skill<span className="text-primary">Track</span>
@@ -104,7 +103,7 @@ const Sidebar: React.FC = () => {
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-0.5">
+      <nav className="sidebar-nav flex-1 overflow-y-auto py-4 px-2 space-y-0.5 [&::-webkit-scrollbar]:hidden">
 
         {items.map((item) => {
           if (item.adminOnly && !isAdmin) return null;
