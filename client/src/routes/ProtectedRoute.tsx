@@ -11,7 +11,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const { user, loading } = useAuth();
 
   if (loading) {
-    return <div className="text-center mt-20 text-gray-400">Loading...</div>;
+    return <div className="text-center mt-20 text-muted-foreground">Loading...</div>;
   }
 
   if (!user) {

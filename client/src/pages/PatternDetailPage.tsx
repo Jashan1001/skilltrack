@@ -409,7 +409,7 @@ const PatternDetailPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="py-20 text-center text-gray-500 dark:text-neutral-400">
+      <div className="py-20 text-center text-muted-foreground">
         Loading roadmap...
       </div>
     );

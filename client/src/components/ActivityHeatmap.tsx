@@ -3,7 +3,6 @@ interface Props {
 }
 
 const ActivityHeatmap: React.FC<Props> = ({ activityMap }) => {
-  // Build last 365 days as array of date strings
   const days: string[] = [];
   const today = new Date();
 
@@ -13,24 +12,23 @@ const ActivityHeatmap: React.FC<Props> = ({ activityMap }) => {
     days.push(d.toISOString().split("T")[0]);
   }
 
-  // Pad to start on Sunday
-  const firstDayOfWeek = new Date(days[0]).getDay(); // 0=Sun
+  const firstDayOfWeek = new Date(days[0]).getDay();
   const padded = [...Array(firstDayOfWeek).fill(null), ...days];
 
-  // Group into weeks (columns of 7)
   const weeks: (string | null)[][] = [];
   for (let i = 0; i < padded.length; i += 7) {
     weeks.push(padded.slice(i, i + 7));
   }
 
+  /* Green-only scale */
   const getColor = (day: string | null) => {
     if (!day) return "bg-transparent";
     const count = activityMap[day] || 0;
     if (count === 0) return "bg-muted";
-    if (count === 1) return "bg-primary/30";
-    if (count === 2) return "bg-primary/55";
-    if (count <= 4) return "bg-primary/75";
-    return "bg-primary";
+    if (count === 1) return "bg-emerald-200 dark:bg-emerald-900/60";
+    if (count === 2) return "bg-emerald-300 dark:bg-emerald-700/70";
+    if (count <= 4) return "bg-emerald-400 dark:bg-emerald-600";
+    return "bg-emerald-500 dark:bg-emerald-500";
   };
 
   const months = [
@@ -38,7 +36,6 @@ const ActivityHeatmap: React.FC<Props> = ({ activityMap }) => {
     "Jul","Aug","Sep","Oct","Nov","Dec",
   ];
 
-  // Month labels — find first day of each month in the weeks
   const monthLabels: { label: string; col: number }[] = [];
   weeks.forEach((week, colIndex) => {
     week.forEach((day) => {
@@ -61,17 +58,21 @@ const ActivityHeatmap: React.FC<Props> = ({ activityMap }) => {
         <span>{totalSubmissions} submissions in the last year</span>
         <div className="flex items-center gap-1">
           <span>Less</span>
-          {["bg-muted", "bg-primary/30", "bg-primary/55", "bg-primary/75", "bg-primary"].map(
-            (c, i) => (
-              <div key={i} className={`w-3 h-3 rounded-sm ${c}`} />
-            )
-          )}
+          {[
+            "bg-muted",
+            "bg-emerald-200 dark:bg-emerald-900/60",
+            "bg-emerald-300 dark:bg-emerald-700/70",
+            "bg-emerald-400 dark:bg-emerald-600",
+            "bg-emerald-500 dark:bg-emerald-500",
+          ].map((c, i) => (
+            <div key={i} className={`w-3 h-3 rounded-sm ${c}`} />
+          ))}
           <span>More</span>
         </div>
       </div>
 
       {/* Month labels */}
-      <div className="flex gap-[3px] ml-0">
+      <div className="flex gap-[3px]">
         {weeks.map((_, colIndex) => {
           const label = monthLabels.find((m) => m.col === colIndex);
           return (

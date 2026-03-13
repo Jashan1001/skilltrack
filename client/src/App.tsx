@@ -97,9 +97,15 @@ function App() {
           </Route>
         </Route>
 
-        {/* 404 */}
-
-        <Route path="*" element={<h1>404 Not Found</h1>} />
+        <Route path="*" element={
+          <div className="min-h-screen flex items-center justify-center
+                          bg-background text-foreground">
+            <div className="text-center space-y-2">
+              <p className="text-6xl font-bold text-primary">404</p>
+              <p className="text-muted-foreground">Page not found.</p>
+            </div>
+          </div>
+        } />
 
       </Routes>
 
