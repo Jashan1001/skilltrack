@@ -552,7 +552,7 @@ className="flex items-center gap-1 text-emerald-500 border border-emerald-500 px
 <button
 onClick={handleSubmit}
 disabled={submitting}
-className="flex items-center gap-1 bg-emerald-600 text-white px-3 py-1 rounded"
+className="flex items-center gap-1 bg-primary text-primary-foreground px-3 py-1 rounded"
 >
 <Send size={14}/> {submitting ? "Submitting..." : "Submit"}
 </button>
@@ -682,7 +682,7 @@ className="w-full h-32 p-3 rounded border border-border bg-muted font-mono"
 
 <button
 onClick={handleRun}
-className="px-4 py-2 bg-emerald-600 text-white rounded"
+className="px-4 py-2 bg-primary text-primary-foreground rounded"
 >
 Run Custom Input
 </button>

@@ -95,7 +95,7 @@ const SubmissionHistoryPage: React.FC = () => {
 
   if (loading)
     return (
-      <div className="py-20 text-center text-neutral-500">
+      <div className="py-20 text-center text-muted-foreground">
         Loading submissions...
       </div>
     );
