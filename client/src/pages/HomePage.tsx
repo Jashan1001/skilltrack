@@ -71,7 +71,7 @@ const HomePage: React.FC = () => {
 
       {/* NAV */}
       <nav className="sticky top-0 z-50 h-14 border-b border-border bg-card">
-        <div className="max-w-5xl mx-auto px-6 h-full flex items-center justify-between">
+        <div className="max-w-[1360px] mx-auto px-6 h-full flex items-center justify-between">
 
           <span className="font-bold text-base tracking-tight">
             Skill<span className="text-primary">Track</span>
@@ -105,7 +105,7 @@ const HomePage: React.FC = () => {
       </nav>
 
       {/* HERO */}
-      <section className="max-w-5xl mx-auto px-6 pt-20 pb-16 text-center">
+      <section className="max-w-[1360px] mx-auto px-6 pt-12 pb-12 text-center">
 
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full
                         border border-border bg-muted text-muted-foreground
@@ -120,7 +120,7 @@ const HomePage: React.FC = () => {
           <span className="text-primary">patterns, not problems</span>
         </h1>
 
-        <p className="text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed mb-10">
+        <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed mb-8">
           SkillTrack teaches you the 12 core patterns behind every coding interview.
           Write real code, run it safely, and track your mastery.
         </p>
@@ -146,7 +146,7 @@ const HomePage: React.FC = () => {
       </section>
 
       {/* EDITOR PREVIEW */}
-      <section className="max-w-4xl mx-auto px-6 pb-20">
+      <section className="max-w-[1360px] mx-auto px-6 pb-16">
         <div className="rounded-xl border border-border bg-card overflow-hidden shadow-xl shadow-black/5">
 
           <div className="flex items-center gap-1.5 px-4 py-3 border-b border-border bg-muted/50">
@@ -214,7 +214,7 @@ const HomePage: React.FC = () => {
 
       {/* PATTERNS */}
       <section className="border-y border-border bg-muted/30 py-14">
-        <div className="max-w-5xl mx-auto px-6">
+        <div className="max-w-[1360px] mx-auto px-6">
           <p className="text-center text-xs font-semibold uppercase tracking-widest
                         text-muted-foreground mb-8">
             12 patterns . every interview covered
@@ -237,7 +237,7 @@ const HomePage: React.FC = () => {
       </section>
 
       {/* FEATURES */}
-      <section className="max-w-5xl mx-auto px-6 py-20">
+      <section className="max-w-[1360px] mx-auto px-6 py-16">
         <h2 className="text-2xl font-bold text-center mb-2">
           Everything in one place
         </h2>
@@ -280,7 +280,7 @@ const HomePage: React.FC = () => {
 
       {/* FOOTER */}
       <footer className="border-t border-border py-6 px-6">
-        <div className="max-w-5xl mx-auto flex items-center justify-between text-xs text-muted-foreground">
+        <div className="max-w-[1360px] mx-auto flex items-center justify-between text-xs text-muted-foreground">
           <span>Skill<span className="text-primary font-semibold">Track</span></span>
           <span>Built for serious learners.</span>
         </div>

@@ -74,7 +74,7 @@ const ProfilePage: React.FC = () => {
   const joinedYear = new Date(user.joinedAt).getFullYear();
 
   return (
-    <div className="space-y-10 max-w-6xl">
+    <div className="w-full max-w-[1360px] mx-auto space-y-10">
 
       {/* Header */}
       <div className="flex items-center gap-6">
