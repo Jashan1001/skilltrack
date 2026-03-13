@@ -53,6 +53,12 @@ const testCaseSchema = z.object({
   expectedOutput: z.string().min(1, "Expected output cannot be empty"),
 });
 
+const exampleSchema = z.object({
+  input: z.string().min(1, "Example input cannot be empty"),
+  output: z.string().min(1, "Example output cannot be empty"),
+  explanation: z.string().trim().optional(),
+});
+
 export const createProblemSchema = z.object({
   title: z
     .string()
@@ -75,8 +81,11 @@ export const createProblemSchema = z.object({
   outputFormat: z.string().min(1).trim(),
   constraints: z.string().min(1).trim(),
 
+  examples: z.array(exampleSchema).optional().default([]),
+
   tags: z.array(z.string().trim()).optional().default([]),
   hints: z.array(z.string().trim()).optional().default([]),
+  editorial: z.string().trim().optional().default(""),
 
   pattern: z
     .enum([

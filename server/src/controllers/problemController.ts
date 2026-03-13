@@ -16,6 +16,11 @@ export const createProblem = asyncHandler(
     const {
       title,
       description,
+      inputFormat,
+      outputFormat,
+      constraints,
+      examples,
+      hints,
       difficulty,
       tags,
       pattern,
@@ -65,6 +70,11 @@ export const createProblem = asyncHandler(
     const problem = await Problem.create({
       title,
       description,
+      inputFormat,
+      outputFormat,
+      constraints,
+      examples: examples || [],
+      hints: hints || [],
       difficulty,
       tags,
       pattern: isOfficial ? pattern : undefined,
@@ -225,6 +235,11 @@ export const updateProblem = asyncHandler(
     const {
       title,
       description,
+      inputFormat,
+      outputFormat,
+      constraints,
+      examples,
+      hints,
       difficulty,
       tags,
       pattern,
@@ -239,6 +254,11 @@ export const updateProblem = asyncHandler(
 
     if (title) problem.title = title;
     if (description) problem.description = description;
+    if (inputFormat) problem.inputFormat = inputFormat;
+    if (outputFormat) problem.outputFormat = outputFormat;
+    if (constraints) problem.constraints = constraints;
+    if (examples) problem.examples = examples;
+    if (hints) problem.hints = hints;
     if (difficulty) problem.difficulty = difficulty;
     if (tags) problem.tags = tags;
     if (estimatedTime) problem.estimatedTime = estimatedTime;

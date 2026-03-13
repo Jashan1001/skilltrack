@@ -8,11 +8,27 @@ interface TestCase {
   expectedOutput: string;
 }
 
+interface Example {
+  input: string;
+  output: string;
+  explanation?: string;
+}
+
 interface Problem {
   title: string;
   description: string;
+  inputFormat: string;
+  outputFormat: string;
+  constraints: string;
+  examples: Example[];
   difficulty: string;
   tags: string[];
+  hints: string[];
+  pattern?: string;
+  orderInPattern?: number;
+  estimatedTime?: number;
+  visibility?: "public" | "private";
+  editorial?: string;
   evaluationType: "strict" | "partial";
   publicTestCases: TestCase[];
   privateTestCases: TestCase[];
@@ -22,6 +38,21 @@ const EditProblemPage: React.FC = () => {
   const { id } = useParams(); // ✅ Keep your working param
   const navigate = useNavigate();
 
+  const patternOptions = [
+    "Sliding Window",
+    "Two Pointers",
+    "Binary Search",
+    "Stack",
+    "Linked List",
+    "Tree",
+    "Graph",
+    "Heap",
+    "Greedy",
+    "Backtracking",
+    "Dynamic Programming",
+    "Bit Manipulation",
+  ];
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [problem, setProblem] = useState<Problem | null>(null);
@@ -30,7 +61,20 @@ const EditProblemPage: React.FC = () => {
     const fetchProblem = async () => {
       try {
         const res = await axios.get(`/problems/${id}`);
-        setProblem(res.data?.data);
+        const data = res.data?.data;
+        setProblem({
+          ...data,
+          inputFormat: data.inputFormat || "",
+          outputFormat: data.outputFormat || "",
+          constraints: data.constraints || "",
+          examples: data.examples || [],
+          hints: data.hints || [],
+          pattern: data.pattern || "Sliding Window",
+          orderInPattern: data.orderInPattern || 1,
+          estimatedTime: data.estimatedTime || 20,
+          visibility: data.visibility || "public",
+          editorial: data.editorial || "",
+        });
       } catch {
         setError("Failed to load problem");
       } finally {
@@ -164,6 +208,119 @@ const EditProblemPage: React.FC = () => {
             className="w-full px-4 py-3 rounded-lg bg-muted border border-border focus:outline-none focus:ring-2 focus:ring-primary"
           />
 
+          <textarea
+            rows={3}
+            value={problem.inputFormat}
+            onChange={(e) =>
+              setProblem({ ...problem, inputFormat: e.target.value })
+            }
+            placeholder="Input format"
+            className="w-full px-4 py-3 rounded-lg bg-muted border border-border focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+
+          <textarea
+            rows={3}
+            value={problem.outputFormat}
+            onChange={(e) =>
+              setProblem({ ...problem, outputFormat: e.target.value })
+            }
+            placeholder="Output format"
+            className="w-full px-4 py-3 rounded-lg bg-muted border border-border focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+
+          <textarea
+            rows={3}
+            value={problem.constraints}
+            onChange={(e) =>
+              setProblem({ ...problem, constraints: e.target.value })
+            }
+            placeholder="Constraints"
+            className="w-full px-4 py-3 rounded-lg bg-muted border border-border focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold">Examples</h3>
+            {problem.examples.map((example, index) => (
+              <div
+                key={index}
+                className="border border-border rounded-xl p-4 space-y-3 bg-muted/40"
+              >
+                <textarea
+                  value={example.input}
+                  onChange={(e) =>
+                    setProblem({
+                      ...problem,
+                      examples: problem.examples.map((ex, i) =>
+                        i === index ? { ...ex, input: e.target.value } : ex
+                      ),
+                    })
+                  }
+                  placeholder="Example input"
+                  className="w-full px-4 py-3 rounded-lg bg-muted border border-border focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+
+                <textarea
+                  value={example.output}
+                  onChange={(e) =>
+                    setProblem({
+                      ...problem,
+                      examples: problem.examples.map((ex, i) =>
+                        i === index ? { ...ex, output: e.target.value } : ex
+                      ),
+                    })
+                  }
+                  placeholder="Example output"
+                  className="w-full px-4 py-3 rounded-lg bg-muted border border-border focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+
+                <textarea
+                  value={example.explanation || ""}
+                  onChange={(e) =>
+                    setProblem({
+                      ...problem,
+                      examples: problem.examples.map((ex, i) =>
+                        i === index
+                          ? { ...ex, explanation: e.target.value }
+                          : ex
+                      ),
+                    })
+                  }
+                  placeholder="Example explanation (optional)"
+                  className="w-full px-4 py-3 rounded-lg bg-muted border border-border focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+
+                <button
+                  onClick={() =>
+                    setProblem({
+                      ...problem,
+                      examples: problem.examples.filter((_, i) => i !== index),
+                    })
+                  }
+                  className="flex items-center gap-2 text-sm text-destructive hover:opacity-80 transition"
+                >
+                  <Trash2 size={14} />
+                  Remove Example
+                </button>
+              </div>
+            ))}
+
+            <button
+              onClick={() =>
+                setProblem({
+                  ...problem,
+                  examples: [
+                    ...problem.examples,
+                    { input: "", output: "", explanation: "" },
+                  ],
+                })
+              }
+              className="flex items-center gap-2 text-sm text-primary hover:opacity-90 transition"
+            >
+              <Plus size={14} />
+              Add Example
+            </button>
+          </div>
+
           <div className="grid md:grid-cols-2 gap-6">
             <select
               value={problem.difficulty}
@@ -192,6 +349,65 @@ const EditProblemPage: React.FC = () => {
             </select>
           </div>
 
+          <div className="grid md:grid-cols-2 gap-6">
+            <select
+              value={problem.pattern}
+              onChange={(e) =>
+                setProblem({ ...problem, pattern: e.target.value })
+              }
+              className="w-full px-4 py-3 rounded-lg bg-muted border border-border focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              {patternOptions.map((p) => (
+                <option key={p} value={p}>{p}</option>
+              ))}
+            </select>
+
+            <input
+              type="number"
+              min={1}
+              value={problem.orderInPattern || 1}
+              onChange={(e) =>
+                setProblem({
+                  ...problem,
+                  orderInPattern: Number(e.target.value || 1),
+                })
+              }
+              placeholder="Order in pattern"
+              className="w-full px-4 py-3 rounded-lg bg-muted border border-border focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-6">
+            <input
+              type="number"
+              min={1}
+              max={300}
+              value={problem.estimatedTime || 20}
+              onChange={(e) =>
+                setProblem({
+                  ...problem,
+                  estimatedTime: Number(e.target.value || 20),
+                })
+              }
+              placeholder="Estimated time (minutes)"
+              className="w-full px-4 py-3 rounded-lg bg-muted border border-border focus:outline-none focus:ring-2 focus:ring-primary"
+            />
+
+            <select
+              value={problem.visibility || "public"}
+              onChange={(e) =>
+                setProblem({
+                  ...problem,
+                  visibility: e.target.value as "public" | "private",
+                })
+              }
+              className="w-full px-4 py-3 rounded-lg bg-muted border border-border focus:outline-none focus:ring-2 focus:ring-primary"
+            >
+              <option value="public">Public</option>
+              <option value="private">Private</option>
+            </select>
+          </div>
+
           <input
             value={problem.tags.join(", ")}
             onChange={(e) =>
@@ -202,6 +418,32 @@ const EditProblemPage: React.FC = () => {
                   .map((t) => t.trim()),
               })
             }
+            className="w-full px-4 py-3 rounded-lg bg-muted border border-border focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+
+          <textarea
+            rows={4}
+            value={problem.hints.join("\n")}
+            onChange={(e) =>
+              setProblem({
+                ...problem,
+                hints: e.target.value
+                  .split("\n")
+                  .map((h) => h.trim())
+                  .filter(Boolean),
+              })
+            }
+            placeholder="Hints (one per line)"
+            className="w-full px-4 py-3 rounded-lg bg-muted border border-border focus:outline-none focus:ring-2 focus:ring-primary"
+          />
+
+          <textarea
+            rows={5}
+            value={problem.editorial || ""}
+            onChange={(e) =>
+              setProblem({ ...problem, editorial: e.target.value })
+            }
+            placeholder="Editorial"
             className="w-full px-4 py-3 rounded-lg bg-muted border border-border focus:outline-none focus:ring-2 focus:ring-primary"
           />
         </div>
