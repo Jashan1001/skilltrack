@@ -21,13 +21,13 @@ body {
     --border: 240 5% 88%;
     --input: 240 5% 88%;
 
-    --primary: 258 76% 59%;
+    --primary: 210 90% 46%;
     --primary-foreground: 0 0% 100%;
 
     --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --ring: 258 76% 59%;
+    --ring: 210 90% 46%;
     --radius: 0.5rem;
   }
 
@@ -45,13 +45,13 @@ body {
     --border: 240 5% 20%;
     --input: 240 5% 20%;
 
-    --primary: 258 76% 66%;
+    --primary: 210 90% 60%;
     --primary-foreground: 0 0% 100%;
 
     --destructive: 0 63% 55%;
     --destructive-foreground: 0 0% 100%;
 
-    --ring: 258 76% 66%;
+    --ring: 210 90% 60%;
     --radius: 0.5rem;
   }
 }

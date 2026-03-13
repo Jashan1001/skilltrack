@@ -1,6 +1,15 @@
 import { Link, Navigate } from "react-router-dom";
 import { useAuth } from "../context/authContext";
-import { Moon, Sun } from "lucide-react";
+import {
+  BookOpenText,
+  ChartColumn,
+  FileText,
+  Flame,
+  Moon,
+  Sun,
+  TerminalSquare,
+  Trophy,
+} from "lucide-react";
 import { useTheme } from "../context/themeContext";
 
 const PATTERNS = [
@@ -20,32 +29,32 @@ const PATTERNS = [
 
 const FEATURES = [
   {
-    icon: "⚡",
+    icon: BookOpenText,
     title: "Pattern-Based",
     desc: "12 patterns covering every interview topic. Learn the technique, not just the answer.",
   },
   {
-    icon: "🧪",
+    icon: TerminalSquare,
     title: "Real Execution",
     desc: "Monaco editor with JS, Python, C++. Docker-sandboxed with instant feedback.",
   },
   {
-    icon: "📊",
+    icon: ChartColumn,
     title: "Progress Tracking",
     desc: "Pattern mastery grid, activity heatmap, streaks, and per-difficulty stats.",
   },
   {
-    icon: "🏆",
+    icon: Trophy,
     title: "Leaderboard",
     desc: "Global rankings with runtime scoring. Filter by week, month, or all time.",
   },
   {
-    icon: "🔖",
+    icon: FileText,
     title: "Editorials",
     desc: "Detailed solutions unlock after your first submission attempt.",
   },
   {
-    icon: "🔥",
+    icon: Flame,
     title: "Daily Streaks",
     desc: "Build consistency. Every accepted submission keeps your streak alive.",
   },
@@ -239,13 +248,14 @@ const HomePage: React.FC = () => {
           {FEATURES.map((f) => (
             <div
               key={f.title}
-              className="bg-card border border-border rounded-xl p-5 space-y-2
-                         hover:border-primary/30 hover:shadow-sm
-                         hover:shadow-primary/5 transition-all"
+              className="bg-card border border-border rounded-xl p-5 space-y-3
+                         hover:border-primary/20 hover:shadow-sm transition-all"
             >
-              <div className="text-2xl">{f.icon}</div>
+              <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-primary">
+                <f.icon size={18} strokeWidth={2} />
+              </div>
               <h3 className="font-semibold text-sm text-foreground">{f.title}</h3>
-              <p className="text-xs text-muted-foreground leading-relaxed">{f.desc}</p>
+              <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
             </div>
           ))}
         </div>
