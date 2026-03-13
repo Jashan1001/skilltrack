@@ -26,7 +26,7 @@ export const registerSchema = z.object({
     .max(100, "Password too long"),
 
   role: z
-    .enum(["student", "recruiter"])
+    .enum(["student"])
     .optional()
     .default("student"),
 });
