@@ -4,11 +4,7 @@ import Sidebar from "../components/Sidebar";
 
 const AppLayout: React.FC = () => {
   return (
-    <div className="h-screen flex 
-                bg-gray-50 dark:bg-neutral-950 
-                text-gray-900 dark:text-neutral-100 
-                transition-colors">
-      
+    <div className="h-screen flex bg-background text-foreground transition-colors">
       <Sidebar />
 
       <div className="flex-1 flex flex-col overflow-hidden">
@@ -20,7 +16,6 @@ const AppLayout: React.FC = () => {
           </div>
         </main>
       </div>
-
     </div>
   );
 };
