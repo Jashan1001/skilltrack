@@ -238,7 +238,7 @@ const ProblemDetailPage = () => {
 
   if(loading)
     return(
-      <div className="flex items-center justify-center h-full text-neutral-500">
+      <div className="flex items-center justify-center h-full text-muted-foreground">
         Loading problem...
       </div>
     );
@@ -257,7 +257,7 @@ const ProblemDetailPage = () => {
 <motion.div
 initial={{opacity:0}}
 animate={{opacity:1}}
-className="flex flex-col h-full px-6 py-4 bg-neutral-100 dark:bg-neutral-950"
+className="flex flex-col h-full px-6 py-4 bg-background"
 >
 
 {/* HEADER */}
@@ -268,7 +268,7 @@ className="flex flex-col h-full px-6 py-4 bg-neutral-100 dark:bg-neutral-950"
 
 <div className="flex items-center gap-4">
 
-<h1 className="text-2xl font-semibold text-neutral-900 dark:text-white">
+<h1 className="text-2xl font-semibold text-foreground">
 {problem.title}
 </h1>
 
@@ -279,25 +279,25 @@ className="flex flex-col h-full px-6 py-4 bg-neutral-100 dark:bg-neutral-950"
 </div>
 
 {problem.pattern && (
-<div className="text-xs text-neutral-500 mt-1">
+<div className="text-xs text-muted-foreground mt-1">
 Pattern: {problem.pattern}
 </div>
 )}
 
 </div>
 
-<div className="flex gap-5 text-sm text-neutral-500">
+<div className="flex gap-5 text-sm text-muted-foreground">
 
 <button
 onClick={()=>navigate(-1)}
-className="flex items-center gap-1 hover:text-neutral-900 dark:hover:text-white"
+className="flex items-center gap-1 hover:text-foreground"
 >
 <ArrowLeft size={16}/> Back
 </button>
 
 <button
 onClick={()=>navigate(`/leaderboard/${problem._id}`)}
-className="flex items-center gap-1 hover:text-neutral-900 dark:hover:text-white"
+className="flex items-center gap-1 hover:text-foreground"
 >
 <Trophy size={16}/> Leaderboard
 </button>
@@ -310,24 +310,24 @@ className="flex items-center gap-1 hover:text-neutral-900 dark:hover:text-white"
 
 <PanelGroup
 direction="horizontal"
-className="flex-1 border border-neutral-200 dark:border-neutral-800 rounded-lg overflow-hidden bg-white dark:bg-neutral-900"
+className="flex-1 border border-border rounded-lg overflow-hidden bg-card"
 >
 
 {/* LEFT PANEL */}
 
 <Panel defaultSize={45} minSize={30}>
 
-<div className="h-full overflow-y-auto border-r border-neutral-200 dark:border-neutral-800 p-5 space-y-8">
+<div className="h-full overflow-y-auto border-r border-border p-5 space-y-8">
 
 {/* DESCRIPTION */}
 
 <section>
 <h2 className="text-sm font-semibold mb-2">Description</h2>
 <div className="prose prose-sm dark:prose-invert max-w-none
-                text-neutral-600 dark:text-neutral-300
-                prose-code:bg-neutral-100 dark:prose-code:bg-neutral-800
+                text-muted-foreground
+                prose-code:bg-muted
                 prose-code:px-1 prose-code:rounded
-                prose-pre:bg-neutral-100 dark:prose-pre:bg-neutral-800">
+                prose-pre:bg-muted">
 <ReactMarkdown>{problem.description}</ReactMarkdown>
 </div>
 </section>
@@ -370,27 +370,27 @@ className="flex-1 border border-neutral-200 dark:border-neutral-800 rounded-lg o
 {problem.examples?.map((ex,i)=>(
 <div
 key={i}
-className="border border-neutral-200 dark:border-neutral-800 rounded-lg p-4"
+className="border border-border rounded-lg p-4"
 >
 
-<div className="text-xs text-neutral-500 mb-2">
+<div className="text-xs text-muted-foreground mb-2">
 Example {i+1}
 </div>
 
-<div className="text-xs text-neutral-500 mb-1">Input</div>
+<div className="text-xs text-muted-foreground mb-1">Input</div>
 
-<pre className="bg-neutral-100 dark:bg-neutral-800 p-2 rounded text-sm font-mono whitespace-pre-wrap">
+<pre className="bg-muted p-2 rounded text-sm font-mono whitespace-pre-wrap">
 {ex.input}
 </pre>
 
-<div className="text-xs text-neutral-500 mt-3 mb-1">Output</div>
+<div className="text-xs text-muted-foreground mt-3 mb-1">Output</div>
 
-<pre className="bg-neutral-100 dark:bg-neutral-800 p-2 rounded text-sm font-mono whitespace-pre-wrap">
+<pre className="bg-muted p-2 rounded text-sm font-mono whitespace-pre-wrap">
 {ex.output}
 </pre>
 
 {ex.explanation && (
-<div className="text-sm mt-3 text-neutral-600 dark:text-neutral-300">
+<div className="text-sm mt-3 text-muted-foreground">
 {ex.explanation}
 </div>
 )}
@@ -410,24 +410,24 @@ Public Test Cases
 
 <div
 key={i}
-className="border border-neutral-200 dark:border-neutral-800 rounded-lg p-3 mb-4"
+className="border border-border rounded-lg p-3 mb-4"
 >
 
-<div className="text-xs text-neutral-500 mb-1">
+<div className="text-xs text-muted-foreground mb-1">
 Test Case {i+1}
 </div>
 
-<div className="text-xs text-neutral-500 mb-1">Input</div>
+<div className="text-xs text-muted-foreground mb-1">Input</div>
 
-<pre className="bg-neutral-100 dark:bg-neutral-800 p-2 rounded text-sm whitespace-pre-wrap">
+<pre className="bg-muted p-2 rounded text-sm whitespace-pre-wrap">
 {tc.input}
 </pre>
 
-<div className="text-xs text-neutral-500 mt-3 mb-1">
+<div className="text-xs text-muted-foreground mt-3 mb-1">
 Expected Output
 </div>
 
-<pre className="bg-neutral-100 dark:bg-neutral-800 p-2 rounded text-sm whitespace-pre-wrap">
+<pre className="bg-muted p-2 rounded text-sm whitespace-pre-wrap">
 {tc.expectedOutput}
 </pre>
 
@@ -457,7 +457,7 @@ className="text-sm font-semibold text-emerald-500 hover:underline"
 {problem.hints.map((hint,i)=>(
 <li
 key={i}
-className="bg-neutral-100 dark:bg-neutral-800 p-2 rounded"
+className="bg-muted p-2 rounded"
 >
 Hint {i+1}: {hint}
 </li>
@@ -491,7 +491,7 @@ className="text-sm font-semibold text-emerald-500 hover:underline"
 {problem.tags.map((tag)=>(
 <span
 key={tag}
-className="text-xs px-2 py-1 rounded bg-neutral-200 dark:bg-neutral-800"
+className="text-xs px-2 py-1 rounded bg-muted"
 >
 {tag}
 </span>
@@ -509,7 +509,7 @@ className="text-xs px-2 py-1 rounded bg-neutral-200 dark:bg-neutral-800"
 
 </Panel>
 
-<PanelResizeHandle className="w-[4px] bg-neutral-200 dark:bg-neutral-700"/>
+<PanelResizeHandle className="w-[4px] bg-border"/>
 
 {/* RIGHT PANEL */}
 
@@ -529,10 +529,10 @@ className="text-xs px-2 py-1 rounded bg-neutral-200 dark:bg-neutral-800"
 value={language}
 onChange={(e)=>setLanguage(e.target.value)}
 className="px-3 py-1 rounded-md text-sm font-medium
-bg-neutral-100 dark:bg-neutral-800
-text-neutral-900 dark:text-white
-border border-neutral-300 dark:border-neutral-700
-focus:outline-none focus:ring-2 focus:ring-emerald-500"
+bg-muted
+text-foreground
+border border-border
+focus:outline-none focus:ring-2 focus:ring-primary"
 >
 <option value="javascript">JavaScript</option>
 <option value="python">Python</option>
@@ -580,15 +580,15 @@ scrollBeyondLastLine:false
 
 </Panel>
 
-<PanelResizeHandle className="h-[4px] bg-neutral-200 dark:bg-neutral-700"/>
+<PanelResizeHandle className="h-[4px] bg-border"/>
 
 {/* OUTPUT PANEL */}
 
 <Panel defaultSize={40} minSize={30}>
 
-<div ref={resultRef} className="h-full border-t border-neutral-200 dark:border-neutral-800 overflow-auto">
+<div ref={resultRef} className="h-full border-t border-border overflow-auto">
 
-<div className="flex border-b border-neutral-200 dark:border-neutral-800 bg-neutral-100 dark:bg-neutral-900 text-sm">
+<div className="flex border-b border-border bg-muted text-sm">
 
 {["Console","Testcases","Custom","Result","Editorial"].map((tab)=>(
 <button
@@ -597,7 +597,7 @@ onClick={()=>setActiveTab(tab.toLowerCase() as any)}
 className={`px-4 py-2 ${
 activeTab === tab.toLowerCase()
 ? "text-emerald-500 border-b-2 border-emerald-500"
-: "text-neutral-500"
+: "text-muted-foreground"
 }`}
 >
 {tab}
@@ -609,7 +609,7 @@ activeTab === tab.toLowerCase()
 <div className="p-4 text-sm">
 
 {activeTab==="console" && (
-<pre className="font-mono whitespace-pre-wrap text-neutral-600 dark:text-neutral-300">
+<pre className="font-mono whitespace-pre-wrap text-muted-foreground">
 {runResult
 ? runResult.detailedResults.map((r:any)=>`TC${r.testCase}: ${r.output}`).join("\n")
 : "Run your code to see output"}
@@ -624,7 +624,7 @@ activeTab === tab.toLowerCase()
 
 <div
 key={r.testCase}
-className="border border-neutral-200 dark:border-neutral-800 rounded-lg p-3"
+className="border border-border rounded-lg p-3"
 >
 
 <div className="flex justify-between mb-3">
@@ -642,19 +642,19 @@ Test Case {r.testCase}
 <div className="grid grid-cols-2 gap-4 text-xs font-mono">
 
 <div>
-<div className="text-neutral-500 mb-1">
+<div className="text-muted-foreground mb-1">
 Expected
 </div>
-<pre className="bg-neutral-100 dark:bg-neutral-800 p-2 rounded whitespace-pre-wrap">
+<pre className="bg-muted p-2 rounded whitespace-pre-wrap">
 {r.expected}
 </pre>
 </div>
 
 <div>
-<div className="text-neutral-500 mb-1">
+<div className="text-muted-foreground mb-1">
 Your Output
 </div>
-<pre className="bg-neutral-100 dark:bg-neutral-800 p-2 rounded whitespace-pre-wrap">
+<pre className="bg-muted p-2 rounded whitespace-pre-wrap">
 {r.output}
 </pre>
 </div>
@@ -677,7 +677,7 @@ Your Output
 value={customInput}
 onChange={(e)=>setCustomInput(e.target.value)}
 placeholder="Enter custom input here..."
-className="w-full h-32 p-3 rounded border border-neutral-300 dark:border-neutral-700 bg-neutral-100 dark:bg-neutral-800 font-mono"
+className="w-full h-32 p-3 rounded border border-border bg-muted font-mono"
 />
 
 <button
@@ -732,7 +732,7 @@ Runtime: {submitResult.runtime} ms
       </div>
     ) : (
       <div className="prose prose-sm dark:prose-invert max-w-none
-                      prose-code:bg-neutral-100 dark:prose-code:bg-neutral-800
+                      prose-code:bg-muted
                       prose-code:px-1 prose-code:rounded">
         <ReactMarkdown>{problem.editorial}</ReactMarkdown>
       </div>
