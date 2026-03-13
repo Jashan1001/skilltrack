@@ -1,169 +1,200 @@
 import { NavLink, useNavigate } from "react-router-dom";
-import { useState } from "react";
 import { useAuth } from "../context/authContext";
+import { useTheme } from "../context/themeContext";
+import { useState } from "react";
 import {
-  LayoutDashboard,
-  Compass,
-  BookOpen,
-  BarChart3,
-  Trophy,
-  PlusCircle,
-  ChevronLeft,
-  ChevronRight,
+  LayoutDashboard, Code2, Layers, Trophy, History,
+  Settings, Sun, Moon, ChevronLeft, ChevronRight,
+  BarChart3, LogOut,
 } from "lucide-react";
 
-const Sidebar = () => {
-  const { user } = useAuth();
+interface NavItem {
+  to: string;
+  icon: React.ReactNode;
+  label: string;
+  adminOnly?: boolean;
+}
+
+const NAV_ITEMS: NavItem[] = [
+  { to: "/dashboard",   icon: <LayoutDashboard size={18} />, label: "Dashboard" },
+  { to: "/problems",    icon: <Code2 size={18} />,           label: "Problems" },
+  { to: "/patterns",    icon: <Layers size={18} />,          label: "Patterns" },
+  { to: "/leaderboard", icon: <Trophy size={18} />,          label: "Leaderboard" },
+  { to: "/submissions", icon: <History size={18} />,         label: "Submissions" },
+];
+
+const ADMIN_ITEMS: NavItem[] = [
+  { to: "/admin/analytics", icon: <BarChart3 size={18} />, label: "Analytics", adminOnly: true },
+  { to: "/admin/create",    icon: <Settings size={18} />,  label: "Create Problem", adminOnly: true },
+];
+
+interface TooltipProps {
+  label: string;
+  children: React.ReactNode;
+  show: boolean;
+}
+
+const Tooltip: React.FC<TooltipProps> = ({ label, children, show }) => (
+  <div className="relative group/tip flex">
+    {children}
+    {show && (
+      <div className="absolute left-full ml-3 top-1/2 -translate-y-1/2
+                      px-2.5 py-1.5 rounded-lg bg-foreground text-background
+                      text-xs font-medium whitespace-nowrap
+                      opacity-0 group-hover/tip:opacity-100
+                      pointer-events-none transition-opacity duration-150 z-50
+                      shadow-lg">
+        {label}
+        <div className="absolute right-full top-1/2 -translate-y-1/2
+                        border-4 border-transparent border-r-foreground" />
+      </div>
+    )}
+  </div>
+);
+
+const Sidebar: React.FC = () => {
+  const { user, logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
 
-  const base =
-    "flex items-center rounded-lg text-sm font-medium transition-colors";
+  const isAdmin = user?.role === "admin";
 
   const getClass = ({ isActive }: { isActive: boolean }) =>
-    `${base} ${
-      collapsed ? "justify-center py-3" : "gap-3 px-3 py-2"
-    } ${
-      isActive
-        ? "bg-neutral-100 dark:bg-neutral-800 text-neutral-900 dark:text-white"
-        : "text-neutral-500 hover:bg-neutral-100 dark:hover:bg-neutral-800 hover:text-neutral-900 dark:hover:text-white"
-    }`;
+    `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
+     transition-colors duration-150 w-full
+     ${isActive
+       ? "bg-primary/10 text-primary"
+       : "text-muted-foreground hover:text-foreground hover:bg-muted"
+     }`;
 
-  const iconSize = collapsed ? 22 : 18;
+  const items = [...NAV_ITEMS, ...(isAdmin ? ADMIN_ITEMS : [])];
 
   return (
     <aside
-      className={`
-      ${collapsed ? "w-16" : "w-60"}
-      flex flex-col
-      bg-white dark:bg-neutral-900
-      border-r border-neutral-200 dark:border-neutral-800
-      transition-all duration-300
-    `}
+      className={`relative flex flex-col border-r border-border bg-card
+                  transition-all duration-300 ease-in-out shrink-0
+                  ${collapsed ? "w-16" : "w-56"}`}
     >
-      {/* Header */}
+      {/* Toggle button */}
+      <button
+        onClick={() => setCollapsed((c) => !c)}
+        className="absolute -right-3 top-6 z-10 w-6 h-6 rounded-full
+                   bg-card border border-border flex items-center justify-center
+                   text-muted-foreground hover:text-foreground
+                   hover:bg-muted transition shadow-sm"
+      >
+        {collapsed
+          ? <ChevronRight size={12} />
+          : <ChevronLeft size={12} />
+        }
+      </button>
 
-      <div className="h-14 flex items-center justify-between px-4 border-b border-neutral-200 dark:border-neutral-800">
-
-        {!collapsed && (
-          <span className="text-base font-semibold tracking-tight text-neutral-900 dark:text-white">
-            SkillTrack
+      {/* Logo */}
+      <div className={`flex items-center h-14 border-b border-border
+                       transition-all duration-300
+                       ${collapsed ? "px-4 justify-center" : "px-5"}`}>
+        {collapsed ? (
+          <span className="text-primary font-bold text-lg">S</span>
+        ) : (
+          <span className="font-bold text-base text-foreground tracking-tight">
+            Skill<span className="text-primary">Track</span>
           </span>
         )}
-
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          className="
-          text-neutral-500
-          hover:text-neutral-900
-          dark:hover:text-white
-          transition
-        "
-        >
-          {collapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
-        </button>
-
       </div>
 
-      {/* Navigation */}
+      {/* Nav */}
+      <nav className="flex-1 overflow-y-auto py-4 px-2 space-y-0.5">
 
-      <nav className="flex-1 px-2 py-4 space-y-1">
+        {items.map((item) => {
+          if (item.adminOnly && !isAdmin) return null;
 
-        <NavLink to="/dashboard" className={getClass}>
-          <LayoutDashboard size={iconSize} />
-          {!collapsed && <span>Dashboard</span>}
-        </NavLink>
+          return (
+            <Tooltip key={item.to} label={item.label} show={collapsed}>
+              <NavLink to={item.to} className={getClass}>
+                <span className="shrink-0">{item.icon}</span>
+                {!collapsed && (
+                  <span className="truncate">{item.label}</span>
+                )}
+              </NavLink>
+            </Tooltip>
+          );
+        })}
 
-        <NavLink to="/patterns" className={getClass}>
-          <Compass size={iconSize} />
-          {!collapsed && <span>Patterns</span>}
-        </NavLink>
+        {/* Divider */}
+        <div className="my-2 border-t border-border" />
 
-        <NavLink to="/problems" className={getClass}>
-          <BookOpen size={iconSize} />
-          {!collapsed && <span>Problems</span>}
-        </NavLink>
-
-        <NavLink to="/submissions" className={getClass}>
-          <BarChart3 size={iconSize} />
-          {!collapsed && <span>Submissions</span>}
-        </NavLink>
-
-        <NavLink to="/leaderboard" className={getClass}>
-          <Trophy size={iconSize} />
-          {!collapsed && <span>Leaderboard</span>}
-        </NavLink>
-
-        {user?.role === "admin" && (
-          <div className="pt-4 space-y-1">
-
+        {/* Theme toggle */}
+        <Tooltip label={theme === "dark" ? "Light mode" : "Dark mode"} show={collapsed}>
+          <button
+            onClick={toggleTheme}
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg
+                        text-sm font-medium w-full transition-colors
+                        text-muted-foreground hover:text-foreground hover:bg-muted
+                        ${collapsed ? "justify-center" : ""}`}
+          >
+            <span className="shrink-0">
+              {theme === "dark"
+                ? <Sun size={18} />
+                : <Moon size={18} />
+              }
+            </span>
             {!collapsed && (
-              <div className="px-3 text-xs uppercase tracking-wide text-neutral-400">
-                Admin
-              </div>
+              <span>{theme === "dark" ? "Light mode" : "Dark mode"}</span>
             )}
+          </button>
+        </Tooltip>
 
-            <NavLink to="/admin/create" className={getClass}>
-              <PlusCircle size={iconSize} />
-              {!collapsed && <span>Create</span>}
-            </NavLink>
-
-            <NavLink to="/admin/analytics" className={getClass}>
-              <BarChart3 size={iconSize} />
-              {!collapsed && <span>Analytics</span>}
-            </NavLink>
-
-          </div>
-        )}
-
+        {/* Logout */}
+        <Tooltip label="Sign out" show={collapsed}>
+          <button
+            onClick={logout}
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg
+                        text-sm font-medium w-full transition-colors
+                        text-muted-foreground hover:text-foreground hover:bg-muted
+                        ${collapsed ? "justify-center" : ""}`}
+          >
+            <LogOut size={18} className="shrink-0" />
+            {!collapsed && <span>Sign out</span>}
+          </button>
+        </Tooltip>
       </nav>
 
-      {/* User info at bottom */}
-      <div className="p-4 border-t border-border">
-        {!collapsed ? (
-          <div
-            className="flex items-center gap-3 cursor-pointer hover:bg-muted rounded-lg p-2 transition"
+      {/* User footer */}
+      <div className={`border-t border-border p-3
+                       ${collapsed ? "flex justify-center" : ""}`}>
+        <Tooltip label={user?.name || ""} show={collapsed}>
+          <button
             onClick={() => navigate(`/profile/${user?.userId}`)}
+            className={`flex items-center gap-3 p-2 rounded-lg w-full
+                        hover:bg-muted transition text-left
+                        ${collapsed ? "justify-center w-auto" : ""}`}
           >
             {user?.avatarUrl ? (
               <img
-              
                 src={user.avatarUrl}
                 alt={user.name}
                 className="w-8 h-8 rounded-full object-cover shrink-0"
               />
             ) : (
-              <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-sm font-semibold shrink-0">
+              <div className="w-8 h-8 rounded-full bg-primary flex items-center
+                              justify-center text-primary-foreground text-sm
+                              font-bold shrink-0">
                 {user?.name?.charAt(0).toUpperCase()}
               </div>
             )}
-            <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-foreground truncate">
-                {user?.name}
-              </p>
-              <p className="text-xs text-muted-foreground truncate">
-                {user?.role}
-              </p>
-            </div>
-          </div>
-        ) : (
-          <div
-            className="flex justify-center cursor-pointer"
-            onClick={() => navigate(`/profile/${user?.userId}`)}
-          >
-            {user?.avatarUrl ? (
-              <img
-                src={user.avatarUrl}
-                alt={user?.name}
-                className="w-8 h-8 rounded-full object-cover"
-              />
-            ) : (
-              <div className="w-8 h-8 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-sm font-semibold">
-                {user?.name?.charAt(0).toUpperCase()}
+            {!collapsed && (
+              <div className="min-w-0 flex-1">
+                <p className="text-sm font-medium text-foreground truncate">
+                  {user?.name}
+                </p>
+                <p className="text-xs text-muted-foreground capitalize truncate">
+                  {user?.role}
+                </p>
               </div>
             )}
-          </div>
-        )}
+          </button>
+        </Tooltip>
       </div>
     </aside>
   );
