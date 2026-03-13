@@ -105,10 +105,10 @@ const SubmissionHistoryPage: React.FC = () => {
 
       {/* Header */}
       <div>
-        <h1 className="text-3xl font-semibold text-gray-900 dark:text-white">
+        <h1 className="text-3xl font-semibold text-foreground">
           Performance Analytics
         </h1>
-        <p className="text-gray-500 dark:text-neutral-400 mt-2">
+        <p className="text-muted-foreground mt-2">
           Analyze efficiency, accuracy, and improvement trends.
         </p>
       </div>
@@ -123,21 +123,21 @@ const SubmissionHistoryPage: React.FC = () => {
       </div>
 
       {/* Filter Bar */}
-      <div className="bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 rounded-xl p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="bg-card border border-border rounded-xl p-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
 
         <input
           type="text"
           placeholder="Search by problem..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="md:w-1/3 px-4 py-2 rounded-md border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
+          className="md:w-1/3 px-4 py-2 rounded-md border border-border bg-muted text-sm focus:outline-none focus:ring-2 focus:ring-primary"
         />
 
         <div className="flex gap-4">
           <select
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-2 rounded-md border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm"
+            className="px-4 py-2 rounded-md border border-border bg-muted text-sm"
           >
             <option value="all">All Status</option>
             <option value="accepted">Accepted</option>
@@ -151,7 +151,7 @@ const SubmissionHistoryPage: React.FC = () => {
             onChange={(e) =>
               setDifficultyFilter(e.target.value)
             }
-            className="px-4 py-2 rounded-md border border-gray-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 text-sm"
+            className="px-4 py-2 rounded-md border border-border bg-muted text-sm"
           >
             <option value="all">All Difficulty</option>
             <option value="easy">Easy</option>
@@ -162,7 +162,7 @@ const SubmissionHistoryPage: React.FC = () => {
       </div>
 
       {/* Table */}
-      <div className="bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 rounded-xl overflow-hidden">
+      <div className="bg-card border border-border rounded-xl overflow-hidden">
         {filtered.length === 0 ? (
           <div className="bg-card border border-border rounded-xl px-6 py-16
                           text-center text-muted-foreground">
@@ -172,7 +172,7 @@ const SubmissionHistoryPage: React.FC = () => {
           </div>
         ) : (
           <table className="w-full text-sm">
-            <thead className="border-b border-gray-200 dark:border-neutral-800 text-left text-gray-500 dark:text-neutral-400">
+            <thead className="border-b border-border text-left text-muted-foreground">
               <tr>
                 <th className="px-6 py-4">Problem</th>
                 <th className="px-6 py-4">Pattern</th>
@@ -187,18 +187,18 @@ const SubmissionHistoryPage: React.FC = () => {
               {filtered.map((sub) => (
                 <tr
                   key={sub._id}
-                  className="border-b border-gray-100 dark:border-neutral-800 hover:bg-gray-50 dark:hover:bg-neutral-800/40 transition"
+                  className="border-b border-border hover:bg-muted/50 transition"
                 >
                   <td
                     onClick={() =>
                       navigate(`/problems/${sub.problem!._id}`)
                     }
-                    className="px-6 py-4 cursor-pointer text-gray-900 dark:text-neutral-200 hover:underline"
+                    className="px-6 py-4 cursor-pointer text-foreground hover:underline"
                   >
                     {sub.problem?.title}
                   </td>
 
-                  <td className="px-6 py-4 text-gray-500 dark:text-neutral-400">
+                  <td className="px-6 py-4 text-muted-foreground">
                     {sub.problem?.pattern || "—"}
                   </td>
 
@@ -230,7 +230,7 @@ const SubmissionHistoryPage: React.FC = () => {
                     {sub.runtime} ms
                   </td>
 
-                  <td className="px-6 py-4 text-gray-500 dark:text-neutral-400">
+                  <td className="px-6 py-4 text-muted-foreground">
                     {new Date(sub.createdAt).toLocaleDateString()}
                   </td>
 
@@ -239,7 +239,7 @@ const SubmissionHistoryPage: React.FC = () => {
                       onClick={() =>
                         navigate(`/submissions/${sub._id}`)
                       }
-                      className="text-indigo-600 hover:underline text-sm"
+                      className="text-primary hover:underline text-sm"
                     >
                       View
                     </button>
@@ -266,11 +266,11 @@ const StatCard = ({
   title: string;
   value: string | number;
 }) => (
-  <div className="bg-white dark:bg-neutral-900 border border-gray-200 dark:border-neutral-800 rounded-xl p-6 shadow-sm">
-    <p className="text-sm text-gray-500 dark:text-neutral-400">
+  <div className="bg-card border border-border rounded-xl p-6 shadow-sm">
+    <p className="text-sm text-muted-foreground">
       {title}
     </p>
-    <p className="text-xl font-semibold text-gray-900 dark:text-white mt-2">
+    <p className="text-xl font-semibold text-foreground mt-2">
       {value}
     </p>
   </div>
@@ -283,37 +283,14 @@ const DifficultyBadge = ({
 }) => {
   const style =
     difficulty === "easy"
-      ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+      ? "bg-emerald-500/10 text-emerald-500"
       : difficulty === "medium"
-      ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-      : "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400";
+      ? "bg-amber-500/10 text-amber-500"
+      : "bg-rose-500/10 text-rose-500";
 
   return (
     <span className={`px-2 py-1 rounded-full text-xs font-medium ${style}`}>
       {difficulty}
-    </span>
-  );
-};
-
-const VerdictBadge = ({
-  verdict,
-}: {
-  verdict: string;
-}) => {
-  const v = verdict.toLowerCase();
-
-  const style =
-    v === "accepted"
-      ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
-      : v === "wrong_answer"
-      ? "bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400"
-      : v === "time_limit_exceeded"
-      ? "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400"
-      : "bg-gray-200 text-gray-700 dark:bg-neutral-700 dark:text-neutral-300";
-
-  return (
-    <span className={`px-2 py-1 rounded-full text-xs font-medium ${style}`}>
-      {verdict.replace("_", " ")}
     </span>
   );
 };
