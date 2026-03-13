@@ -1,64 +1,56 @@
-import { useNavigate, useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/authContext";
 import { useTheme } from "../context/themeContext";
-import { Sun, Moon, LogOut } from "lucide-react";
+import { Moon, Sun } from "lucide-react";
 
 const Navbar: React.FC = () => {
-  const { logout, user } = useAuth();
+  const { user } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
-
-  const handleLogout = () => {
-    logout();
-    navigate("/login");
-  };
 
   const getPageTitle = () => {
     const path = location.pathname;
 
     if (path.startsWith("/dashboard")) return "Dashboard";
+    if (path.startsWith("/patterns/")) return "Pattern";
     if (path.startsWith("/patterns")) return "Patterns";
     if (path.startsWith("/problems/")) return "Problem";
     if (path.startsWith("/problems")) return "Problems";
     if (path.startsWith("/submissions")) return "Submissions";
     if (path.startsWith("/leaderboard")) return "Leaderboard";
-    if (path.startsWith("/admin")) return "Admin Panel";
+    if (path.startsWith("/profile")) return "Profile";
+    if (path.startsWith("/admin")) return "Admin";
 
     return "SkillTrack";
   };
 
   return (
-    <header
-      className="
-      h-14
-      flex items-center justify-between
-      px-6
-      bg-white dark:bg-neutral-900
-      border-b border-neutral-200 dark:border-neutral-800
-      transition-colors
-    "
-    >
-      {/* Title */}
-      <h1 className="text-base font-semibold tracking-tight text-neutral-900 dark:text-white">
+    <header className="h-14 flex items-center justify-between px-6
+                        bg-card border-b border-border transition-colors shrink-0">
+      <h1 className="text-sm font-semibold text-foreground tracking-tight">
         {getPageTitle()}
       </h1>
 
-      {/* Controls */}
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2">
 
-        {/* Theme toggle */}
+        {/* Streak badge - only shows if active */}
+        {(user?.currentStreak ?? 0) > 0 && (
+          <div className="flex items-center gap-1.5 px-3 py-1 rounded-full
+                          bg-orange-500/10 border border-orange-500/20 mr-1">
+            <span className="text-sm">🔥</span>
+            <span className="text-xs font-semibold text-orange-500">
+              {user?.currentStreak}
+            </span>
+          </div>
+        )}
+
         <button
           onClick={toggleTheme}
-          className="
-          p-2
-          rounded-md
-          hover:bg-neutral-100
-          dark:hover:bg-neutral-800
-          transition
-        "
+          className="p-2 rounded-lg text-muted-foreground
+                     hover:text-foreground hover:bg-muted transition"
         >
-          {theme === "dark" ? <Sun size={18} /> : <Moon size={18} />}
+          {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
         </button>
 
         {/* Profile */}
@@ -76,29 +68,12 @@ const Navbar: React.FC = () => {
             />
           ) : (
             <div className="w-6 h-6 rounded-full bg-primary flex items-center
-                    justify-center text-primary-foreground text-xs font-semibold">
+                            justify-center text-primary-foreground text-xs font-bold">
               {user?.name?.charAt(0).toUpperCase()}
             </div>
           )}
-          <span className="hidden md:block">{user?.name}</span>
+          <span className="hidden md:block font-medium">{user?.name}</span>
         </button>
-
-        {/* Logout */}
-        <button
-          onClick={handleLogout}
-          className="
-          flex items-center gap-1
-          text-sm
-          text-neutral-500
-          hover:text-neutral-900
-          dark:hover:text-white
-          transition
-        "
-        >
-          <LogOut size={16} />
-          Logout
-        </button>
-
       </div>
     </header>
   );
