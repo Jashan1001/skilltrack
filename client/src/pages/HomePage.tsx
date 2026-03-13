@@ -36,7 +36,7 @@ const FEATURES = [
   {
     icon: TerminalSquare,
     title: "Real Execution",
-    desc: "Monaco editor with JS, Python, C++. Docker-sandboxed with instant feedback.",
+    desc: "Monaco editor with JS, Python, C++. Docker-sandboxed execution with result summaries.",
   },
   {
     icon: ChartColumn,
@@ -70,8 +70,8 @@ const HomePage: React.FC = () => {
     <div className="min-h-screen bg-background text-foreground">
 
       {/* NAV */}
-      <nav className="sticky top-0 z-50 border-b border-border bg-background/90 backdrop-blur-sm">
-        <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between">
+      <nav className="sticky top-0 z-50 h-14 border-b border-border bg-card">
+        <div className="max-w-5xl mx-auto px-6 h-full flex items-center justify-between">
 
           <span className="font-bold text-base tracking-tight">
             Skill<span className="text-primary">Track</span>
@@ -122,7 +122,7 @@ const HomePage: React.FC = () => {
 
         <p className="text-lg text-muted-foreground max-w-xl mx-auto leading-relaxed mb-10">
           SkillTrack teaches you the 12 core patterns behind every coding interview.
-          Write real code, get instant feedback, track your mastery.
+          Write real code, run it safely, and track your mastery.
         </p>
 
         <div className="flex items-center justify-center gap-3">
@@ -154,7 +154,7 @@ const HomePage: React.FC = () => {
             <div className="w-3 h-3 rounded-full bg-amber-400/70" />
             <div className="w-3 h-3 rounded-full bg-emerald-400/70" />
             <span className="ml-3 text-xs text-muted-foreground font-mono">
-              sliding-window.js - SkillTrack
+              sliding-window.cpp - SkillTrack (sample)
             </span>
           </div>
 
@@ -162,15 +162,15 @@ const HomePage: React.FC = () => {
 
             <div className="p-5 font-mono text-[13px] leading-6 border-r border-border bg-background/60">
               <div className="text-muted-foreground mb-1">{"// Max subarray sum of size k"}</div>
-              <div><span className="text-primary font-semibold">function</span> <span className="text-foreground">maxSum</span><span className="text-muted-foreground">(arr, k) {"{"}</span></div>
-              <div className="ml-4"><span className="text-primary font-semibold">let</span> <span className="text-foreground">win</span> <span className="text-muted-foreground">= </span><span className="text-foreground">arr.slice(0,k).reduce((a,b) =&gt; a+b)</span></div>
-              <div className="ml-4"><span className="text-primary font-semibold">let</span> <span className="text-foreground">max</span> <span className="text-muted-foreground">= win</span></div>
+              <div><span className="text-primary font-semibold">int</span> <span className="text-foreground">maxSum</span><span className="text-muted-foreground">(vector&lt;int&gt;&amp; arr, int k) {"{"}</span></div>
+              <div className="ml-4"><span className="text-primary font-semibold">int</span> <span className="text-foreground">win</span> <span className="text-muted-foreground">= accumulate(arr.begin(), arr.begin() + k, 0);</span></div>
+              <div className="ml-4"><span className="text-primary font-semibold">int</span> <span className="text-foreground">best</span> <span className="text-muted-foreground">= win;</span></div>
               <div className="ml-4 mt-2 text-muted-foreground">{"// slide the window"}</div>
-              <div className="ml-4"><span className="text-primary font-semibold">for</span> <span className="text-muted-foreground">(let i = k; i &lt; arr.length; i++) {"{"}</span></div>
-              <div className="ml-8"><span className="text-foreground">win += arr[i] - arr[i-k]</span></div>
-              <div className="ml-8"><span className="text-foreground">max = Math.max(max, win)</span></div>
+              <div className="ml-4"><span className="text-primary font-semibold">for</span> <span className="text-muted-foreground">(int i = k; i &lt; (int)arr.size(); i++) {"{"}</span></div>
+              <div className="ml-8"><span className="text-foreground">win += arr[i] - arr[i - k];</span></div>
+              <div className="ml-8"><span className="text-foreground">best = max(best, win);</span></div>
               <div className="ml-4 text-muted-foreground">{"}"}</div>
-              <div className="ml-4"><span className="text-primary font-semibold">return</span> <span className="text-foreground">max</span></div>
+              <div className="ml-4"><span className="text-primary font-semibold">return</span> <span className="text-foreground">best;</span></div>
               <div className="text-muted-foreground">{"}"}</div>
             </div>
 
@@ -205,7 +205,7 @@ const HomePage: React.FC = () => {
               </div>
               <div className="pt-1 text-xs text-muted-foreground space-y-0.5">
                 <div>Pattern: <span className="text-primary font-medium">Sliding Window</span></div>
-                <div>Runtime: <span className="text-foreground font-medium">38ms . O(n)</span></div>
+                <div>Runtime: <span className="text-foreground font-medium">38ms . O(n) . sample output</span></div>
               </div>
             </div>
           </div>

@@ -6,8 +6,8 @@ const Header = ({ showAuthButtons = true }) => {
   const { theme, toggleTheme } = useTheme();
 
   return (
-    <header className="border-b border-border">
-      <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+    <header className="h-14 border-b border-border bg-card">
+      <div className="max-w-6xl mx-auto px-6 h-full flex items-center justify-between">
 
         <Link to="/" className="text-lg font-semibold tracking-tight">
           SkillTrack
