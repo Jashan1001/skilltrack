@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import axios from "../api/axios";
 import toast from "react-hot-toast";
 import Header from "../components/Header";
+import { Eye, EyeOff } from "lucide-react";
 
 const ResetPasswordPage: React.FC = () => {
   const [searchParams] = useSearchParams();
@@ -13,6 +14,8 @@ const ResetPasswordPage: React.FC = () => {
 
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -67,27 +70,48 @@ const ResetPasswordPage: React.FC = () => {
           </div>
 
           <form onSubmit={handleSubmit} className="space-y-4">
-            <input
-              type="password"
-              placeholder="New password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              minLength={6}
-              className="w-full bg-muted border border-border rounded-lg
-                         px-4 py-3 text-sm focus:outline-none
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                placeholder="New password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+                minLength={6}
+                className="w-full bg-muted border border-border rounded-lg
+                         px-4 py-3 pr-11 text-sm focus:outline-none
                          focus:ring-2 focus:ring-primary transition"
-            />
-            <input
-              type="password"
-              placeholder="Confirm new password"
-              value={confirm}
-              onChange={(e) => setConfirm(e.target.value)}
-              required
-              className="w-full bg-muted border border-border rounded-lg
-                         px-4 py-3 text-sm focus:outline-none
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((prev) => !prev)}
+                className="absolute inset-y-0 right-0 px-3 text-muted-foreground hover:text-foreground"
+                aria-label={showPassword ? "Hide new password" : "Show new password"}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
+
+            <div className="relative">
+              <input
+                type={showConfirmPassword ? "text" : "password"}
+                placeholder="Confirm new password"
+                value={confirm}
+                onChange={(e) => setConfirm(e.target.value)}
+                required
+                className="w-full bg-muted border border-border rounded-lg
+                         px-4 py-3 pr-11 text-sm focus:outline-none
                          focus:ring-2 focus:ring-primary transition"
-            />
+              />
+              <button
+                type="button"
+                onClick={() => setShowConfirmPassword((prev) => !prev)}
+                className="absolute inset-y-0 right-0 px-3 text-muted-foreground hover:text-foreground"
+                aria-label={showConfirmPassword ? "Hide confirm password" : "Show confirm password"}
+              >
+                {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
+            </div>
             <button
               type="submit"
               disabled={loading}
