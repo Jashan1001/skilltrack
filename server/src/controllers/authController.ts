@@ -86,7 +86,11 @@ export const login = asyncHandler(
 /* ============================= */
 
 export const getMe = asyncHandler(
-  async (req: any, res: Response, next: NextFunction) => {
+  async (req: Request, res: Response, next: NextFunction) => {
+    if (!req.user) {
+      return next(new AppError("Unauthorized", 401));
+    }
+
     const user = await User.findById(req.user.userId).select("-password");
 
     if (!user) {
