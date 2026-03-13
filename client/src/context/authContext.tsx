@@ -46,6 +46,8 @@ export const AuthProvider = ({
         return;
       }
 
+      setLoading(true);
+
       try {
         const res = await axios.get("/auth/me");
         setUser(res.data.data);
@@ -63,10 +65,25 @@ export const AuthProvider = ({
   }, [token]);
 
   const login = async (email: string, password: string) => {
-    const res = await axios.post("/auth/login", { email, password });
-    const tokenFromServer = res.data.token;
-    localStorage.setItem("token", tokenFromServer);
-    setToken(tokenFromServer);
+    setLoading(true);
+    try {
+      const res = await axios.post("/auth/login", { email, password });
+      const tokenFromServer = res.data.token;
+      localStorage.setItem("token", tokenFromServer);
+
+      axios.defaults.headers.common.Authorization = `Bearer ${tokenFromServer}`;
+      const meRes = await axios.get("/auth/me");
+
+      setUser(meRes.data.data);
+      setToken(tokenFromServer);
+    } catch (error) {
+      localStorage.removeItem("token");
+      setToken(null);
+      setUser(null);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
   };
 
   const register = async (
