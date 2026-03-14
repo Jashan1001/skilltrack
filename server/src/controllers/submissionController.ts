@@ -5,6 +5,7 @@ import User from "../models/User";
 import { asyncHandler } from "../utils/asyncHandler";
 import { AppError } from "../utils/AppError";
 import { evaluateTestCases } from "../services/evaluateSolution";
+import { calculateNewStreak } from "../utils/calculateStreak";
 
 /* ============================= */
 /* SUBMIT SOLUTION */
@@ -111,29 +112,18 @@ export const submitSolution = asyncHandler(
       const u = await User.findById(req.user.userId);
 
       if (u) {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        const updated = calculateNewStreak(
+          {
+            currentStreak: u.currentStreak,
+            longestStreak: u.longestStreak,
+            lastSubmissionDate: u.lastSubmissionDate || null,
+          },
+          new Date()
+        );
 
-        const lastDate = u.lastSubmissionDate
-          ? new Date(u.lastSubmissionDate)
-          : null;
-
-        if (lastDate) lastDate.setHours(0, 0, 0, 0);
-
-        const yesterday = new Date(today);
-        yesterday.setDate(yesterday.getDate() - 1);
-
-        if (!lastDate || lastDate < yesterday) {
-          u.currentStreak = 1;
-        } else if (lastDate.getTime() === yesterday.getTime()) {
-          u.currentStreak += 1;
-        }
-
-        if (u.currentStreak > u.longestStreak) {
-          u.longestStreak = u.currentStreak;
-        }
-
-        u.lastSubmissionDate = new Date();
+        u.currentStreak = updated.currentStreak;
+        u.longestStreak = updated.longestStreak;
+        u.lastSubmissionDate = updated.lastSubmissionDate || undefined;
         await u.save();
       }
     }
