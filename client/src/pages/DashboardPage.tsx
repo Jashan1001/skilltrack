@@ -118,45 +118,35 @@ const DashboardPage: React.FC = () => {
   }, [problems, progress]);
 
   // ── Loading skeleton ──────────────────────────────────────────────────────
-  if (loading || !progress)
-    return (
-      <div className="space-y-8 animate-pulse">
-        <div className="space-y-2">
-          <Skeleton className="h-7 w-44" />
-          <Skeleton className="h-4 w-60" />
-        </div>
-        <div className="grid grid-cols-3 gap-4">
-          {[...Array(3)].map((_, i) => (
-            <Skeleton key={i} className="h-20 rounded-xl" />
-          ))}
-        </div>
-        <div className="grid md:grid-cols-3 gap-4">
-          {[...Array(6)].map((_, i) => (
-            <SkeletonCard key={i} />
-          ))}
-        </div>
-      </div>
-    );
+  // ✅ MOVE THIS WHOLE BLOCK UP (before return)
+const difficultyCount = useMemo(() => {
+  if (!progress) return {};
 
-  // ── Ring math ─────────────────────────────────────────────────────────────
-  const radius = 52;
-  const circumference = 2 * Math.PI * radius;
-  const offset =
-    circumference - (progress.completionPercentage / 100) * circumference;
+  const solved = new Set(progress.solvedProblemIds);
+  return problems.reduce(
+    (acc, p) => {
+      if (solved.has(p._id)) acc[p.difficulty] = (acc[p.difficulty] || 0) + 1;
+      return acc;
+    },
+    {} as Record<string, number>
+  );
+}, [problems, progress]);
 
-  const recentActivity = submissions.filter((s) => s.problem).slice(0, 5);
+// ── Loading skeleton ──────────────────────────────────────────────────────
+if (loading || !progress)
+  return (
+    <div className="space-y-8 animate-pulse">
+      ...
+    </div>
+  );
 
-  // Difficulty breakdown from problems list
-  const difficultyCount = useMemo(() => {
-    const solved = new Set(progress.solvedProblemIds);
-    return problems.reduce(
-      (acc, p) => {
-        if (solved.has(p._id)) acc[p.difficulty] = (acc[p.difficulty] || 0) + 1;
-        return acc;
-      },
-      {} as Record<string, number>
-    );
-  }, [problems, progress]);
+// ── Ring math ─────────────────────────────────────────────────────────────
+const radius = 52;
+const circumference = 2 * Math.PI * radius;
+const offset =
+  circumference - (progress.completionPercentage / 100) * circumference;
+
+const recentActivity = submissions.filter((s) => s.problem).slice(0, 5);
 
   return (
     <div className="space-y-8 pb-8">
