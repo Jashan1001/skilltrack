@@ -16,16 +16,16 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { to: "/dashboard",   icon: <LayoutDashboard size={18} />, label: "Dashboard" },
-  { to: "/problems",    icon: <Code2 size={18} />,           label: "Problems" },
-  { to: "/patterns",    icon: <Layers size={18} />,          label: "Patterns" },
-  { to: "/leaderboard", icon: <Trophy size={18} />,          label: "Leaderboard" },
-  { to: "/submissions", icon: <History size={18} />,         label: "Submissions" },
+  { to: "/dashboard",   icon: <LayoutDashboard size={15} />, label: "Dashboard" },
+  { to: "/problems",    icon: <Code2 size={15} />,           label: "Problems" },
+  { to: "/patterns",    icon: <Layers size={15} />,          label: "Patterns" },
+  { to: "/leaderboard", icon: <Trophy size={15} />,          label: "Leaderboard" },
+  { to: "/submissions", icon: <History size={15} />,         label: "Submissions" },
 ];
 
 const ADMIN_ITEMS: NavItem[] = [
-  { to: "/admin/analytics", icon: <BarChart3 size={18} />, label: "Analytics", adminOnly: true },
-  { to: "/admin/create",    icon: <Settings size={18} />,  label: "Create Problem", adminOnly: true },
+  { to: "/admin/analytics", icon: <BarChart3 size={15} />, label: "Analytics",      adminOnly: true },
+  { to: "/admin/create",    icon: <Settings size={15} />,  label: "Create Problem", adminOnly: true },
 ];
 
 interface TooltipProps {
@@ -39,13 +39,11 @@ const Tooltip: React.FC<TooltipProps> = ({ label, children, show }) => (
     {children}
     {show && (
       <div className="hidden group-hover/tip:block absolute left-full ml-3 top-1/2 -translate-y-1/2
-                      px-2.5 py-1.5 rounded-lg bg-foreground text-background
-                      text-xs font-medium whitespace-nowrap
-                      pointer-events-none z-50
-                      shadow-lg">
+                      px-2.5 py-1.5 rounded-lg bg-sidebar-fg text-sidebar-bg
+                      text-xs font-medium whitespace-nowrap pointer-events-none z-50 shadow-lg">
         {label}
         <div className="absolute right-full top-1/2 -translate-y-1/2
-                        border-4 border-transparent border-r-foreground" />
+                        border-4 border-transparent border-r-sidebar-fg" />
       </div>
     )}
   </div>
@@ -56,87 +54,74 @@ const Sidebar: React.FC = () => {
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [collapsed, setCollapsed] = useState(false);
-
   const isAdmin = user?.role === "admin";
+  const items = [...NAV_ITEMS, ...(isAdmin ? ADMIN_ITEMS : [])];
 
-  const getClass = ({ isActive }: { isActive: boolean }) =>
-    `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
+  const getNavClass = ({ isActive }: { isActive: boolean }) =>
+    `flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium
      transition-colors duration-150 w-full
      ${isActive
-       ? "bg-primary/10 text-primary"
-       : "text-muted-foreground hover:text-foreground hover:bg-muted"
+       ? "bg-primary/20 text-white border-l-2 border-primary pl-[10px]"
+       : "text-sidebar-muted hover:text-sidebar-fg hover:bg-white/5"
      }`;
 
-  const items = [...NAV_ITEMS, ...(isAdmin ? ADMIN_ITEMS : [])];
+  const iconBtnClass = `flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium w-full
+    transition-colors text-sidebar-muted hover:text-sidebar-fg hover:bg-white/5
+    ${collapsed ? "justify-center" : ""}`;
 
   return (
     <aside
-      className={`relative flex flex-col border-r border-border bg-card
+      className={`relative flex flex-col bg-sidebar-bg border-r border-sidebar-border
                   transition-all duration-300 ease-in-out shrink-0
-                  ${collapsed ? "w-16" : "w-56"}`}
+                  ${collapsed ? "w-14" : "w-52"}`}
     >
-      {/* Toggle button */}
+      {/* Collapse toggle */}
       <button
         onClick={() => setCollapsed((c) => !c)}
-        className="absolute -right-3 top-6 z-10 w-6 h-6 rounded-full
-                   bg-card border border-border flex items-center justify-center
-                   text-muted-foreground hover:text-foreground
-                   hover:bg-muted transition shadow-sm"
+        className="absolute -right-3 top-5 z-10 w-6 h-6 rounded-full
+                   bg-sidebar-bg border border-sidebar-border
+                   flex items-center justify-center
+                   text-sidebar-muted hover:text-sidebar-fg
+                   hover:bg-white/10 transition shadow-sm"
       >
-        {collapsed
-          ? <ChevronRight size={12} />
-          : <ChevronLeft size={12} />
-        }
+        {collapsed ? <ChevronRight size={11} /> : <ChevronLeft size={11} />}
       </button>
 
-      {/* Logo */}
-      <div className={`flex items-center h-14 border-b border-border
+      {/* Logo row */}
+      <div className={`flex items-center h-12 border-b border-sidebar-border bg-sidebar-deeper
                        transition-all duration-300
-                       ${collapsed ? "px-4 justify-center" : "px-5"}`}>
+                       ${collapsed ? "px-3 justify-center" : "px-4"}`}>
         {collapsed ? (
-          <Code2 size={20} className="text-primary" />
+          <Code2 size={17} className="text-primary" />
         ) : (
-          <span className="font-bold text-base text-foreground tracking-tight">
+          <span className="font-bold text-sm text-sidebar-fg tracking-tight">
             Skill<span className="text-primary">Track</span>
           </span>
         )}
       </div>
 
       {/* Nav */}
-      <nav className="sidebar-nav flex-1 overflow-y-auto py-4 px-2 space-y-0.5 [&::-webkit-scrollbar]:hidden">
-
+      <nav className="sidebar-nav flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
         {items.map((item) => {
           if (item.adminOnly && !isAdmin) return null;
-
           return (
             <Tooltip key={item.to} label={item.label} show={collapsed}>
-              <NavLink to={item.to} className={getClass}>
+              <NavLink to={item.to} className={getNavClass}>
                 <span className="shrink-0">{item.icon}</span>
-                {!collapsed && (
-                  <span className="truncate">{item.label}</span>
-                )}
+                {!collapsed && <span className="truncate">{item.label}</span>}
               </NavLink>
             </Tooltip>
           );
         })}
 
         {/* Divider */}
-        <div className="my-2 border-t border-border" />
+        <div className="my-2 border-t border-sidebar-border" />
 
         {/* Theme toggle */}
         <Tooltip label={theme === "dark" ? "Light mode" : "Dark mode"} show={collapsed}>
-          <button
-            onClick={toggleTheme}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg
-                        text-sm font-medium w-full transition-colors
-                        text-muted-foreground hover:text-foreground hover:bg-muted
-                        ${collapsed ? "justify-center" : ""}`}
-          >
+          <button onClick={toggleTheme} className={iconBtnClass}>
             <span className="shrink-0">
-              {theme === "dark"
-                ? <Sun size={18} />
-                : <Moon size={18} />
-              }
+              {theme === "dark" ? <Sun size={15} /> : <Moon size={15} />}
             </span>
             {!collapsed && (
               <span>{theme === "dark" ? "Light mode" : "Dark mode"}</span>
@@ -146,50 +131,39 @@ const Sidebar: React.FC = () => {
 
         {/* Logout */}
         <Tooltip label="Sign out" show={collapsed}>
-          <button
-            onClick={logout}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg
-                        text-sm font-medium w-full transition-colors
-                        text-muted-foreground hover:text-foreground hover:bg-muted
-                        ${collapsed ? "justify-center" : ""}`}
-          >
-            <LogOut size={18} className="shrink-0" />
+          <button onClick={logout} className={iconBtnClass}>
+            <LogOut size={15} className="shrink-0" />
             {!collapsed && <span>Sign out</span>}
           </button>
         </Tooltip>
       </nav>
 
       {/* User footer */}
-      <div className={`border-t border-border p-3
+      <div className={`border-t border-sidebar-border p-2 bg-sidebar-deeper
                        ${collapsed ? "flex justify-center" : ""}`}>
         <Tooltip label={user?.name || ""} show={collapsed}>
           <button
             onClick={() => navigate(`/profile/${user?.userId}`)}
-            className={`flex items-center gap-3 p-2 rounded-lg w-full
-                        hover:bg-muted transition text-left
+            className={`flex items-center gap-2.5 p-2 rounded-lg w-full
+                        hover:bg-white/5 transition text-left
                         ${collapsed ? "justify-center w-auto" : ""}`}
           >
             {user?.avatarUrl ? (
               <img
                 src={user.avatarUrl}
                 alt={user.name}
-                className="w-8 h-8 rounded-full object-cover shrink-0"
+                className="w-7 h-7 rounded-full object-cover shrink-0"
               />
             ) : (
-              <div className="w-8 h-8 rounded-full bg-primary flex items-center
-                              justify-center text-primary-foreground text-sm
-                              font-bold shrink-0">
+              <div className="w-7 h-7 rounded-full bg-primary/80 flex items-center
+                              justify-center text-white text-xs font-bold shrink-0">
                 {user?.name?.charAt(0).toUpperCase()}
               </div>
             )}
             {!collapsed && (
               <div className="min-w-0 flex-1">
-                <p className="text-sm font-medium text-foreground truncate">
-                  {user?.name}
-                </p>
-                <p className="text-xs text-muted-foreground capitalize truncate">
-                  {user?.role}
-                </p>
+                <p className="text-xs font-medium text-sidebar-fg truncate">{user?.name}</p>
+                <p className="text-[10px] text-sidebar-muted capitalize truncate">{user?.role}</p>
               </div>
             )}
           </button>

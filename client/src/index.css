@@ -7,62 +7,94 @@ body {
   color: hsl(var(--foreground));
 }
 
-/* hide sidebar nav scrollbar cross-browser */
 .sidebar-nav {
   scrollbar-width: none;
   -ms-overflow-style: none;
 }
+.sidebar-nav::-webkit-scrollbar {
+  display: none;
+}
 
 @layer base {
   :root {
-    --background: 45 17% 95%;
-    --foreground: 228 23% 23%;
+    /* Surfaces */
+    --background:        240 10% 96%;   /* #f5f5f7 — off-white, not pure white */
+    --foreground:        240 30% 14%;   /* #1a1a2e — cool near-black */
 
-    --card: 0 0% 100%;
-    --card-foreground: 228 23% 23%;
+    --card:              0 0% 100%;     /* #ffffff — pure white for cards only */
+    --card-foreground:   240 30% 14%;
 
-    --muted: 210 14% 90%;
-    --muted-foreground: 214 10% 45%;
+    --muted:             240 8% 92%;    /* #e8e8ed */
+    --muted-foreground:  240 8% 47%;    /* #6b6b80 */
 
-    --border: 214 14% 83%;
-    --input: 214 14% 83%;
+    --border:            240 10% 88%;   /* #e2e2e8 */
+    --input:             240 10% 88%;
 
-    --primary: 224 22% 31%;
-    --primary-foreground: 45 17% 95%;
+    /* Sidebar — stays dark in BOTH modes */
+    --sidebar-bg:        240 30% 14%;   /* #1a1a2e */
+    --sidebar-deeper:    240 34% 10%;   /* #0e0e1a — deeper for header */
+    --sidebar-fg:        240 20% 96%;   /* near white text */
+    --sidebar-muted:     240 12% 50%;   /* muted nav items */
+    --sidebar-border:    240 20% 22%;   /* subtle separator */
 
-    --accent: 206 24% 72%;
-    --accent-foreground: 228 23% 23%;
+    /* Primary accent — purple */
+    --primary:           249 74% 62%;   /* #6d5ae8 */
+    --primary-foreground: 0 0% 100%;
 
-    --destructive: 0 72% 51%;
+    /* Semantic accents */
+    --accent-green:      142 71% 45%;   /* #22c55e — accepted */
+    --accent-red:        0 84% 60%;     /* #ef4444 — wrong answer */
+    --accent-orange:     25 95% 64%;    /* #fb923c — streak */
+    --accent-blue:       207 89% 64%;   /* #4facf5 — easy */
+    --accent-yellow:     45 93% 56%;    /* #facc15 — medium */
+    --accent-pink:       330 81% 70%;   /* #f472b6 — hard */
+    --accent-teal:       172 66% 50%;   /* #2dd4bf — patterns */
+
+    --destructive:       0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --ring: 224 22% 31%;
-    --radius: 0.5rem;
+    --ring:              249 74% 62%;
+    --radius:            0.5rem;
   }
 
   .dark {
-    --background: 228 24% 11%;
-    --foreground: 48 16% 92%;
+    /* Surfaces */
+    --background:        240 28% 7%;    /* #0e0e16 — deep cool dark */
+    --foreground:        240 20% 96%;   /* #f0f0f5 — warm off-white */
 
-    --card: 228 20% 16%;
-    --card-foreground: 48 16% 92%;
+    --card:              240 25% 10%;   /* #16161f — elevated surface */
+    --card-foreground:   240 20% 96%;
 
-    --muted: 226 15% 22%;
-    --muted-foreground: 214 11% 61%;
+    --muted:             240 18% 18%;   /* #252535 */
+    --muted-foreground:  240 10% 57%;   /* #7a7a90 */
 
-    --border: 226 15% 27%;
-    --input: 226 15% 27%;
+    --border:            240 20% 22%;   /* #2a2a3d */
+    --input:             240 20% 22%;
 
-    --primary: 206 24% 72%;
-    --primary-foreground: 228 24% 11%;
+    /* Sidebar — even deeper in dark mode */
+    --sidebar-bg:        240 34% 6%;    /* #0a0a12 */
+    --sidebar-deeper:    240 34% 4%;    /* even deeper for logo row */
+    --sidebar-fg:        240 20% 96%;
+    --sidebar-muted:     240 10% 45%;
+    --sidebar-border:    240 20% 18%;
 
-    --accent: 48 16% 78%;
-    --accent-foreground: 228 24% 11%;
+    /* Primary stays the same purple */
+    --primary:           249 74% 62%;
+    --primary-foreground: 0 0% 100%;
 
-    --destructive: 0 63% 55%;
+    /* Semantic accents — slightly brighter in dark */
+    --accent-green:      142 69% 58%;   /* #4ade80 */
+    --accent-red:        0 84% 65%;
+    --accent-orange:     25 95% 64%;
+    --accent-blue:       207 89% 68%;
+    --accent-yellow:     45 93% 58%;
+    --accent-pink:       330 81% 72%;
+    --accent-teal:       172 66% 52%;
+
+    --destructive:       0 84% 65%;
     --destructive-foreground: 0 0% 100%;
 
-    --ring: 206 24% 72%;
-    --radius: 0.5rem;
+    --ring:              249 74% 62%;
+    --radius:            0.5rem;
   }
 }
