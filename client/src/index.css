@@ -1,3 +1,5 @@
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -5,6 +7,7 @@
 body {
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
+  font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
 }
 
 .sidebar-nav {
@@ -18,34 +21,34 @@ body {
 @layer base {
   :root {
     /* Surfaces */
-    --background:        240 10% 96%;   /* #f5f5f7 — off-white, not pure white */
-    --foreground:        240 30% 14%;   /* #1a1a2e — cool near-black */
+    --background:        0 0% 100%;     /* #ffffff */
+    --foreground:        221 39% 11%;   /* #111827 */
 
-    --card:              0 0% 100%;     /* #ffffff — pure white for cards only */
-    --card-foreground:   240 30% 14%;
+    --card:              0 0% 100%;
+    --card-foreground:   221 39% 11%;
 
-    --muted:             240 8% 92%;    /* #e8e8ed */
-    --muted-foreground:  240 8% 47%;    /* #6b6b80 */
+    --muted:             220 20% 97%;   /* slate-50 tint */
+    --muted-foreground:  220 9% 46%;    /* #6b7280 */
 
-    --border:            240 10% 88%;   /* #e2e2e8 */
-    --input:             240 10% 88%;
+    --border:            220 13% 91%;   /* #e5e7eb */
+    --input:             220 13% 91%;
 
     /* Sidebar — stays dark in BOTH modes */
-    --sidebar-bg:        240 30% 14%;   /* #1a1a2e */
-    --sidebar-deeper:    240 34% 10%;   /* #0e0e1a — deeper for header */
-    --sidebar-fg:        240 20% 96%;   /* near white text */
-    --sidebar-muted:     240 12% 50%;   /* muted nav items */
-    --sidebar-border:    240 20% 22%;   /* subtle separator */
+    --sidebar-bg:        224 47% 7%;    /* #0a0f1c */
+    --sidebar-deeper:    223 46% 6%;
+    --sidebar-fg:        210 20% 98%;
+    --sidebar-muted:     215 14% 64%;
+    --sidebar-border:    215 28% 17%;
 
-    /* Primary accent — purple */
-    --primary:           249 74% 62%;   /* #6d5ae8 */
+    /* Primary accent — dark blue */
+    --primary:           224 64% 33%;   /* #1e3a8a */
     --primary-foreground: 0 0% 100%;
 
     /* Semantic accents */
     --accent-green:      142 71% 45%;   /* #22c55e — accepted */
     --accent-red:        0 84% 60%;     /* #ef4444 — wrong answer */
     --accent-orange:     25 95% 64%;    /* #fb923c — streak */
-    --accent-blue:       207 89% 64%;   /* #4facf5 — easy */
+    --accent-blue:       221 83% 53%;   /* #2563eb — soft blue accent */
     --accent-yellow:     45 93% 56%;    /* #facc15 — medium */
     --accent-pink:       330 81% 70%;   /* #f472b6 — hard */
     --accent-teal:       172 66% 50%;   /* #2dd4bf — patterns */
@@ -53,40 +56,40 @@ body {
     --destructive:       0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --ring:              249 74% 62%;
+    --ring:              224 64% 33%;
     --radius:            0.5rem;
   }
 
   .dark {
     /* Surfaces */
-    --background:        240 28% 7%;    /* #0e0e16 — deep cool dark */
-    --foreground:        240 20% 96%;   /* #f0f0f5 — warm off-white */
+    --background:        224 47% 7%;    /* #0a0f1c */
+    --foreground:        210 20% 98%;   /* near white */
 
-    --card:              240 25% 10%;   /* #16161f — elevated surface */
-    --card-foreground:   240 20% 96%;
+    --card:              222 47% 11%;   /* #0f172a */
+    --card-foreground:   210 20% 98%;
 
-    --muted:             240 18% 18%;   /* #252535 */
-    --muted-foreground:  240 10% 57%;   /* #7a7a90 */
+    --muted:             222 35% 15%;
+    --muted-foreground:  215 16% 70%;
 
-    --border:            240 20% 22%;   /* #2a2a3d */
-    --input:             240 20% 22%;
+    --border:            215 28% 17%;   /* #1f2937 */
+    --input:             215 28% 17%;
 
     /* Sidebar — even deeper in dark mode */
-    --sidebar-bg:        240 34% 6%;    /* #0a0a12 */
-    --sidebar-deeper:    240 34% 4%;    /* even deeper for logo row */
-    --sidebar-fg:        240 20% 96%;
-    --sidebar-muted:     240 10% 45%;
-    --sidebar-border:    240 20% 18%;
+    --sidebar-bg:        224 47% 7%;
+    --sidebar-deeper:    223 46% 6%;
+    --sidebar-fg:        210 20% 98%;
+    --sidebar-muted:     215 16% 66%;
+    --sidebar-border:    215 28% 17%;
 
-    /* Primary stays the same purple */
-    --primary:           249 74% 62%;
+    /* Primary stays the same dark blue */
+    --primary:           224 64% 33%;
     --primary-foreground: 0 0% 100%;
 
     /* Semantic accents — slightly brighter in dark */
     --accent-green:      142 69% 58%;   /* #4ade80 */
     --accent-red:        0 84% 65%;
     --accent-orange:     25 95% 64%;
-    --accent-blue:       207 89% 68%;
+    --accent-blue:       221 83% 53%;
     --accent-yellow:     45 93% 58%;
     --accent-pink:       330 81% 72%;
     --accent-teal:       172 66% 52%;
@@ -94,7 +97,7 @@ body {
     --destructive:       0 84% 65%;
     --destructive-foreground: 0 0% 100%;
 
-    --ring:              249 74% 62%;
+    --ring:              224 64% 33%;
     --radius:            0.5rem;
   }
 }

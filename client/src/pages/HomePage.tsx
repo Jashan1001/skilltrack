@@ -1,7 +1,9 @@
 import { Link, Navigate } from "react-router-dom";
 import { useAuth } from "../context/authContext";
 import {
+  ArrowRight,
   BookOpenText,
+  CheckCircle2,
   ChartColumn,
   FileText,
   Flame,
@@ -67,36 +69,34 @@ const HomePage: React.FC = () => {
   if (user) return <Navigate to="/dashboard" replace />;
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div className="min-h-screen bg-background text-foreground antialiased">
 
       {/* NAV */}
-      <nav className="sticky top-0 z-50 h-14 border-b border-border bg-card">
-        <div className="max-w-[1360px] mx-auto px-6 h-full flex items-center justify-between">
+      <nav className="sticky top-0 z-50 h-16 border-b border-border/80 bg-background/90 backdrop-blur">
+        <div className="mx-auto flex h-full w-full max-w-6xl items-center justify-between px-5 sm:px-6 lg:px-8">
 
-          <span className="font-bold text-base tracking-tight">
+          <span className="text-base font-semibold tracking-tight sm:text-lg">
             Skill<span className="text-primary">Track</span>
           </span>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 sm:gap-3">
 
             <button
               onClick={toggleTheme}
-              className="p-2 rounded-lg text-muted-foreground
-                         hover:text-foreground hover:bg-muted transition"
+              aria-label="Toggle theme"
+              className="rounded-lg border border-border bg-card p-2 text-muted-foreground transition hover:text-foreground"
             >
               {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
             </button>
             <Link
               to="/login"
-              className="px-3 py-1.5 text-sm text-muted-foreground
-                         hover:text-foreground transition"
+              className="hidden rounded-lg px-3 py-2 text-sm font-medium text-muted-foreground transition hover:text-foreground sm:inline-block"
             >
               Sign in
             </Link>
             <Link
               to="/register"
-              className="px-4 py-1.5 rounded-lg bg-primary text-primary-foreground
-                         text-sm font-medium hover:opacity-90 transition"
+              className="rounded-lg bg-primary px-4 py-2 text-sm font-medium text-primary-foreground transition hover:bg-accent-blue focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             >
               Get started
             </Link>
@@ -105,51 +105,85 @@ const HomePage: React.FC = () => {
       </nav>
 
       {/* HERO */}
-      <section className="max-w-[1360px] mx-auto px-6 pt-12 pb-12 text-center">
+      <section className="relative overflow-hidden border-b border-border/70">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-64 bg-gradient-to-b from-primary/10 to-transparent" />
+        <div className="mx-auto grid w-full max-w-6xl gap-10 px-5 pb-14 pt-14 sm:px-6 md:pb-16 md:pt-20 lg:grid-cols-[1.12fr_0.88fr] lg:gap-12 lg:px-8">
+          <div className="text-left">
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs font-medium text-muted-foreground">
+              <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+              Built for focused interview prep
+            </div>
 
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full
-                        border border-border bg-muted text-muted-foreground
-                        text-xs font-medium mb-8">
-          <span className="w-1.5 h-1.5 rounded-full bg-primary" />
-          Pattern-based DSA mastery
-        </div>
+            <h1 className="text-4xl font-semibold leading-tight tracking-tight text-foreground sm:text-5xl lg:text-[3.4rem] lg:leading-[1.08]">
+              Master DSA with a clean system, not random practice.
+            </h1>
 
-        <h1 className="text-5xl md:text-6xl font-bold tracking-tight leading-[1.1] mb-6">
-          Learn DSA through
-          <br />
-          <span className="text-primary">patterns, not problems</span>
-        </h1>
+            <p className="mt-6 max-w-xl text-base leading-relaxed text-muted-foreground sm:text-lg">
+              Learn the 12 core patterns, write real code in a production-grade editor, and track progress with clear signals that keep you improving every week.
+            </p>
 
-        <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed mb-8">
-          SkillTrack teaches you the 12 core patterns behind every coding interview.
-          Write real code, run it safely, and track your mastery.
-        </p>
+            <div className="mt-8 flex flex-wrap items-center gap-3">
+              <Link
+                to="/register"
+                className="inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition hover:bg-accent-blue focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+              >
+                Start for free
+                <ArrowRight size={16} />
+              </Link>
+              <Link
+                to="/login"
+                className="rounded-lg border border-border bg-card px-6 py-3 text-sm font-medium text-foreground transition hover:bg-muted"
+              >
+                Sign in
+              </Link>
+            </div>
 
-        <div className="flex items-center justify-center gap-3">
+            <div className="mt-8 flex flex-wrap gap-2 text-xs text-muted-foreground sm:text-sm">
+              {["No credit card", "Editorial unlocks", "Safe code execution"].map((item) => (
+                <span key={item} className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3 py-1.5">
+                  <CheckCircle2 size={14} className="text-primary" />
+                  {item}
+                </span>
+              ))}
+            </div>
+          </div>
 
-          <Link
-            to="/register"
-            className="px-6 py-2.5 rounded-lg bg-primary text-primary-foreground
-                       font-semibold text-sm hover:opacity-90 transition
-                       shadow-lg shadow-primary/20"
-          >
-            Start for free
-          </Link>
-          <Link
-            to="/login"
-            className="px-6 py-2.5 rounded-lg border border-border
-                       text-sm font-medium hover:bg-muted transition"
-          >
-            Sign in
-          </Link>
+          <div className="rounded-2xl border border-border bg-card p-5 shadow-[0_20px_50px_-32px_rgba(2,6,23,0.8)]">
+            <p className="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+              Weekly performance
+            </p>
+            <div className="grid grid-cols-3 gap-2">
+              {[
+                { label: "Solved", value: "24" },
+                { label: "Accuracy", value: "91%" },
+                { label: "Streak", value: "16d" },
+              ].map((metric) => (
+                <div key={metric.label} className="rounded-xl border border-border bg-background px-3 py-3">
+                  <p className="text-lg font-semibold text-foreground">{metric.value}</p>
+                  <p className="text-xs text-muted-foreground">{metric.label}</p>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-4 rounded-xl border border-border bg-background p-4">
+              <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
+                <span>Pattern confidence</span>
+                <span>72%</span>
+              </div>
+              <div className="h-2 overflow-hidden rounded-full bg-muted">
+                <div className="h-full w-[72%] rounded-full bg-primary" />
+              </div>
+              <p className="mt-2 text-xs text-muted-foreground">Up 11% from last week</p>
+            </div>
+          </div>
         </div>
       </section>
 
       {/* EDITOR PREVIEW */}
-      <section className="max-w-[1360px] mx-auto px-6 pb-16">
-        <div className="rounded-xl border border-border bg-card overflow-hidden shadow-xl shadow-black/5">
+      <section className="mx-auto w-full max-w-6xl px-5 pb-16 pt-12 sm:px-6 lg:px-8">
+        <div className="overflow-hidden rounded-2xl border border-border bg-card shadow-[0_22px_64px_-36px_rgba(15,23,42,0.9)]">
 
-          <div className="flex items-center gap-1.5 px-4 py-3 border-b border-border bg-muted/50">
+          <div className="flex items-center gap-1.5 border-b border-border bg-muted/40 px-4 py-3">
             <div className="w-3 h-3 rounded-full bg-rose-400/70" />
             <div className="w-3 h-3 rounded-full bg-amber-400/70" />
             <div className="w-3 h-3 rounded-full bg-emerald-400/70" />
@@ -160,7 +194,7 @@ const HomePage: React.FC = () => {
 
           <div className="grid md:grid-cols-[1fr_280px]">
 
-            <div className="p-5 font-mono text-[13px] leading-6 border-r border-border bg-background/60">
+            <div className="border-r border-border bg-background/70 p-5 font-mono text-[13px] leading-6">
               <div className="text-muted-foreground mb-1">{"// Max subarray sum of size k"}</div>
               <div><span className="text-primary font-semibold">int</span> <span className="text-foreground">maxSum</span><span className="text-muted-foreground">(vector&lt;int&gt;&amp; arr, int k) {"{"}</span></div>
               <div className="ml-4"><span className="text-primary font-semibold">int</span> <span className="text-foreground">win</span> <span className="text-muted-foreground">= accumulate(arr.begin(), arr.begin() + k, 0);</span></div>
@@ -174,7 +208,7 @@ const HomePage: React.FC = () => {
               <div className="text-muted-foreground">{"}"}</div>
             </div>
 
-            <div className="p-4 space-y-3 bg-muted/20">
+            <div className="space-y-3 bg-muted/20 p-4">
               <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
                 Test Results
               </p>
@@ -203,7 +237,7 @@ const HomePage: React.FC = () => {
                   Accepted - 3/3 passed
                 </span>
               </div>
-              <div className="pt-1 text-xs text-muted-foreground space-y-0.5">
+              <div className="space-y-0.5 pt-1 text-xs text-muted-foreground">
                 <div>Pattern: <span className="text-primary font-medium">Sliding Window</span></div>
                 <div>Runtime: <span className="text-foreground font-medium">38ms . O(n) . sample output</span></div>
               </div>
@@ -214,19 +248,15 @@ const HomePage: React.FC = () => {
 
       {/* PATTERNS */}
       <section className="border-y border-border bg-muted/30 py-14">
-        <div className="max-w-[1360px] mx-auto px-6">
-          <p className="text-center text-xs font-semibold uppercase tracking-widest
-                        text-muted-foreground mb-8">
+        <div className="mx-auto w-full max-w-6xl px-5 sm:px-6 lg:px-8">
+          <p className="mb-8 text-center text-xs font-semibold uppercase tracking-widest text-muted-foreground">
             12 patterns . every interview covered
           </p>
-          <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
             {PATTERNS.map((p, i) => (
               <div
                 key={p}
-                className="px-3 py-2 rounded-lg border border-border bg-card
-                           text-center text-xs font-medium text-muted-foreground
-                           hover:border-primary/40 hover:text-primary
-                           hover:bg-primary/5 transition-all cursor-default"
+                className="cursor-default rounded-lg border border-border bg-card px-3 py-2 text-center text-xs font-medium text-muted-foreground transition-all hover:border-primary/40 hover:bg-primary/5 hover:text-foreground"
               >
                 <span className="text-border mr-1">{String(i + 1).padStart(2, "0")}</span>
                 {p}
@@ -237,24 +267,23 @@ const HomePage: React.FC = () => {
       </section>
 
       {/* FEATURES */}
-      <section className="max-w-[1360px] mx-auto px-6 py-16">
-        <h2 className="text-2xl font-bold text-center mb-2">
+      <section className="mx-auto w-full max-w-6xl px-5 py-16 sm:px-6 lg:px-8">
+        <h2 className="mb-2 text-center text-3xl font-semibold tracking-tight text-foreground">
           Everything in one place
         </h2>
-        <p className="text-muted-foreground text-center text-sm mb-12">
+        <p className="mb-12 text-center text-sm text-muted-foreground">
           Built for systematic learning, not random grinding.
         </p>
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map((f) => (
             <div
               key={f.title}
-              className="bg-card border border-border rounded-xl p-5 space-y-3
-                         hover:border-primary/20 hover:shadow-sm transition-all"
+              className="space-y-3 rounded-xl border border-border bg-card p-5 transition-all hover:border-primary/30 hover:bg-background"
             >
-              <div className="w-10 h-10 rounded-lg bg-muted flex items-center justify-center text-primary">
+              <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-muted text-primary">
                 <f.icon size={18} strokeWidth={2} />
               </div>
-              <h3 className="font-semibold text-sm text-foreground">{f.title}</h3>
+              <h3 className="text-sm font-semibold text-foreground">{f.title}</h3>
               <p className="text-sm text-muted-foreground leading-relaxed">{f.desc}</p>
             </div>
           ))}
@@ -262,25 +291,23 @@ const HomePage: React.FC = () => {
       </section>
 
       {/* CTA */}
-      <section className="border-t border-border py-16 text-center px-6">
-        <h2 className="text-2xl font-bold mb-3">Ready to start?</h2>
-        <p className="text-muted-foreground text-sm mb-6">
+      <section className="border-t border-border px-5 py-16 text-center sm:px-6 lg:px-8">
+        <h2 className="mb-3 text-3xl font-semibold tracking-tight text-foreground">Ready to start?</h2>
+        <p className="mb-6 text-sm text-muted-foreground">
           Free to use. No credit card required.
         </p>
 
         <Link
           to="/register"
-          className="inline-block px-7 py-2.5 rounded-lg bg-primary
-                     text-primary-foreground font-semibold text-sm
-                     hover:opacity-90 transition shadow-lg shadow-primary/20"
+          className="inline-block rounded-lg bg-primary px-7 py-3 text-sm font-semibold text-primary-foreground transition hover:bg-accent-blue focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         >
           Create free account
         </Link>
       </section>
 
       {/* FOOTER */}
-      <footer className="border-t border-border py-6 px-6">
-        <div className="max-w-[1360px] mx-auto flex items-center justify-between text-xs text-muted-foreground">
+      <footer className="border-t border-border px-5 py-6 sm:px-6 lg:px-8">
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between text-xs text-muted-foreground">
           <span>Skill<span className="text-primary font-semibold">Track</span></span>
           <span>Built for serious learners.</span>
         </div>
