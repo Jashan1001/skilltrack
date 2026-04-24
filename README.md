@@ -19,7 +19,7 @@ SkillTrack/
 ├── client/             # React frontend (UI layer)
 ├── server/             # API, authentication, database
 └── execution-engine/   # Docker-based code execution sandbox
-
+```
 ### Why this design?
 
 - Isolates untrusted code execution from the main backend  

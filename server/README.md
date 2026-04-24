@@ -66,6 +66,7 @@ server/
 ├── types/         # TypeScript types
 ├── utils/         # helpers
 └── index.ts       # entry point
+```
 
 ## 🚀 Run Server
 
