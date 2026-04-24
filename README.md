@@ -13,12 +13,12 @@ It combines structured learning with a real execution engine using a multi-servi
 
 SkillTrack is built as three independent services:
 
-
+```plaintext
 SkillTrack/
 │
 ├── client/             # React frontend (UI layer)
-├── server/             # API + database + authentication
-├── execution-engine/   # Docker-based code execution sandbox
+├── server/             # API, authentication, database
+└── execution-engine/   # Docker-based code execution sandbox
 
 ### Why this design?
 

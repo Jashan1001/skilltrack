@@ -55,7 +55,7 @@ The server handles:
 
 ## 📂 Project Structure
 
-
+```plaintext
 server/
 │
 ├── controllers/   # request handlers
