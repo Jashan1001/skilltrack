@@ -4,12 +4,14 @@ import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/authContext";
 import LearningPlanCard from "../components/LearningPlanCard";
 import { Skeleton } from "../components/Skeleton";
-import { Activity, RotateCw } from "lucide-react";
+import { Activity, ArrowRight, RotateCw } from "lucide-react";
 
 interface Problem {
   _id: string;
+  title: string;
   difficulty: "easy" | "medium" | "hard";
   pattern?: string;
+  orderInPattern?: number;
 }
 
 interface Submission {
@@ -167,6 +169,19 @@ const difficultyCount = useMemo(() => {
   );
 }, [problems, progress]);
 
+const nextProblem = useMemo(() => {
+  const solved = new Set(progress?.solvedProblemIds ?? []);
+  return [...problems]
+    .sort((a, b) => {
+      const rank = (pattern?: string) => {
+        const index = PATTERN_ORDER.indexOf(pattern || "");
+        return index < 0 ? PATTERN_ORDER.length : index;
+      };
+      return rank(a.pattern) - rank(b.pattern) || (a.orderInPattern ?? 0) - (b.orderInPattern ?? 0);
+    })
+    .find((problem) => !solved.has(problem._id));
+}, [problems, progress]);
+
 // ── Loading skeleton ──────────────────────────────────────────────────────
 if (loadError)
   return (
@@ -200,15 +215,24 @@ const recentActivity = submissions.filter((s) => s.problem).slice(0, 5);
     <div className="space-y-8 pb-8">
 
       {/* ── Header row ─────────────────────────────────────────────────── */}
-      <div className="flex items-start justify-between">
+      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-foreground tracking-tight">
-            Mastery Dashboard
+          <p className="mb-1 text-xs font-semibold uppercase tracking-[0.16em] text-primary">Your learning path</p>
+          <h1 className="text-2xl font-semibold text-foreground tracking-tight sm:text-3xl">
+            Welcome back, {user?.name?.split(" ")[0] || "learner"}
           </h1>
-          <p className="text-sm text-muted-foreground mt-0.5">
-            DSA progress by pattern
+          <p className="mt-1 text-sm text-muted-foreground">
+            Pick up where you left off and keep building momentum.
           </p>
         </div>
+
+        <button
+          onClick={() => navigate(nextProblem ? `/problems/${nextProblem._id}` : "/problems")}
+          className="inline-flex max-w-full items-center justify-center gap-2 self-start rounded-xl bg-primary px-4 py-3 text-sm font-semibold text-primary-foreground shadow-sm transition hover:opacity-90 focus-visible:ring-2 focus-visible:ring-ring sm:self-auto"
+        >
+          <span className="max-w-[min(65vw,26rem)] truncate">{nextProblem ? `Continue: ${nextProblem.title}` : "Explore problems"}</span>
+          <ArrowRight size={16} />
+        </button>
 
         {/* Streak pill */}
         {(user?.currentStreak ?? 0) > 0 && (
@@ -233,9 +257,9 @@ const recentActivity = submissions.filter((s) => s.problem).slice(0, 5);
       <LearningPlanCard />
 
       {/* ── Top stat cards ─────────────────────────────────────────────── */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-3 sm:grid-cols-3 sm:gap-4">
         {/* Solved */}
-        <div className="bg-card border border-border rounded-xl p-4">
+        <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
           <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1.5">
             Solved
           </p>
@@ -248,7 +272,7 @@ const recentActivity = submissions.filter((s) => s.problem).slice(0, 5);
         </div>
 
         {/* Completion */}
-        <div className="bg-card border border-border rounded-xl p-4">
+        <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
           <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1.5">
             Completion
           </p>
@@ -259,7 +283,7 @@ const recentActivity = submissions.filter((s) => s.problem).slice(0, 5);
         </div>
 
         {/* Difficulty breakdown */}
-        <div className="bg-card border border-border rounded-xl p-4">
+        <div className="bg-card border border-border rounded-2xl p-5 shadow-sm">
           <p className="text-[10px] uppercase tracking-widest text-muted-foreground mb-1.5">
             By Difficulty
           </p>
@@ -448,4 +472,3 @@ const recentActivity = submissions.filter((s) => s.problem).slice(0, 5);
 };
 
 export default DashboardPage;
-

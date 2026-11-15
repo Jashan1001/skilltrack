@@ -1,9 +1,9 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/authContext";
 import { useTheme } from "../context/themeContext";
-import { Moon, Sun } from "lucide-react";
+import { Menu, Moon, Sun } from "lucide-react";
 
-const Navbar: React.FC = () => {
+const Navbar: React.FC<{ onMenu: () => void }> = ({ onMenu }) => {
   const { user } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
@@ -26,11 +26,14 @@ const Navbar: React.FC = () => {
   };
 
   return (
-    <header className="h-14 flex items-center justify-between px-6
-                        bg-card border-b border-border transition-colors shrink-0">
-      <h1 className="text-sm font-semibold text-foreground tracking-tight">
+    <header className="h-[4.25rem] flex items-center justify-between gap-3 px-4 sm:px-6
+                        bg-card/90 border-b border-border transition-colors shrink-0">
+      <div className="flex min-w-0 items-center gap-3">
+      <button onClick={onMenu} aria-label="Open navigation" className="rounded-lg p-2 text-muted-foreground hover:bg-muted hover:text-foreground md:hidden"><Menu size={19} /></button>
+      <h1 className="truncate text-base font-semibold text-foreground tracking-tight">
         {getPageTitle()}
       </h1>
+      </div>
 
       <div className="flex items-center gap-2">
 
@@ -47,7 +50,8 @@ const Navbar: React.FC = () => {
 
         <button
           onClick={toggleTheme}
-          className="p-2 rounded-lg text-muted-foreground
+          aria-label={theme === "dark" ? "Switch to light theme" : "Switch to dark theme"}
+          className="p-2.5 rounded-xl text-muted-foreground
                      hover:text-foreground hover:bg-muted transition"
         >
           {theme === "dark" ? <Sun size={16} /> : <Moon size={16} />}
@@ -56,7 +60,7 @@ const Navbar: React.FC = () => {
         {/* Profile */}
         <button
           onClick={() => navigate(`/profile/${user?.userId}`)}
-          className="flex items-center gap-2 px-3 py-1.5 rounded-lg
+          className="flex items-center gap-2 px-2.5 py-2 rounded-xl
              hover:bg-muted transition text-sm text-muted-foreground
              hover:text-foreground"
         >

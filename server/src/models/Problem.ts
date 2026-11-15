@@ -46,6 +46,7 @@ interface IExample {
 
 export interface IProblem extends Document {
   title: string;
+  leetcodeUrl?: string;
 
   description: string;
 
@@ -117,6 +118,12 @@ const ProblemSchema = new Schema<IProblem>(
       type: String,
       required: true,
       trim: true,
+    },
+
+    leetcodeUrl: {
+      type: String,
+      trim: true,
+      match: /^https:\/\/leetcode\.com\/problems\/[a-z0-9-]+\/?$/,
     },
 
     description: {

@@ -1,0 +1,45 @@
+const PROBLEM_SLUGS: Record<string, string> = {
+  "Subsets": "subsets", "Combination Sum": "combination-sum", "Permutations": "permutations",
+  "Word Search": "word-search", "Palindrome Partitioning": "palindrome-partitioning", "N Queens": "n-queens",
+  "Binary Search": "binary-search", "Search Insert Position": "search-insert-position",
+  "Find First and Last Position of Element in Sorted Array": "find-first-and-last-position-of-element-in-sorted-array",
+  "Search in Rotated Sorted Array": "search-in-rotated-sorted-array", "Find Peak Element": "find-peak-element",
+  "Koko Eating Bananas": "koko-eating-bananas", "Median of Two Sorted Arrays": "median-of-two-sorted-arrays",
+  "Single Number": "single-number", "Number of 1 Bits": "number-of-1-bits", "Counting Bits": "counting-bits",
+  "Power of Two": "power-of-two", "Maximum XOR of Two Numbers in an Array": "maximum-xor-of-two-numbers-in-an-array",
+  "Climbing Stairs": "climbing-stairs", "House Robber": "house-robber", "Coin Change": "coin-change",
+  "Longest Increasing Subsequence": "longest-increasing-subsequence", "Longest Common Subsequence": "longest-common-subsequence",
+  "Target Sum": "target-sum", "Word Break": "word-break", "Number of Islands": "number-of-islands",
+  "Clone Graph": "clone-graph", "Rotting Oranges": "rotting-oranges", "Graph Valid Tree": "graph-valid-tree",
+  "Course Schedule": "course-schedule", "Pacific Atlantic Water Flow": "pacific-atlantic-water-flow", "Word Ladder": "word-ladder",
+  "Assign Cookies": "assign-cookies", "Gas Station": "gas-station", "Jump Game": "jump-game", "Jump Game II": "jump-game-ii",
+  "Merge Intervals": "merge-intervals", "Partition Labels": "partition-labels",
+  "Minimum Number of Arrows to Burst Balloons": "minimum-number-of-arrows-to-burst-balloons", "Candy": "candy",
+  "Kth Largest Element in an Array": "kth-largest-element-in-an-array", "Top K Frequent Elements": "top-k-frequent-elements",
+  "Merge K Sorted Lists": "merge-k-sorted-lists", "Task Scheduler": "task-scheduler",
+  "Reverse Linked List": "reverse-linked-list", "Linked List Cycle": "linked-list-cycle",
+  "Merge Two Sorted Lists": "merge-two-sorted-lists", "Remove Nth Node From End of List": "remove-nth-node-from-end-of-list",
+  "Reorder List": "reorder-list", "Add Two Numbers": "add-two-numbers", "Intersection of Two Linked Lists": "intersection-of-two-linked-lists",
+  "Copy List with Random Pointer": "copy-list-with-random-pointer", "Maximum Subarray": "maximum-subarray",
+  "Best Time to Buy and Sell Stock": "best-time-to-buy-and-sell-stock", "Longest Substring Without Repeating Characters": "longest-substring-without-repeating-characters",
+  "Minimum Size Subarray Sum": "minimum-size-subarray-sum", "Longest Repeating Character Replacement": "longest-repeating-character-replacement",
+  "Permutation in String": "permutation-in-string", "Find All Anagrams in a String": "find-all-anagrams-in-a-string",
+  "Sliding Window Maximum": "sliding-window-maximum", "Valid Parentheses": "valid-parentheses", "Min Stack": "min-stack",
+  "Daily Temperatures": "daily-temperatures", "Next Greater Element I": "next-greater-element-i",
+  "Largest Rectangle in Histogram": "largest-rectangle-in-histogram", "Next Greater Element II": "next-greater-element-ii",
+  "Remove K Digits": "remove-k-digits", "Basic Calculator": "basic-calculator",
+  "Maximum Depth of Binary Tree": "maximum-depth-of-binary-tree", "Binary Tree Inorder Traversal": "binary-tree-inorder-traversal",
+  "Validate Binary Search Tree": "validate-binary-search-tree", "Binary Tree Level Order Traversal": "binary-tree-level-order-traversal",
+  "Lowest Common Ancestor of a Binary Tree": "lowest-common-ancestor-of-a-binary-tree", "Diameter of Binary Tree": "diameter-of-binary-tree",
+  "Construct Binary Tree from Preorder and Inorder Traversal": "construct-binary-tree-from-preorder-and-inorder-traversal",
+  "Serialize and Deserialize Binary Tree": "serialize-and-deserialize-binary-tree",
+  "Two Sum II - Input Array Is Sorted": "two-sum-ii-input-array-is-sorted", "Remove Duplicates from Sorted Array": "remove-duplicates-from-sorted-array",
+  "Valid Palindrome": "valid-palindrome", "Container With Most Water": "container-with-most-water", "3Sum": "3sum",
+  "Sort Colors": "sort-colors", "Trapping Rain Water": "trapping-rain-water",
+};
+
+export function getLeetCodeUrl(title: string, suppliedUrl?: string): string | undefined {
+  if (suppliedUrl) return suppliedUrl;
+  const slug = PROBLEM_SLUGS[title.trim()];
+  return slug ? `https://leetcode.com/problems/${slug}/` : undefined;
+}

@@ -4,6 +4,7 @@ import { asyncHandler } from "../utils/asyncHandler";
 import { AppError } from "../utils/AppError";
 
 import Submission from "../models/Submission";
+import { getLeetCodeUrl } from "../utils/leetcodeLinks";
 /* ============================= */
 /* CREATE PROBLEM */
 /* ============================= */
@@ -15,6 +16,7 @@ export const createProblem = asyncHandler(
 
     const {
       title,
+      leetcodeUrl,
       description,
       inputFormat,
       outputFormat,
@@ -69,6 +71,7 @@ export const createProblem = asyncHandler(
 
     const problem = await Problem.create({
       title,
+      leetcodeUrl: getLeetCodeUrl(title, leetcodeUrl),
       description,
       inputFormat,
       outputFormat,
@@ -216,9 +219,11 @@ export const getProblemById = asyncHandler(
       (problem as any).privateTestCases = undefined;
     }
 
+    const safeProblem: any = problem.toObject();
+    safeProblem.leetcodeUrl = getLeetCodeUrl(problem.title, problem.leetcodeUrl);
     res.status(200).json({
       success: true,
-      data: problem,
+      data: safeProblem,
     });
   }
 );
@@ -252,6 +257,7 @@ export const updateProblem = asyncHandler(
 
     const {
       title,
+      leetcodeUrl,
       description,
       inputFormat,
       outputFormat,
@@ -271,6 +277,7 @@ export const updateProblem = asyncHandler(
     } = req.body;
 
     if (title) problem.title = title;
+    if (leetcodeUrl !== undefined) problem.leetcodeUrl = getLeetCodeUrl(title || problem.title, leetcodeUrl || undefined);
     if (description) problem.description = description;
     if (inputFormat) problem.inputFormat = inputFormat;
     if (outputFormat) problem.outputFormat = outputFormat;
@@ -351,13 +358,16 @@ export const getAllOfficialProblems = asyncHandler(
       isOfficial: true,
       visibility: "public",
     })
-      .select("_id pattern orderInPattern difficulty title tags")
+      .select("_id pattern orderInPattern difficulty title tags leetcodeUrl")
       .sort({ pattern: 1, orderInPattern: 1 });
 
     res.status(200).json({
       success: true,
       data: {
-        problems,
+        problems: problems.map((problem) => ({
+          ...problem.toObject(),
+          leetcodeUrl: getLeetCodeUrl(problem.title, problem.leetcodeUrl),
+        })),
       },
     });
   }

@@ -27,6 +27,7 @@ interface Example {
 interface Problem {
   _id: string;
   title: string;
+  leetcodeUrl?: string;
   description: string;
   difficulty: string;
   pattern?: string;
@@ -432,14 +433,14 @@ className="flex items-center gap-1 hover:text-foreground"
 <Trophy size={16}/> Leaderboard
 </button>
 
-<a
-href={`https://leetcode.com/problemset/?search=${encodeURIComponent(problem.title)}`}
+{problem.leetcodeUrl && <a
+href={problem.leetcodeUrl}
 target="_blank"
 rel="noreferrer"
 className="flex items-center gap-1 hover:text-foreground"
 >
-<ExternalLink size={15}/> Search LeetCode
-</a>
+<ExternalLink size={15}/> LeetCode
+</a>}
 
 </div>
 
@@ -936,4 +937,3 @@ Runtime: {submitResult.runtime} ms
 };
 
 export default ProblemDetailPage;
-
