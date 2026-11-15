@@ -29,7 +29,18 @@ export interface ISubmission extends Document {
     | "wrong_answer"
     | "partially_accepted"
     | "runtime_error"
-    | "time_limit_exceeded";
+    | "time_limit_exceeded"
+    | "cancelled";
+
+  jobState: "queued" | "running" | "completed" | "failed" | "cancelled";
+  idempotencyKey?: string;
+  requestHash?: string;
+  attempts: number;
+  availableAt: Date;
+  lockedUntil?: Date;
+  lockToken?: string;
+  startedAt?: Date;
+  completedAt?: Date;
 
   score: number;
 
@@ -101,10 +112,29 @@ const SubmissionSchema: Schema<ISubmission> = new Schema(
         "partially_accepted",
         "runtime_error",
         "time_limit_exceeded",
+        "cancelled",
       ],
       default: "pending",
       index: true,
     },
+
+    // Existing submissions are historical results. New requests opt into the
+    // durable worker lifecycle explicitly when their document is created.
+    jobState: {
+      type: String,
+      enum: ["queued", "running", "completed", "failed", "cancelled"],
+      default: "completed",
+      index: true,
+    },
+
+    idempotencyKey: { type: String, select: false },
+    requestHash: { type: String, select: false },
+    attempts: { type: Number, default: 0, min: 0 },
+    availableAt: { type: Date, default: Date.now, index: true },
+    lockedUntil: { type: Date, select: false, index: true },
+    lockToken: { type: String, select: false },
+    startedAt: { type: Date },
+    completedAt: { type: Date },
 
     score: {
       type: Number,
@@ -152,6 +182,17 @@ SubmissionSchema.index({ problem: 1, score: -1, runtime: 1 });
 
 /* Best submission lookup */
 SubmissionSchema.index({ user: 1, problem: 1 });
+SubmissionSchema.index({ jobState: 1, availableAt: 1, createdAt: 1 });
+SubmissionSchema.index({ jobState: 1, lockedUntil: 1 });
+
+// One stable client key can create at most one submission per learner.
+SubmissionSchema.index(
+  { user: 1, idempotencyKey: 1 },
+  {
+    unique: true,
+    partialFilterExpression: { idempotencyKey: { $type: "string" } },
+  }
+);
 
 export default mongoose.model<ISubmission>(
   "Submission",

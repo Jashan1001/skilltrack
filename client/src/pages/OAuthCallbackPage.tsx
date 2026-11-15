@@ -1,22 +1,34 @@
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useNavigate } from "react-router-dom";
+import axios from "../api/axios";
+import { useAuth } from "../context/authContext";
 
 const OAuthCallbackPage: React.FC = () => {
   const navigate = useNavigate();
+  const { completeOAuthLogin } = useAuth();
+  const started = useRef(false);
 
   useEffect(() => {
-    const params = new URLSearchParams(window.location.search);
-    const token = params.get("token");
+    if (started.current) return;
+    started.current = true;
 
-    if (token) {
-      localStorage.setItem("token", token);
-      // Clean the token from the URL immediately
-      window.history.replaceState({}, "", "/oauth/callback");
-      navigate("/dashboard", { replace: true });
-    } else {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get("code");
+
+    // Remove the short-lived exchange code before making any network requests.
+    window.history.replaceState({}, "", "/oauth/callback");
+
+    if (!code) {
       navigate("/login?error=oauth_failed", { replace: true });
+      return;
     }
-  }, []);
+
+    void axios
+      .post("/auth/oauth/exchange", { code })
+      .then((response) => completeOAuthLogin(response.data.token))
+      .then(() => navigate("/dashboard", { replace: true }))
+      .catch(() => navigate("/login?error=oauth_failed", { replace: true }));
+  }, [completeOAuthLogin, navigate]);
 
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">

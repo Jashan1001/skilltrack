@@ -14,10 +14,10 @@ export const registerSchema = z.object({
 
   email: z
     .string()
+    .trim()
     .min(1, "Email is required")
     .email("Invalid email format")
-    .toLowerCase()
-    .trim(),
+    .toLowerCase(),
 
   password: z
     .string()
@@ -34,14 +34,22 @@ export const registerSchema = z.object({
 export const loginSchema = z.object({
   email: z
     .string()
+    .trim()
     .min(1, "Email is required")
     .email("Invalid email format")
-    .toLowerCase()
-    .trim(),
+    .toLowerCase(),
 
   password: z
     .string()
     .min(1, "Password is required"),
+});
+
+export const verifyEmailSchema = z.object({
+  token: z.string().regex(/^[A-Za-z0-9_-]{43}$/, "Invalid verification token"),
+});
+
+export const resendVerificationSchema = z.object({
+  email: z.string().trim().email("Invalid email format").toLowerCase(),
 });
 
 /* ============================= */
@@ -49,8 +57,16 @@ export const loginSchema = z.object({
 /* ============================= */
 
 const testCaseSchema = z.object({
-  input: z.string().min(1, "Test case input cannot be empty"),
-  expectedOutput: z.string().min(1, "Expected output cannot be empty"),
+  input: z
+    .string()
+    .min(1, "Test case input cannot be empty")
+    .max(10_000)
+    .refine((value) => Buffer.byteLength(value, "utf8") <= 10_000, "Test case input is too large"),
+  expectedOutput: z
+    .string()
+    .min(1, "Expected output cannot be empty")
+    .max(64_000)
+    .refine((value) => Buffer.byteLength(value, "utf8") <= 64 * 1024, "Expected output is too large"),
 });
 
 const exampleSchema = z.object({
@@ -116,11 +132,13 @@ export const createProblemSchema = z.object({
 
   publicTestCases: z
     .array(testCaseSchema)
-    .min(1, "At least one public test case is required"),
+    .min(1, "At least one public test case is required")
+    .max(100, "A problem cannot have more than 100 public test cases"),
 
   privateTestCases: z
     .array(testCaseSchema)
-    .min(1, "At least one private test case is required"),
+    .min(1, "At least one private test case is required")
+    .max(100, "A problem cannot have more than 100 private test cases"),
 });
 
 export const updateProblemSchema = createProblemSchema.partial();
@@ -139,7 +157,8 @@ const codeSubmissionBase = z.object({
     .string()
     .min(1, "Code is required")
     .min(1, "Code cannot be empty")
-    .max(50000, "Code exceeds maximum allowed size"),
+    .max(50000, "Code exceeds maximum allowed size")
+    .refine((value) => Buffer.byteLength(value, "utf8") <= 80 * 1024, "Code exceeds maximum allowed size"),
 
   language: z.enum(["javascript", "python", "cpp"], {
     error: "Language must be javascript, python, or cpp",
@@ -149,17 +168,28 @@ const codeSubmissionBase = z.object({
 export const submitSchema = codeSubmissionBase;
 
 export const runSchema = codeSubmissionBase.extend({
-  customInput: z.string().max(10000).optional().default(""),
+  mode: z.enum(["samples", "custom"]).optional().default("samples"),
+  customInput: z
+    .string()
+    .max(10000)
+    .refine((value) => Buffer.byteLength(value, "utf8") <= 10_000, "Input exceeds maximum allowed size")
+    .optional()
+    .default(""),
 });
 export const forgotPasswordSchema = z.object({
-  email: z.string().email("Invalid email format").toLowerCase().trim(),
+  email: z.string().trim().email("Invalid email format").toLowerCase(),
 });
 
 export const resetPasswordSchema = z.object({
   token: z.string().min(1),
-  email: z.string().email().toLowerCase().trim(),
+  email: z.string().trim().email().toLowerCase(),
   password: z
     .string()
     .min(6, "Password must be at least 6 characters")
     .max(100),
 });
+
+export const oauthExchangeSchema = z.object({
+  code: z.string().regex(/^[A-Za-z0-9_-]{43}$/, "Invalid OAuth code"),
+});
+

@@ -1,14 +1,19 @@
 {
-  "devDependencies": {
-    "autoprefixer": "^10.4.24",
-    "postcss": "^8.5.6",
-    "tailwindcss": "^3.4.1"
-  },
-  "dependencies": {
-    "dotenv": "^17.3.1",
-    "helmet": "^8.1.0",
-    "passport": "^0.7.0",
-    "passport-github2": "^0.1.12",
-    "passport-google-oauth20": "^2.0.0"
+  "name": "skilltrack",
+  "version": "1.0.0",
+  "private": true,
+  "engines": { "node": ">=22.13.0" },
+  "scripts": {
+    "dev:client": "npm --prefix client run dev",
+    "dev:server": "npm --prefix server run dev",
+    "dev:worker": "npm --prefix server run dev:worker",
+    "dev:engine": "npm --prefix execution-engine run dev",
+    "build:client": "npm --prefix client run build",
+    "build:server": "npm --prefix server run build",
+    "build:engine": "npm --prefix execution-engine run build",
+    "typecheck:client": "npm --prefix client run typecheck",
+    "build": "npm run typecheck:client && npm run build:client && npm run build:server && npm run build:engine",
+    "lint": "npm --prefix client run lint",
+    "seed": "npm --prefix server run seed"
   }
 }

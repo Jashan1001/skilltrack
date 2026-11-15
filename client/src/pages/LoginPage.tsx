@@ -3,6 +3,8 @@ import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/authContext";
 import Header from "../components/Header";
 import { Eye, EyeOff } from "lucide-react";
+import axios from "../api/axios";
+import { isAxiosError } from "axios";
 
 const LoginPage: React.FC = () => {
   const { login } = useAuth();
@@ -13,6 +15,9 @@ const LoginPage: React.FC = () => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [verificationRequired, setVerificationRequired] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resendMessage, setResendMessage] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -20,12 +25,32 @@ const LoginPage: React.FC = () => {
     try {
       setLoading(true);
       setError("");
+      setVerificationRequired(false);
       await login(email, password);
       navigate("/problems");
-    } catch {
-      setError("Invalid email or password");
+    } catch (error) {
+      const code = isAxiosError(error) ? error.response?.data?.code : undefined;
+      if (code === "EMAIL_NOT_VERIFIED") {
+        setVerificationRequired(true);
+        setError("Verify your email address before signing in.");
+      } else {
+        setError("Invalid email or password");
+      }
     } finally {
       setLoading(false);
+    }
+  };
+
+  const resendVerification = async () => {
+    setResending(true);
+    setResendMessage("");
+    try {
+      const response = await axios.post("/auth/verify-email/resend", { email });
+      setResendMessage(response.data.message);
+    } catch {
+      setResendMessage("Could not request a new link. Please try again shortly.");
+    } finally {
+      setResending(false);
     }
   };
 
@@ -91,9 +116,18 @@ const LoginPage: React.FC = () => {
             </div>
 
             {error && (
-              <p className="text-sm text-destructive">
+              <p role="alert" className="text-sm text-destructive">
                 {error}
               </p>
+            )}
+
+            {verificationRequired && (
+              <div className="-mt-2 space-y-2">
+                <button type="button" onClick={() => void resendVerification()} disabled={resending || !email} className="text-sm font-medium text-primary hover:underline disabled:opacity-50">
+                  {resending ? "Sending…" : "Resend verification email"}
+                </button>
+                {resendMessage && <p role="status" className="text-xs text-muted-foreground">{resendMessage}</p>}
+              </div>
             )}
 
             <button
@@ -163,3 +197,4 @@ const LoginPage: React.FC = () => {
 };
 
 export default LoginPage;
+

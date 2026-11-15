@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import Problem from "../models/Problem";
 import { asyncHandler } from "../utils/asyncHandler";
 import { AppError } from "../utils/AppError";
-import { evaluateTestCases } from "../services/evaluateSolution";
+import { evaluateTestCases, executeCustomInput } from "../services/evaluateSolution";
 
 /*
 =============================
@@ -13,7 +13,7 @@ RUN SOLUTION (Public Only)
 export const runSolution = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
 
-    const { problemId, code, language } = req.body;
+    const { problemId, code, language, mode, customInput = "" } = req.body;
 
     if (!problemId || !code || !language) {
       return next(
@@ -28,6 +28,29 @@ export const runSolution = asyncHandler(
 
     if (!problem) {
       return next(new AppError("Problem not found", 404));
+    }
+
+    if (
+      problem.visibility === "private" &&
+      problem.createdBy.toString() !== req.user?.userId &&
+      req.user?.role !== "admin"
+    ) {
+      return next(new AppError("Problem not found", 404));
+    }
+
+    if (mode === "custom") {
+      const execution = await executeCustomInput(code, language, customInput);
+      return res.status(200).json({
+        success: true,
+        message: "Custom input run completed",
+        data: {
+          mode: "custom",
+          status: execution?.status || "internal_error",
+          stdout: execution?.stdout || "",
+          stderr: execution?.stderr || "",
+          runtime: Number(execution?.executionTime) || 0,
+        },
+      });
     }
 
     if (!problem.publicTestCases || problem.publicTestCases.length === 0) {
@@ -48,6 +71,7 @@ export const runSolution = asyncHandler(
       success: true,
       message: "Run completed",
       data: {
+        mode: "samples",
         verdict: evaluation.verdict,
         passed: evaluation.passed,
         total: evaluation.total,

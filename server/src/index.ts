@@ -16,6 +16,8 @@ import runRoutes from "./routes/runRoutes";
 import { protect } from "./middleware/authMiddleware";
 import { globalErrorHandler } from "./middleware/errorHandler";
 import adminRoutes from "./routes/adminRoutes";
+import Submission from "./models/Submission";
+import JudgeWorkerHeartbeat from "./models/JudgeWorkerHeartbeat";
 dotenv.config();
 
 const app = express();
@@ -74,7 +76,7 @@ app.use(
 /* Body Parser                  */
 /* ============================= */
 
-app.use(express.json({ limit: "50kb" }));
+app.use(express.json({ limit: "250kb" }));
 
 /* ============================= */
 /* Routes                       */
@@ -100,15 +102,31 @@ app.get("/health", async (req, res) => {
   const dbState = mongoose.connection.readyState;
   // 0 = disconnected, 1 = connected, 2 = connecting, 3 = disconnecting
   const dbStatus = dbState === 1 ? "connected" : "disconnected";
-
   const status = dbState === 1 ? "ok" : "degraded";
+  let judgeWorkerStatus = "unknown";
+  let queuedJobs: number | null = null;
+  let runningJobs: number | null = null;
+
+  if (dbState === 1) {
+    const heartbeatSince = new Date(Date.now() - 45_000);
+    const [heartbeat, queuedCount, runningCount] = await Promise.all([
+      JudgeWorkerHeartbeat.exists({ lastSeenAt: { $gte: heartbeatSince } }),
+      Submission.countDocuments({ jobState: "queued" }),
+      Submission.countDocuments({ jobState: "running" }),
+    ]);
+    judgeWorkerStatus = heartbeat ? "healthy" : "unavailable";
+    queuedJobs = queuedCount;
+    runningJobs = runningCount;
+  }
 
   res.status(dbState === 1 ? 200 : 503).json({
     status,
     timestamp: new Date().toISOString(),
     services: {
       database: dbStatus,
+      judgeWorker: judgeWorkerStatus,
     },
+    queue: { queuedJobs, runningJobs },
   });
 });
 
@@ -137,7 +155,29 @@ export { app };
 
 const startServer = async () => {
   try {
+    const required = ["MONGO_URI", "JWT_SECRET", "EXECUTION_ENGINE_URL", "INTERNAL_SECRET"];
+    const missing = required.filter((key) => !process.env[key]);
+    if (missing.length > 0) {
+      throw new Error(`Missing required environment variables: ${missing.join(", ")}`);
+    }
+
+    if ((process.env.JWT_SECRET || "").length < 32) {
+      throw new Error("JWT_SECRET must be at least 32 characters long");
+    }
+    if ((process.env.INTERNAL_SECRET || "").length < 32) {
+      throw new Error("INTERNAL_SECRET must be at least 32 characters long");
+    }
+
+    const executionUrl = new URL(process.env.EXECUTION_ENGINE_URL as string);
+    if (executionUrl.protocol !== "http:" && executionUrl.protocol !== "https:") {
+      throw new Error("EXECUTION_ENGINE_URL must use HTTP or HTTPS");
+    }
+
     await mongoose.connect(process.env.MONGO_URI as string);
+    await Promise.all([
+      Submission.createIndexes(),
+      JudgeWorkerHeartbeat.createIndexes(),
+    ]);
     console.log("MongoDB connected");
 
     app.listen(PORT, () => {

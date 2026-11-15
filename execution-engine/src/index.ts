@@ -18,8 +18,13 @@ if (!INTERNAL_SECRET) {
     "Set a strong random string shared between the server and execution engine."
   );
 }
+if (INTERNAL_SECRET.length < 32) {
+  throw new Error("INTERNAL_SECRET must be at least 32 characters long");
+}
 
 app.use((req, res, next) => {
+  if (req.path === "/health") return next();
+
   const token = req.headers["x-internal-token"];
 
   if (token !== INTERNAL_SECRET) {
@@ -33,7 +38,7 @@ app.use((req, res, next) => {
 /* Body Parser                  */
 /* ============================= */
 
-app.use(express.json({ limit: "100kb" }));
+app.use(express.json({ limit: "250kb" }));
 
 /* ============================= */
 /* Routes                       */

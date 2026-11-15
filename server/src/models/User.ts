@@ -3,6 +3,9 @@ import mongoose, { Schema, Document } from "mongoose";
 export interface IUser extends Document {
   name: string;
   email: string;
+  emailVerified: boolean;
+  emailVerificationTokenHash?: string;
+  emailVerificationExpires?: Date;
   password?: string;
   role: "student" | "recruiter" | "admin";
   googleId?: string;
@@ -12,6 +15,9 @@ export interface IUser extends Document {
   longestStreak: number;
   lastSubmissionDate?: Date;
   savedProblems: mongoose.Types.ObjectId[];
+  learningGoal?: "interview" | "fundamentals" | "contests";
+  placementLevel?: "beginner" | "intermediate" | "advanced";
+  hoursPerWeek?: number;
   passwordResetToken?: string;
   passwordResetExpires?: Date;
   createdAt: Date;
@@ -32,6 +38,9 @@ const UserSchema: Schema<IUser> = new Schema(
       lowercase: true,
       trim: true,
     },
+    emailVerified: { type: Boolean, default: false },
+    emailVerificationTokenHash: { type: String, select: false },
+    emailVerificationExpires: { type: Date, select: false },
     password: {
       type: String,
       required: false, // optional — OAuth users have no password
@@ -72,6 +81,9 @@ const UserSchema: Schema<IUser> = new Schema(
         ref: "Problem",
       },
     ],
+    learningGoal: { type: String, enum: ["interview", "fundamentals", "contests"] },
+    placementLevel: { type: String, enum: ["beginner", "intermediate", "advanced"] },
+    hoursPerWeek: { type: Number, min: 2, max: 20, default: 5 },
     passwordResetToken: { type: String },
     passwordResetExpires: { type: Date },
   },
@@ -79,3 +91,4 @@ const UserSchema: Schema<IUser> = new Schema(
 );
 
 export default mongoose.model<IUser>("User", UserSchema);
+

@@ -1,8 +1,8 @@
-import { useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Editor from "@monaco-editor/react";
 import axios from "../api/axios";
-import { Play, Send, ArrowLeft, Trophy } from "lucide-react";
+import { Play, Send, ArrowLeft, ExternalLink, Trophy } from "lucide-react";
 import { motion } from "framer-motion";
 import { useTheme } from "../context/themeContext";
 import ReactMarkdown from "react-markdown";
@@ -39,6 +39,48 @@ interface Problem {
   publicTestCases: TestCase[];
   editorial?: string;
 }
+
+interface RunTestResult {
+  testCase: number;
+  passed: boolean;
+  expected: string;
+  output: string;
+  status: string;
+  runtime: number;
+}
+
+interface RunResult {
+  mode: "samples" | "custom";
+  verdict?: string;
+  status?: string;
+  stdout?: string;
+  stderr?: string;
+  passed?: number;
+  total?: number;
+  runtime: number;
+  detailedResults?: RunTestResult[];
+}
+
+interface SubmitResult {
+  submissionId: string;
+  jobState: "queued" | "running" | "completed" | "failed" | "cancelled";
+  verdict: string;
+  score: number;
+  passed: number;
+  total: number;
+  runtime: number;
+  errorMessage?: string;
+}
+
+type ResultTab = "console" | "testcases" | "custom" | "result" | "editorial";
+
+const resultTabs: Array<{ label: string; value: ResultTab }> = [
+  { label: "Console", value: "console" },
+  { label: "Testcases", value: "testcases" },
+  { label: "Custom", value: "custom" },
+  { label: "Result", value: "result" },
+  { label: "Editorial", value: "editorial" },
+];
 
 const templates: Record<string, string> = {
   javascript: `function solve() {
@@ -90,16 +132,17 @@ const ProblemDetailPage = () => {
 
   const [running,setRunning] = useState(false);
   const [submitting,setSubmitting] = useState(false);
+  const [cancelling,setCancelling] = useState(false);
 
-  const [runResult,setRunResult] = useState<any>(null);
-  const [submitResult,setSubmitResult] = useState<any>(null);
+  const [runResult,setRunResult] = useState<RunResult | null>(null);
+  const [submitResult,setSubmitResult] = useState<SubmitResult | null>(null);
+  const submissionKeyRef = useRef<{ fingerprint: string; key: string } | null>(null);
 
   const [showHints,setShowHints] = useState(false);
   const [showTags,setShowTags] = useState(false);
   const [hasAttempted, setHasAttempted] = useState(false);
 
-  const [activeTab, setActiveTab] =
-    useState<"console" | "testcases" | "custom" | "result" | "editorial">("console");
+  const [activeTab, setActiveTab] = useState<ResultTab>("console");
 
   /* FETCH PROBLEM */
 
@@ -127,7 +170,7 @@ const ProblemDetailPage = () => {
       setCodes(parsed.codes);
       setLanguage(parsed.language);
     }
-  },[problemId]);
+  },[storageKey]);
 
   /* AUTOSAVE */
 
@@ -140,7 +183,7 @@ const ProblemDetailPage = () => {
     },800);
 
     return ()=>clearTimeout(timer);
-  },[codes,language]);
+  },[storageKey,codes,language]);
 
   /* CLEAR STALE RUN RESULT */
 
@@ -156,31 +199,9 @@ const ProblemDetailPage = () => {
     }
   },[runResult,submitResult]);
 
-  /* KEYBOARD SHORTCUTS */
-
-  useEffect(()=>{
-    const handleKey = (e:KeyboardEvent)=>{
-
-      if(e.ctrlKey && e.key==="Enter"){
-        e.preventDefault();
-        handleRun();
-      }
-
-      if(e.ctrlKey && e.shiftKey && e.key==="Enter"){
-        e.preventDefault();
-        handleSubmit();
-      }
-
-    };
-
-    window.addEventListener("keydown",handleKey);
-    return ()=>window.removeEventListener("keydown",handleKey);
-
-  },[code]);
-
   /* RUN */
 
-  const handleRun = async () => {
+  const handleRun = useCallback(async (useCustomInput = false) => {
     if (!code.trim() || running) return;
 
     setRunning(true);
@@ -191,59 +212,168 @@ const ProblemDetailPage = () => {
         problemId,
         code,
         language,
-        customInput,
+        mode: useCustomInput ? "custom" : "samples",
+        customInput: useCustomInput ? customInput : "",
       });
 
       setRunResult(res.data.data);
-      setActiveTab("testcases");
+      setActiveTab(useCustomInput ? "console" : "testcases");
     } catch {
       toast.error("Failed to run code. Please try again.");
     } finally {
       setRunning(false);
     }
-  };
+  }, [code, running, problemId, language, customInput]);
 
   /* SUBMIT */
 
-  const handleSubmit = async () => {
+  const handleSubmit = useCallback(async () => {
     if (!code.trim() || submitting) return;
 
     setSubmitting(true);
     setRunResult(null);
 
     try {
+      const fingerprint = `${problemId}:${language}:${code}`;
+      if (submissionKeyRef.current?.fingerprint !== fingerprint) {
+        submissionKeyRef.current = {
+          fingerprint,
+          key: crypto.randomUUID(),
+        };
+      }
+
       const res = await axios.post("/submissions", {
         problemId,
         code,
         language,
+      }, {
+        headers: { "Idempotency-Key": submissionKeyRef.current.key },
       });
-
-      const verdict = res.data.data.verdict;
-
-      if (verdict === "accepted") {
+        const { submissionId, jobState, status, score, passed, total, runtime, errorMessage } = res.data.data;
+      submissionKeyRef.current = null;
+      setSubmitResult({
+        submissionId,
+        jobState,
+        verdict: status,
+        score,
+        passed,
+        total,
+        runtime,
+        errorMessage,
+      });
+      setHasAttempted(true);
+      if (jobState === "queued" || jobState === "running") {
+        toast.success("Submission queued for judging");
+      } else if (status === "accepted") {
         toast.success("Accepted! All test cases passed 🎉");
       } else {
-        toast.error(`${verdict.replace(/_/g, " ")} — check the result tab`);
+        toast.error(`${status.replace(/_/g, " ")} — check the result tab`);
       }
-
-      setSubmitResult(res.data.data);
       setActiveTab("result");
     } catch {
       toast.error("Submission failed. Please try again.");
     } finally {
-      setHasAttempted(true);
       setSubmitting(false);
     }
-  };
+  }, [code, submitting, problemId, language]);
+
+  const handleCancelSubmission = useCallback(async () => {
+    if (!submitResult?.submissionId || cancelling) return;
+    setCancelling(true);
+    try {
+      const response = await axios.post(`/submissions/${submitResult.submissionId}/cancel`);
+      setSubmitResult((current) => current ? {
+        ...current,
+        jobState: response.data.data.jobState,
+        verdict: response.data.data.status,
+      } : current);
+      toast.success(response.data.message || "Cancellation requested");
+    } catch {
+      toast.error("Could not cancel this submission. Refresh its status and try again.");
+    } finally {
+      setCancelling(false);
+    }
+  }, [submitResult?.submissionId, cancelling]);
+
+  /* POLL DURABLE JUDGE JOB */
+  useEffect(() => {
+    const submissionId = submitResult?.submissionId;
+    if (
+      !submissionId ||
+      (submitResult.jobState !== "queued" && submitResult.jobState !== "running")
+    ) return;
+
+    let cancelled = false;
+    let timer = 0;
+    let pollDelay = 2_000;
+    const poll = async () => {
+      try {
+        const res = await axios.get(`/submissions/${submissionId}`);
+        const submission = res.data.data;
+        if (cancelled) return;
+        const nextResult: SubmitResult = {
+          submissionId,
+          jobState: submission.jobState,
+          verdict: submission.status,
+          score: submission.score,
+          passed: submission.passedTestCases,
+          total: submission.totalTestCases,
+          runtime: submission.runtime,
+          errorMessage: submission.errorMessage,
+        };
+        setSubmitResult(nextResult);
+        if (submission.jobState === "completed" || submission.jobState === "failed") {
+          if (submission.status === "accepted") {
+            toast.success("Accepted! All test cases passed 🎉");
+          } else {
+            toast.error(`${submission.status.replace(/_/g, " ")} — check the result tab`);
+          }
+          return;
+        }
+        pollDelay = Math.min(8_000, Math.round(pollDelay * 1.5));
+      } catch {
+        // Keep polling through temporary API/network interruptions.
+      }
+      if (!cancelled) timer = window.setTimeout(() => void poll(), pollDelay);
+    };
+
+    timer = window.setTimeout(() => void poll(), pollDelay);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [submitResult?.submissionId, submitResult?.jobState]);
+
+  /* KEYBOARD SHORTCUTS */
+  useEffect(() => {
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.ctrlKey && event.shiftKey && event.key === "Enter") {
+        event.preventDefault();
+        void handleSubmit();
+      } else if (event.ctrlKey && event.key === "Enter") {
+        event.preventDefault();
+        void handleRun();
+      }
+    };
+
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [handleRun, handleSubmit]);
 
   if(loading)
     return(
-      <div className="flex items-center justify-center h-full text-muted-foreground">
-        Loading problem...
+      <div className="flex h-full min-h-64 items-center justify-center text-sm text-muted-foreground" role="status">
+        Loading problem…
       </div>
     );
 
-  if(!problem) return null;
+  if(!problem) return (
+    <section className="flex min-h-80 flex-col items-center justify-center rounded-2xl border border-border bg-card px-6 text-center">
+      <h1 className="text-lg font-semibold text-foreground">This problem isn’t available</h1>
+      <p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">It may have been removed, or your connection dropped while loading it.</p>
+      <button onClick={() => navigate("/problems")} className="mt-5 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90">Back to problems</button>
+    </section>
+  );
 
   const difficultyStyle =
     problem.difficulty === "easy"
@@ -301,6 +431,15 @@ className="flex items-center gap-1 hover:text-foreground"
 >
 <Trophy size={16}/> Leaderboard
 </button>
+
+<a
+href={`https://leetcode.com/problemset/?search=${encodeURIComponent(problem.title)}`}
+target="_blank"
+rel="noreferrer"
+className="flex items-center gap-1 hover:text-foreground"
+>
+<ExternalLink size={15}/> Search LeetCode
+</a>
 
 </div>
 
@@ -542,7 +681,7 @@ focus:outline-none focus:ring-2 focus:ring-primary"
 <div className="flex gap-2">
 
 <button
-onClick={handleRun}
+onClick={()=>void handleRun()}
 disabled={running}
 className="flex items-center gap-1 text-emerald-500 border border-emerald-500 px-3 py-1 rounded"
 >
@@ -590,17 +729,17 @@ scrollBeyondLastLine:false
 
 <div className="flex border-b border-border bg-muted text-sm">
 
-{["Console","Testcases","Custom","Result","Editorial"].map((tab)=>(
+{resultTabs.map(({ label, value })=>(
 <button
-key={tab}
-onClick={()=>setActiveTab(tab.toLowerCase() as any)}
+key={value}
+onClick={()=>setActiveTab(value)}
 className={`px-4 py-2 ${
-activeTab === tab.toLowerCase()
+activeTab === value
 ? "text-emerald-500 border-b-2 border-emerald-500"
 : "text-muted-foreground"
 }`}
 >
-{tab}
+{label}
 </button>
 ))}
 
@@ -611,7 +750,9 @@ activeTab === tab.toLowerCase()
 {activeTab==="console" && (
 <pre className="font-mono whitespace-pre-wrap text-muted-foreground">
 {runResult
-? runResult.detailedResults.map((r:any)=>`TC${r.testCase}: ${r.output}`).join("\n")
+? runResult.mode === "custom"
+  ? `Status: ${runResult.status}\nRuntime: ${runResult.runtime} ms\n\n${[runResult.stdout, runResult.stderr].filter(Boolean).join("\n") || "Program completed with no output."}`
+  : (runResult.detailedResults ?? []).map((r)=>`TC${r.testCase}: ${r.output}`).join("\n")
 : "Run your code to see output"}
 </pre>
 )}
@@ -620,7 +761,7 @@ activeTab === tab.toLowerCase()
 
 <div className="space-y-4">
 
-{runResult.detailedResults.map((r:any)=>(
+{(runResult.detailedResults ?? []).map((r)=>(
 
 <div
 key={r.testCase}
@@ -665,6 +806,10 @@ Your Output
 
 ))}
 
+{runResult.mode === "custom" && (
+  <p className="text-muted-foreground">Custom input runs do not compare against an expected answer.</p>
+)}
+
 </div>
 
 )}
@@ -681,7 +826,7 @@ className="w-full h-32 p-3 rounded border border-border bg-muted font-mono"
 />
 
 <button
-onClick={handleRun}
+onClick={()=>void handleRun(true)}
 className="px-4 py-2 bg-primary text-primary-foreground rounded"
 >
 Run Custom Input
@@ -694,6 +839,31 @@ Run Custom Input
 {activeTab==="result" && submitResult && (
 
 <div className="space-y-2">
+
+{(submitResult.jobState === "queued" || submitResult.jobState === "running") ? (
+  <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-1">
+    <div className="font-semibold text-foreground">
+      {submitResult.jobState === "queued" ? "Queued for judging" : "Judging your submission"}
+    </div>
+    <p className="text-sm text-muted-foreground">
+      This result updates automatically. You can leave this page and find the submission in your history.
+    </p>
+    <button
+      onClick={() => navigate(`/submissions/${submitResult.submissionId}`)}
+      className="text-sm text-primary hover:underline"
+    >
+      Open submission status
+    </button>
+      <button
+        onClick={() => void handleCancelSubmission()}
+        disabled={cancelling}
+        className="ml-4 text-sm text-muted-foreground hover:text-foreground disabled:opacity-50"
+      >
+        {cancelling ? "Cancelling..." : "Cancel submission"}
+      </button>
+  </div>
+) : (
+<>
 
 <div className="text-lg font-semibold capitalize">
 Verdict:
@@ -715,6 +885,13 @@ Passed: {submitResult.passed}/{submitResult.total}
 <div>
 Runtime: {submitResult.runtime} ms
 </div>
+
+{submitResult.errorMessage && (
+  <div className="text-sm text-red-500">{submitResult.errorMessage}</div>
+)}
+
+</>
+)}
 
 </div>
 
@@ -759,3 +936,4 @@ Runtime: {submitResult.runtime} ms
 };
 
 export default ProblemDetailPage;
+

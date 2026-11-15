@@ -1,35 +1,42 @@
+import { lazy, Suspense } from "react";
 import { Routes, Route } from "react-router-dom";
 
 import { ThemeProvider } from "./context/themeContext";
 
-import LoginPage from "./pages/LoginPage";
-import RegisterPage from "./pages/RegisterPage";
-import HomePage from "./pages/HomePage";
-
-import PatternsPage from "./pages/PatternsPage";
-import PatternDetailPage from "./pages/PatternDetailPage";
-import ProblemsPage from "./pages/ProblemsPage";
-import ProblemDetailPage from "./pages/ProblemDetailPage";
-import ProblemLeaderboardPage from "./pages/ProblemLeaderboardPage";
-import SubmissionHistoryPage from "./pages/SubmissionHistoryPage";
-import DashboardPage from "./pages/DashboardPage";
-
-import CreateProblemPage from "./pages/CreateProblemPage";
-import EditProblemPage from "./pages/EditProblemPage";
-
 import ProtectedRoute from "./routes/ProtectedRoute";
 import AppLayout from "./layouts/AppLayout";
-import GlobalLeaderboardPage from "./pages/GlobalLeaderboardPage";
-import SubmissionDetailPage from "./pages/SubmissionDetailPage";
-import ProfilePage from "./pages/ProfilePage";
-import OAuthCallbackPage from "./pages/OAuthCallbackPage";
-import AdminAnalyticsPage from "./pages/AdminAnalyticsPage";
-import ForgotPasswordPage from "./pages/ForgotPasswordPage";
-import ResetPasswordPage from "./pages/ResetPasswordPage";
+
+const LoginPage = lazy(() => import("./pages/LoginPage"));
+const RegisterPage = lazy(() => import("./pages/RegisterPage"));
+const HomePage = lazy(() => import("./pages/HomePage"));
+const PatternsPage = lazy(() => import("./pages/PatternsPage"));
+const PatternDetailPage = lazy(() => import("./pages/PatternDetailPage"));
+const ProblemsPage = lazy(() => import("./pages/ProblemsPage"));
+const ProblemDetailPage = lazy(() => import("./pages/ProblemDetailPage"));
+const ProblemLeaderboardPage = lazy(() => import("./pages/ProblemLeaderboardPage"));
+const SubmissionHistoryPage = lazy(() => import("./pages/SubmissionHistoryPage"));
+const DashboardPage = lazy(() => import("./pages/DashboardPage"));
+const CreateProblemPage = lazy(() => import("./pages/CreateProblemPage"));
+const EditProblemPage = lazy(() => import("./pages/EditProblemPage"));
+const GlobalLeaderboardPage = lazy(() => import("./pages/GlobalLeaderboardPage"));
+const SubmissionDetailPage = lazy(() => import("./pages/SubmissionDetailPage"));
+const ProfilePage = lazy(() => import("./pages/ProfilePage"));
+const OAuthCallbackPage = lazy(() => import("./pages/OAuthCallbackPage"));
+const AdminAnalyticsPage = lazy(() => import("./pages/AdminAnalyticsPage"));
+const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage"));
+const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
+const VerifyEmailPage = lazy(() => import("./pages/VerifyEmailPage"));
 function App() {
   return (
     <ThemeProvider>
 
+      <Suspense
+        fallback={
+          <div className="min-h-screen flex items-center justify-center text-muted-foreground">
+            Loading SkillTrack…
+          </div>
+        }
+      >
       <Routes>
 
         {/* PUBLIC ROUTES */}
@@ -39,6 +46,7 @@ function App() {
         <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/verify-email" element={<VerifyEmailPage />} />
 
         {/* AUTHENTICATED ROUTES */}
         <Route element={<ProtectedRoute />}>
@@ -108,9 +116,11 @@ function App() {
         } />
 
       </Routes>
+      </Suspense>
 
     </ThemeProvider>
   );
 }
 
 export default App;
+
