@@ -34,6 +34,8 @@ Make SkillTrack a guided pattern mastery platform: learners know what to study n
 - Generate a daily plan with spaced review for weak or stale patterns.
 - Explain failed submissions with useful, private feedback while preserving hidden test cases.
 
+**Implemented in the current learning slice:** learners can set a goal, self place by experience, and choose weekly study time. The dashboard builds a five session plan using completed attempts, acceptance rates, curriculum order, and recency. Persistent mastery scores and scheduled review outcomes remain the next step.
+
 **Acceptance:** a learner can start from a goal, follow a generated weekly plan, see why a topic was selected, and measure retained mastery over time.
 
 ## Phase 4: Community, collaboration and proof of skill

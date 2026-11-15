@@ -1,143 +1,96 @@
-/**
- * Integration tests for authMiddleware.ts
- *
- * Tests the protect() and allowRoles() middleware in isolation
- * using a minimal Express app — no real DB queries needed.
- *
- * Run: npm test
- */
-
-import request from "supertest";
-import express from "express";
+import type { NextFunction, Request, Response } from "express";
 import jwt from "jsonwebtoken";
-import { protect, allowRoles } from "../middleware/authMiddleware";
+import { allowRoles, protect } from "../middleware/authMiddleware";
 
 const SECRET = "test-jwt-secret-32-chars-minimum!";
 process.env.JWT_SECRET = SECRET;
 
-// Build a minimal test app
-const buildApp = () => {
-  const app = express();
-  app.use(express.json());
+const makeToken = (
+  userId: string,
+  role: string,
+  secret = SECRET,
+  expiresIn: jwt.SignOptions["expiresIn"] = "1h"
+) =>
+  jwt.sign({ userId, role }, secret, { expiresIn });
 
-  // Protected route
-  app.get("/protected", protect, (req, res) => {
-    res.json({ user: req.user });
-  });
+const makeRequest = (authorization?: string) => ({
+  headers: authorization ? { authorization } : {},
+  user: undefined,
+}) as unknown as Request;
 
-  // Admin-only route
-  app.get("/admin", protect, allowRoles("admin"), (req, res) => {
-    res.json({ message: "admin access" });
-  });
-
-  // Student + admin route
-  app.get("/submit", protect, allowRoles("student", "admin"), (req, res) => {
-    res.json({ message: "submit access" });
-  });
-
-  return app;
+const makeResponse = () => {
+  const response = { status: jest.fn(), json: jest.fn() };
+  response.status.mockReturnValue(response);
+  return response as unknown as Response & typeof response;
 };
 
-const app = buildApp();
-
-const makeToken = (userId: string, role: string, secret = SECRET) =>
-  jwt.sign({ userId, role }, secret, { expiresIn: "1h" });
-
-// ─── protect() middleware ─────────────────────────────────────────────────────
-
 describe("protect middleware", () => {
-  it("allows request with valid Bearer token", async () => {
-    const token = makeToken("user123", "student");
-    const res = await request(app)
-      .get("/protected")
-      .set("Authorization", `Bearer ${token}`);
+  it("allows a valid Bearer token and attaches its claims", () => {
+    const req = makeRequest(`Bearer ${makeToken("user123", "student")}`);
+    const res = makeResponse();
+    const next = jest.fn() as unknown as NextFunction;
 
-    expect(res.status).toBe(200);
-    expect(res.body.user.userId).toBe("user123");
-    expect(res.body.user.role).toBe("student");
+    protect(req, res, next);
+
+    expect(req.user).toMatchObject({ userId: "user123", role: "student" });
+    expect(next).toHaveBeenCalledTimes(1);
+    expect(res.status).not.toHaveBeenCalled();
   });
 
-  it("rejects request with no Authorization header", async () => {
-    const res = await request(app).get("/protected");
-    expect(res.status).toBe(401);
-  });
+  it.each([
+    ["missing Authorization header", undefined],
+    ["wrong auth scheme", `Basic ${makeToken("user123", "student")}`],
+    ["expired token", `Bearer ${makeToken("user123", "student", SECRET, "0s")}`],
+    ["wrong signing secret", `Bearer ${makeToken("user123", "student", "wrong-secret")}`],
+    ["malformed token", "Bearer this.is.not.a.jwt"],
+  ])("rejects %s", (_description, authorization) => {
+    const req = makeRequest(authorization);
+    const res = makeResponse();
+    const next = jest.fn() as unknown as NextFunction;
 
-  it("rejects request with wrong auth scheme (Basic instead of Bearer)", async () => {
-    const token = makeToken("user123", "student");
-    const res = await request(app)
-      .get("/protected")
-      .set("Authorization", `Basic ${token}`);
-    expect(res.status).toBe(401);
-  });
+    protect(req, res, next);
 
-  it("rejects expired token", async () => {
-    const token = jwt.sign({ userId: "user123", role: "student" }, SECRET, {
-      expiresIn: "0s", // immediately expired
+    expect(res.status).toHaveBeenCalledWith(401);
+    expect(res.json).toHaveBeenCalledWith({
+      message: authorization?.startsWith("Bearer ")
+        ? "Not authorized, token failed"
+        : "Not authorized, no token",
     });
-
-    // Small delay to ensure token is expired
-    await new Promise((r) => setTimeout(r, 100));
-
-    const res = await request(app)
-      .get("/protected")
-      .set("Authorization", `Bearer ${token}`);
-
-    expect(res.status).toBe(401);
-  });
-
-  it("rejects token signed with wrong secret", async () => {
-    const token = makeToken("user123", "student", "wrong-secret");
-    const res = await request(app)
-      .get("/protected")
-      .set("Authorization", `Bearer ${token}`);
-
-    expect(res.status).toBe(401);
-  });
-
-  it("rejects completely malformed token string", async () => {
-    const res = await request(app)
-      .get("/protected")
-      .set("Authorization", "Bearer this.is.not.a.jwt");
-
-    expect(res.status).toBe(401);
+    expect(next).not.toHaveBeenCalled();
   });
 });
 
-// ─── allowRoles() middleware ──────────────────────────────────────────────────
-
 describe("allowRoles middleware", () => {
-  it("allows admin to access admin-only route", async () => {
-    const token = makeToken("admin1", "admin");
-    const res = await request(app)
-      .get("/admin")
-      .set("Authorization", `Bearer ${token}`);
+  const authorize = (role: string | undefined, ...allowed: string[]) => {
+    const req = { user: role ? { userId: "user123", role } : undefined } as unknown as Request;
+    const res = makeResponse();
+    const next = jest.fn() as unknown as NextFunction;
+    allowRoles(...allowed)(req, res, next);
+    return { res, next };
+  };
 
-    expect(res.status).toBe(200);
-    expect(res.body.message).toBe("admin access");
+  it("allows admin on an admin-only route", () => {
+    const { res, next } = authorize("admin", "admin");
+    expect(next).toHaveBeenCalledTimes(1);
+    expect(res.status).not.toHaveBeenCalled();
   });
 
-  it("blocks student from admin-only route with 403", async () => {
-    const token = makeToken("user1", "student");
-    const res = await request(app)
-      .get("/admin")
-      .set("Authorization", `Bearer ${token}`);
-
-    expect(res.status).toBe(403);
+  it("blocks a student on an admin-only route", () => {
+    const { res, next } = authorize("student", "admin");
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(res.json).toHaveBeenCalledWith({ message: "Access forbidden: insufficient permissions" });
+    expect(next).not.toHaveBeenCalled();
   });
 
-  it("allows both student and admin to access submit route", async () => {
-    const studentToken = makeToken("user1", "student");
-    const adminToken = makeToken("admin1", "admin");
+  it.each(["student", "admin"])("allows %s on a student or admin route", (role) => {
+    const { res, next } = authorize(role, "student", "admin");
+    expect(next).toHaveBeenCalledTimes(1);
+    expect(res.status).not.toHaveBeenCalled();
+  });
 
-    const studentRes = await request(app)
-      .get("/submit")
-      .set("Authorization", `Bearer ${studentToken}`);
-
-    const adminRes = await request(app)
-      .get("/submit")
-      .set("Authorization", `Bearer ${adminToken}`);
-
-    expect(studentRes.status).toBe(200);
-    expect(adminRes.status).toBe(200);
+  it("blocks requests without an authenticated user", () => {
+    const { res, next } = authorize(undefined, "admin");
+    expect(res.status).toHaveBeenCalledWith(403);
+    expect(next).not.toHaveBeenCalled();
   });
 });
