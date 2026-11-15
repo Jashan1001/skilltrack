@@ -83,6 +83,11 @@ export const createProblemSchema = z.object({
     .max(150, "Title must be under 150 characters")
     .trim(),
 
+  leetcodeUrl: z.string().trim().url().refine(
+    (value) => /^https:\/\/leetcode\.com\/problems\/[a-z0-9-]+\/?$/.test(value),
+    "Use a specific LeetCode problem URL"
+  ).optional().or(z.literal("")),
+
   description: z
     .string()
     .min(1, "Description is required")
@@ -192,4 +197,3 @@ export const resetPasswordSchema = z.object({
 export const oauthExchangeSchema = z.object({
   code: z.string().regex(/^[A-Za-z0-9_-]{43}$/, "Invalid OAuth code"),
 });
-

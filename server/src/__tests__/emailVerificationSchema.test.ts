@@ -27,4 +27,3 @@ describe("email ownership input validation", () => {
     expect(verifyEmailSchema.safeParse({ token: `${token}=` }).success).toBe(false);
   });
 });
-

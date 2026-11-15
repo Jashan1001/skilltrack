@@ -8,7 +8,13 @@ body {
   background-color: hsl(var(--background));
   color: hsl(var(--foreground));
   font-family: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+  font-feature-settings: "cv11", "ss01";
+  -webkit-font-smoothing: antialiased;
 }
+
+* { scrollbar-color: hsl(var(--border)) transparent; }
+::selection { background: hsl(var(--primary) / 0.18); }
+:focus-visible { outline: 2px solid hsl(var(--ring)); outline-offset: 2px; }
 
 .sidebar-nav {
   scrollbar-width: none;
@@ -21,17 +27,17 @@ body {
 @layer base {
   :root {
     /* Surfaces */
-    --background:        0 0% 100%;     /* #ffffff */
-    --foreground:        221 39% 11%;   /* #111827 */
+    --background:        220 20% 98%;   /* cool neutral canvas */
+    --foreground:        222 42% 11%;
 
     --card:              0 0% 100%;
-    --card-foreground:   221 39% 11%;
+    --card-foreground:   222 42% 11%;
 
-    --muted:             220 20% 97%;   /* slate-50 tint */
-    --muted-foreground:  220 9% 46%;    /* #6b7280 */
+    --muted:             220 18% 95%;
+    --muted-foreground:  220 10% 43%;
 
-    --border:            220 13% 91%;   /* #e5e7eb */
-    --input:             220 13% 91%;
+    --border:            220 16% 90%;
+    --input:             220 16% 88%;
 
     /* Sidebar — stays dark in BOTH modes */
     --sidebar-bg:        224 47% 7%;    /* #0a0f1c */
@@ -41,7 +47,7 @@ body {
     --sidebar-border:    215 28% 17%;
 
     /* Primary accent — dark blue */
-    --primary:           224 64% 33%;   /* #1e3a8a */
+    --primary:           239 72% 58%;
     --primary-foreground: 0 0% 100%;
 
     /* Semantic accents */
@@ -56,8 +62,8 @@ body {
     --destructive:       0 84% 60%;
     --destructive-foreground: 0 0% 100%;
 
-    --ring:              224 64% 33%;
-    --radius:            0.5rem;
+    --ring:              239 72% 58%;
+    --radius:            0.75rem;
   }
 
   .dark {
@@ -82,7 +88,7 @@ body {
     --sidebar-border:    215 28% 17%;
 
     /* Primary stays the same dark blue */
-    --primary:           224 64% 33%;
+    --primary:           239 78% 70%;
     --primary-foreground: 0 0% 100%;
 
     /* Semantic accents — slightly brighter in dark */
@@ -97,7 +103,7 @@ body {
     --destructive:       0 84% 65%;
     --destructive-foreground: 0 0% 100%;
 
-    --ring:              224 64% 33%;
-    --radius:            0.5rem;
+    --ring:              239 78% 70%;
+    --radius:            0.75rem;
   }
 }

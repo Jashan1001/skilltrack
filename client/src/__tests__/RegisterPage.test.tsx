@@ -166,4 +166,3 @@ describe("RegisterPage", () => {
     expect(mockResendVerification).toHaveBeenCalledWith("/auth/verify-email/resend", { email: "test@example.com" });
   });
 });
-

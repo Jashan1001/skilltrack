@@ -19,6 +19,7 @@ const CreateProblemPage: React.FC = () => {
   const navigate = useNavigate();
 
   const [title, setTitle] = useState("");
+  const [leetcodeUrl, setLeetcodeUrl] = useState("");
   const [description, setDescription] = useState("");
   const [inputFormat, setInputFormat] = useState("");
   const [outputFormat, setOutputFormat] = useState("");
@@ -101,6 +102,7 @@ const CreateProblemPage: React.FC = () => {
     try {
       await axios.post("/problems", {
         title,
+        leetcodeUrl: leetcodeUrl || undefined,
         description,
         inputFormat,
         outputFormat,
@@ -177,6 +179,12 @@ const CreateProblemPage: React.FC = () => {
                 onChange={(e) => setTitle(e.target.value)}
                 className="w-full px-4 py-3 rounded-lg bg-muted border border-border focus:outline-none focus:ring-2 focus:ring-primary"
               />
+            </div>
+
+            <div className="space-y-2">
+              <label className="text-sm font-medium">LeetCode problem URL <span className="text-muted-foreground">(optional)</span></label>
+              <input type="url" value={leetcodeUrl} onChange={(e) => setLeetcodeUrl(e.target.value)} placeholder="https://leetcode.com/problems/two-sum/" className="w-full rounded-lg border border-border bg-muted px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary" />
+              <p className="text-xs text-muted-foreground">Use the direct problem page. Search URLs are not accepted.</p>
             </div>
 
             <div className="space-y-2">

@@ -9,6 +9,7 @@ import { ArrowUpRight, Bookmark, Check, Code2, Search, SlidersHorizontal } from 
 interface Problem {
   _id: string;
   title: string;
+  leetcodeUrl?: string;
   difficulty: "easy" | "medium" | "hard";
   pattern?: string;
   tags?: string[];
@@ -363,9 +364,9 @@ const ProblemsPage: React.FC = () => {
                     </td>
 
                     <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
-                      <a href={`https://leetcode.com/problemset/?search=${encodeURIComponent(problem.title)}`} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground" title={`Search LeetCode for ${problem.title}`}>
-                        LeetCode <ArrowUpRight size={13} />
-                      </a>
+                      {problem.leetcodeUrl && <a href={problem.leetcodeUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-xs font-medium text-muted-foreground transition hover:bg-muted hover:text-foreground" title={`Open ${problem.title} on LeetCode`}>
+                        Practice <ArrowUpRight size={13} />
+                      </a>}
                     </td>
 
                     <td
@@ -438,4 +439,3 @@ const ProblemsPage: React.FC = () => {
 };
 
 export default ProblemsPage;
-

@@ -47,4 +47,3 @@ export const loginAttemptLimiter = rateLimit({
   standardHeaders: "draft-8",
   legacyHeaders: false,
 });
-

@@ -292,4 +292,3 @@ describe("POST /api/auth/forgot-password", () => {
     expect(res.status).toBe(400);
   });
 });
-

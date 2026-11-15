@@ -8,6 +8,8 @@ import {
   BarChart3, LogOut,
 } from "lucide-react";
 
+interface SidebarProps { mobileOpen: boolean; onClose: () => void; }
+
 interface NavItem {
   to: string;
   icon: React.ReactNode;
@@ -49,7 +51,7 @@ const Tooltip: React.FC<TooltipProps> = ({ label, children, show }) => (
   </div>
 );
 
-const Sidebar: React.FC = () => {
+const Sidebar: React.FC<SidebarProps> = ({ mobileOpen, onClose }) => {
   const { user, logout } = useAuth();
   const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
@@ -58,7 +60,7 @@ const Sidebar: React.FC = () => {
   const items = [...NAV_ITEMS, ...(isAdmin ? ADMIN_ITEMS : [])];
 
   const getNavClass = ({ isActive }: { isActive: boolean }) =>
-    `flex items-center gap-3 px-3 py-2 rounded-lg text-xs font-medium
+    `flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium
      transition-colors duration-150 w-full
      ${isActive
        ? "bg-primary/20 text-white border-l-2 border-primary pl-[10px]"
@@ -70,15 +72,19 @@ const Sidebar: React.FC = () => {
     ${collapsed ? "justify-center" : ""}`;
 
   return (
+    <>
+    {mobileOpen && <button aria-label="Close navigation" onClick={onClose} className="fixed inset-0 z-40 bg-slate-950/50 backdrop-blur-[2px] md:hidden" />}
     <aside
-      className={`relative flex flex-col bg-sidebar-bg border-r border-sidebar-border
+      className={`fixed inset-y-0 left-0 z-50 flex flex-col bg-sidebar-bg border-r border-sidebar-border shadow-2xl
+                  md:relative md:z-auto md:shadow-none
                   transition-all duration-300 ease-in-out shrink-0
-                  ${collapsed ? "w-14" : "w-52"}`}
+                  ${mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
+                  ${collapsed ? "md:w-[4.5rem] w-72" : "w-72 md:w-64"}`}
     >
       {/* Collapse toggle */}
       <button
         onClick={() => setCollapsed((c) => !c)}
-        className="absolute -right-3 top-5 z-10 w-6 h-6 rounded-full
+        className="absolute -right-3 top-5 z-10 hidden md:flex w-6 h-6 rounded-full
                    bg-sidebar-bg border border-sidebar-border
                    flex items-center justify-center
                    text-sidebar-muted hover:text-sidebar-fg
@@ -88,25 +94,25 @@ const Sidebar: React.FC = () => {
       </button>
 
       {/* Logo row */}
-      <div className={`flex items-center h-12 border-b border-sidebar-border bg-sidebar-deeper
+      <div className={`flex items-center h-[4.25rem] border-b border-sidebar-border bg-sidebar-deeper
                        transition-all duration-300
                        ${collapsed ? "px-3 justify-center" : "px-4"}`}>
         {collapsed ? (
-          <Code2 size={17} className="text-primary" />
+          <Code2 size={19} className="text-indigo-300" />
         ) : (
           <span className="font-bold text-sm text-sidebar-fg tracking-tight">
-            Skill<span className="text-primary">Track</span>
+            Skill<span className="text-indigo-300">Track</span>
           </span>
         )}
       </div>
 
       {/* Nav */}
-      <nav className="sidebar-nav flex-1 overflow-y-auto py-3 px-2 space-y-0.5">
+      <nav className="sidebar-nav flex-1 overflow-y-auto py-5 px-3 space-y-1">
         {items.map((item) => {
           if (item.adminOnly && !isAdmin) return null;
           return (
             <Tooltip key={item.to} label={item.label} show={collapsed}>
-              <NavLink to={item.to} className={getNavClass}>
+              <NavLink to={item.to} onClick={onClose} className={getNavClass}>
                 <span className="shrink-0">{item.icon}</span>
                 {!collapsed && <span className="truncate">{item.label}</span>}
               </NavLink>
@@ -170,6 +176,7 @@ const Sidebar: React.FC = () => {
         </Tooltip>
       </div>
     </aside>
+    </>
   );
 };
 

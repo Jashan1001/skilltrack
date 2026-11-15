@@ -16,6 +16,7 @@ interface Example {
 
 interface Problem {
   title: string;
+  leetcodeUrl?: string;
   description: string;
   inputFormat: string;
   outputFormat: string;
@@ -198,6 +199,12 @@ const EditProblemPage: React.FC = () => {
             }
             className="w-full px-4 py-3 rounded-lg bg-muted border border-border focus:outline-none focus:ring-2 focus:ring-primary"
           />
+
+          <div className="space-y-2">
+            <label className="text-sm font-medium">LeetCode problem URL <span className="text-muted-foreground">(optional)</span></label>
+            <input type="url" value={problem.leetcodeUrl || ""} onChange={(e) => setProblem({ ...problem, leetcodeUrl: e.target.value })} placeholder="https://leetcode.com/problems/two-sum/" className="w-full rounded-lg border border-border bg-muted px-4 py-3 focus:outline-none focus:ring-2 focus:ring-primary" />
+            <p className="text-xs text-muted-foreground">Use the direct problem page. Search URLs are not accepted.</p>
+          </div>
 
           <textarea
             rows={6}

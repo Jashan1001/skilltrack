@@ -29,4 +29,3 @@ export const sendEmail = async (options: EmailOptions) => {
     html: options.html,
   });
 };
-
