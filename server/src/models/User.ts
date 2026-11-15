@@ -12,6 +12,9 @@ export interface IUser extends Document {
   longestStreak: number;
   lastSubmissionDate?: Date;
   savedProblems: mongoose.Types.ObjectId[];
+  learningGoal?: "interview" | "fundamentals" | "contests";
+  placementLevel?: "beginner" | "intermediate" | "advanced";
+  hoursPerWeek?: number;
   passwordResetToken?: string;
   passwordResetExpires?: Date;
   createdAt: Date;
@@ -72,6 +75,9 @@ const UserSchema: Schema<IUser> = new Schema(
         ref: "Problem",
       },
     ],
+    learningGoal: { type: String, enum: ["interview", "fundamentals", "contests"] },
+    placementLevel: { type: String, enum: ["beginner", "intermediate", "advanced"] },
+    hoursPerWeek: { type: Number, min: 2, max: 20, default: 5 },
     passwordResetToken: { type: String },
     passwordResetExpires: { type: Date },
   },

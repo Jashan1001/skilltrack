@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from "react";
 import axios from "../api/axios";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/authContext";
+import LearningPlanCard from "../components/LearningPlanCard";
 
 interface Problem {
   _id: string;
@@ -204,6 +205,8 @@ const recentActivity = submissions.filter((s) => s.problem).slice(0, 5);
           </div>
         )}
       </div>
+
+      <LearningPlanCard />
 
       {/* ── Top stat cards ─────────────────────────────────────────────── */}
       <div className="grid grid-cols-3 gap-4">
