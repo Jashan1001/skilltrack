@@ -16,6 +16,8 @@ import runRoutes from "./routes/runRoutes";
 import { protect } from "./middleware/authMiddleware";
 import { globalErrorHandler } from "./middleware/errorHandler";
 import adminRoutes from "./routes/adminRoutes";
+import Submission from "./models/Submission";
+import JudgeWorkerHeartbeat from "./models/JudgeWorkerHeartbeat";
 dotenv.config();
 
 const app = express();
@@ -100,15 +102,31 @@ app.get("/health", async (req, res) => {
   const dbState = mongoose.connection.readyState;
   // 0 = disconnected, 1 = connected, 2 = connecting, 3 = disconnecting
   const dbStatus = dbState === 1 ? "connected" : "disconnected";
-
   const status = dbState === 1 ? "ok" : "degraded";
+  let judgeWorkerStatus = "unknown";
+  let queuedJobs: number | null = null;
+  let runningJobs: number | null = null;
+
+  if (dbState === 1) {
+    const heartbeatSince = new Date(Date.now() - 45_000);
+    const [heartbeat, queuedCount, runningCount] = await Promise.all([
+      JudgeWorkerHeartbeat.exists({ lastSeenAt: { $gte: heartbeatSince } }),
+      Submission.countDocuments({ jobState: "queued" }),
+      Submission.countDocuments({ jobState: "running" }),
+    ]);
+    judgeWorkerStatus = heartbeat ? "healthy" : "unavailable";
+    queuedJobs = queuedCount;
+    runningJobs = runningCount;
+  }
 
   res.status(dbState === 1 ? 200 : 503).json({
     status,
     timestamp: new Date().toISOString(),
     services: {
       database: dbStatus,
+      judgeWorker: judgeWorkerStatus,
     },
+    queue: { queuedJobs, runningJobs },
   });
 });
 
@@ -156,6 +174,10 @@ const startServer = async () => {
     }
 
     await mongoose.connect(process.env.MONGO_URI as string);
+    await Promise.all([
+      Submission.createIndexes(),
+      JudgeWorkerHeartbeat.createIndexes(),
+    ]);
     console.log("MongoDB connected");
 
     app.listen(PORT, () => {

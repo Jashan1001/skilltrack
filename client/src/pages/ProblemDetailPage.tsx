@@ -62,11 +62,14 @@ interface RunResult {
 }
 
 interface SubmitResult {
+  submissionId: string;
+  jobState: "queued" | "running" | "completed" | "failed" | "cancelled";
   verdict: string;
   score: number;
   passed: number;
   total: number;
   runtime: number;
+  errorMessage?: string;
 }
 
 type ResultTab = "console" | "testcases" | "custom" | "result" | "editorial";
@@ -129,9 +132,11 @@ const ProblemDetailPage = () => {
 
   const [running,setRunning] = useState(false);
   const [submitting,setSubmitting] = useState(false);
+  const [cancelling,setCancelling] = useState(false);
 
   const [runResult,setRunResult] = useState<RunResult | null>(null);
   const [submitResult,setSubmitResult] = useState<SubmitResult | null>(null);
+  const submissionKeyRef = useRef<{ fingerprint: string; key: string } | null>(null);
 
   const [showHints,setShowHints] = useState(false);
   const [showTags,setShowTags] = useState(false);
@@ -229,29 +234,115 @@ const ProblemDetailPage = () => {
     setRunResult(null);
 
     try {
+      const fingerprint = `${problemId}:${language}:${code}`;
+      if (submissionKeyRef.current?.fingerprint !== fingerprint) {
+        submissionKeyRef.current = {
+          fingerprint,
+          key: crypto.randomUUID(),
+        };
+      }
+
       const res = await axios.post("/submissions", {
         problemId,
         code,
         language,
+      }, {
+        headers: { "Idempotency-Key": submissionKeyRef.current.key },
       });
-
-      const verdict = res.data.data.verdict;
-
-      if (verdict === "accepted") {
+        const { submissionId, jobState, status, score, passed, total, runtime, errorMessage } = res.data.data;
+      submissionKeyRef.current = null;
+      setSubmitResult({
+        submissionId,
+        jobState,
+        verdict: status,
+        score,
+        passed,
+        total,
+        runtime,
+        errorMessage,
+      });
+      setHasAttempted(true);
+      if (jobState === "queued" || jobState === "running") {
+        toast.success("Submission queued for judging");
+      } else if (status === "accepted") {
         toast.success("Accepted! All test cases passed 🎉");
       } else {
-        toast.error(`${verdict.replace(/_/g, " ")} — check the result tab`);
+        toast.error(`${status.replace(/_/g, " ")} — check the result tab`);
       }
-
-      setSubmitResult(res.data.data);
       setActiveTab("result");
     } catch {
       toast.error("Submission failed. Please try again.");
     } finally {
-      setHasAttempted(true);
       setSubmitting(false);
     }
   }, [code, submitting, problemId, language]);
+
+  const handleCancelSubmission = useCallback(async () => {
+    if (!submitResult?.submissionId || cancelling) return;
+    setCancelling(true);
+    try {
+      const response = await axios.post(`/submissions/${submitResult.submissionId}/cancel`);
+      setSubmitResult((current) => current ? {
+        ...current,
+        jobState: response.data.data.jobState,
+        verdict: response.data.data.status,
+      } : current);
+      toast.success(response.data.message || "Cancellation requested");
+    } catch {
+      toast.error("Could not cancel this submission. Refresh its status and try again.");
+    } finally {
+      setCancelling(false);
+    }
+  }, [submitResult?.submissionId, cancelling]);
+
+  /* POLL DURABLE JUDGE JOB */
+  useEffect(() => {
+    const submissionId = submitResult?.submissionId;
+    if (
+      !submissionId ||
+      (submitResult.jobState !== "queued" && submitResult.jobState !== "running")
+    ) return;
+
+    let cancelled = false;
+    let timer = 0;
+    let pollDelay = 2_000;
+    const poll = async () => {
+      try {
+        const res = await axios.get(`/submissions/${submissionId}`);
+        const submission = res.data.data;
+        if (cancelled) return;
+        const nextResult: SubmitResult = {
+          submissionId,
+          jobState: submission.jobState,
+          verdict: submission.status,
+          score: submission.score,
+          passed: submission.passedTestCases,
+          total: submission.totalTestCases,
+          runtime: submission.runtime,
+          errorMessage: submission.errorMessage,
+        };
+        setSubmitResult(nextResult);
+        if (submission.jobState === "completed" || submission.jobState === "failed") {
+          if (submission.status === "accepted") {
+            toast.success("Accepted! All test cases passed 🎉");
+          } else {
+            toast.error(`${submission.status.replace(/_/g, " ")} — check the result tab`);
+          }
+          return;
+        }
+        pollDelay = Math.min(8_000, Math.round(pollDelay * 1.5));
+      } catch {
+        // Keep polling through temporary API/network interruptions.
+      }
+      if (!cancelled) timer = window.setTimeout(() => void poll(), pollDelay);
+    };
+
+    timer = window.setTimeout(() => void poll(), pollDelay);
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
+  }, [submitResult?.submissionId, submitResult?.jobState]);
 
   /* KEYBOARD SHORTCUTS */
   useEffect(() => {
@@ -734,6 +825,31 @@ Run Custom Input
 
 <div className="space-y-2">
 
+{(submitResult.jobState === "queued" || submitResult.jobState === "running") ? (
+  <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 space-y-1">
+    <div className="font-semibold text-foreground">
+      {submitResult.jobState === "queued" ? "Queued for judging" : "Judging your submission"}
+    </div>
+    <p className="text-sm text-muted-foreground">
+      This result updates automatically. You can leave this page and find the submission in your history.
+    </p>
+    <button
+      onClick={() => navigate(`/submissions/${submitResult.submissionId}`)}
+      className="text-sm text-primary hover:underline"
+    >
+      Open submission status
+    </button>
+      <button
+        onClick={() => void handleCancelSubmission()}
+        disabled={cancelling}
+        className="ml-4 text-sm text-muted-foreground hover:text-foreground disabled:opacity-50"
+      >
+        {cancelling ? "Cancelling..." : "Cancel submission"}
+      </button>
+  </div>
+) : (
+<>
+
 <div className="text-lg font-semibold capitalize">
 Verdict:
 <span className={
@@ -754,6 +870,13 @@ Passed: {submitResult.passed}/{submitResult.total}
 <div>
 Runtime: {submitResult.runtime} ms
 </div>
+
+{submitResult.errorMessage && (
+  <div className="text-sm text-red-500">{submitResult.errorMessage}</div>
+)}
+
+</>
+)}
 
 </div>
 

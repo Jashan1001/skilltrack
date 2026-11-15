@@ -1,11 +1,9 @@
 import { Request, Response, NextFunction } from "express";
+import { createHash } from "crypto";
 import Submission from "../models/Submission";
 import Problem from "../models/Problem";
-import User from "../models/User";
 import { asyncHandler } from "../utils/asyncHandler";
 import { AppError } from "../utils/AppError";
-import { evaluateTestCases } from "../services/evaluateSolution";
-import { calculateNewStreak } from "../utils/calculateStreak";
 
 /* ============================= */
 /* SUBMIT SOLUTION */
@@ -18,6 +16,7 @@ export const submitSolution = asyncHandler(
     }
 
     const { problemId, code, language } = req.body;
+    const idempotencyKey = req.get("Idempotency-Key");
 
     if (!problemId || !code || !language) {
       return next(
@@ -26,6 +25,10 @@ export const submitSolution = asyncHandler(
           400
         )
       );
+    }
+
+    if (!idempotencyKey || idempotencyKey.length > 128) {
+      return next(new AppError("A valid Idempotency-Key header is required", 400));
     }
 
     /* ============================= */
@@ -46,109 +49,89 @@ export const submitSolution = asyncHandler(
       return next(new AppError("Problem not found", 404));
     }
 
-    /* ============================= */
-    /* EXECUTE TEST CASES */
-    /* ============================= */
+    const requestHash = createHash("sha256")
+      .update(JSON.stringify({ problemId, code, language }))
+      .digest("hex");
+    const userId = req.user.userId;
 
-    const evaluation = await evaluateTestCases(
-      problem.privateTestCases,
-      code,
-      language,
-      problem.evaluationType
-    );
+    const existing = await Submission.findOne({ user: userId, idempotencyKey })
+      .select("+requestHash")
+      .exec();
+    if (existing) {
+      if (existing.requestHash !== requestHash) {
+        return next(new AppError("Idempotency-Key was already used for a different submission", 409));
+      }
+      return res.status(202).json({
+        success: true,
+        message: "Submission is already queued",
+        data: {
+          submissionId: existing._id,
+          status: existing.status,
+          jobState: existing.jobState,
+          score: existing.score,
+          passed: existing.passedTestCases,
+          total: existing.totalTestCases,
+          runtime: existing.runtime,
+          errorMessage: existing.errorMessage,
+          statusUrl: `/submissions/${existing._id}`,
+        },
+      });
+    }
 
-    /* ============================= */
-    /* CALCULATE SCORE */
-    /* ============================= */
+    const [activeForUser, queuedCount] = await Promise.all([
+      Submission.countDocuments({ user: userId, jobState: { $in: ["queued", "running"] } }),
+      Submission.countDocuments({ jobState: "queued" }),
+    ]);
+    if (activeForUser >= 3) {
+      return next(new AppError("You already have several submissions waiting for the judge", 429));
+    }
+    if (queuedCount >= 500) {
+      res.setHeader("Retry-After", "10");
+      return next(new AppError("The judge queue is full. Please retry shortly", 503));
+    }
 
-    const score =
-      evaluation.verdict === "accepted"
-        ? 100
-        : Math.round((evaluation.passed / evaluation.total) * 100);
-
-    /* ============================= */
-    /* FETCH EXISTING SUBMISSION */
-    /* ============================= */
-
-    const existing = await Submission.findOne({
-      user: req.user.userId,
-      problem: problemId,
-    });
-
-    /* ============================= */
-    /* UPDATE OR CREATE */
-    /* ============================= */
-
-    if (!existing) {
-
-      await Submission.create({
-        user: req.user.userId,
-        problem: problemId,
+    let submission;
+    try {
+      submission = await Submission.create({
+        user: userId,
+        problem: problem._id,
         code,
         language,
-        status: evaluation.verdict as
-          | "accepted"
-          | "runtime_error"
-          | "pending"
-          | "wrong_answer"
-          | "partially_accepted"
-          | "time_limit_exceeded",
-        score,
-        runtime: evaluation.runtime,
-        totalTestCases: evaluation.total,
-        passedTestCases: evaluation.passed,
+        status: "pending",
+        jobState: "queued",
+        idempotencyKey,
+        requestHash,
+        availableAt: new Date(),
+        totalTestCases: problem.privateTestCases.length,
       });
-
-    } else if (score > existing.score) {
-
-      existing.code = code;
-      existing.language = language;
-      existing.status = evaluation.verdict as typeof existing.status;
-      existing.score = score;
-      existing.runtime = evaluation.runtime;
-      existing.totalTestCases = evaluation.total;
-      existing.passedTestCases = evaluation.passed;
-
-      await existing.save();
-    }
-
-    /* ============================= */
-    /* UPDATE STREAK */
-    /* ============================= */
-
-    if (evaluation.verdict === "accepted") {
-      const u = await User.findById(req.user.userId);
-
-      if (u) {
-        const updated = calculateNewStreak(
-          {
-            currentStreak: u.currentStreak,
-            longestStreak: u.longestStreak,
-            lastSubmissionDate: u.lastSubmissionDate || null,
-          },
-          new Date()
-        );
-
-        u.currentStreak = updated.currentStreak;
-        u.longestStreak = updated.longestStreak;
-        u.lastSubmissionDate = updated.lastSubmissionDate || undefined;
-        await u.save();
+    } catch (error) {
+      // A concurrent retry can win the unique idempotency index after our
+      // initial lookup. Return that job instead of making the client guess.
+      if ((error as { code?: number }).code !== 11000) {
+        throw error;
       }
+      const duplicate = await Submission.findOne({ user: userId, idempotencyKey })
+        .select("+requestHash")
+        .exec();
+      if (!duplicate || duplicate.requestHash !== requestHash) {
+        return next(new AppError("Idempotency-Key was already used for a different submission", 409));
+      }
+      submission = duplicate;
     }
 
-    /* ============================= */
-    /* RESPONSE */
-    /* ============================= */
-
-    res.status(200).json({
+    res.status(202).json({
       success: true,
-      message: "Submission evaluated",
+      message: "Submission queued for judging",
       data: {
-        verdict: evaluation.verdict,
-        score,
-        passed: evaluation.passed,
-        total: evaluation.total,
-        runtime: evaluation.runtime,
+        submissionId: submission._id,
+        status: submission.status,
+        jobState: submission.jobState,
+        score: submission.score,
+        passed: submission.passedTestCases,
+        total: submission.totalTestCases,
+        runtime: submission.runtime,
+        errorMessage: submission.errorMessage,
+        statusUrl: `/submissions/${submission._id}`,
       },
     });
   }
@@ -167,7 +150,8 @@ export const getMySubmissions = asyncHandler(
     const submissions = await Submission.find({
       user: req.user.userId,
     })
-      .populate("problem", "title difficulty")
+      .select("-idempotencyKey -requestHash -lockToken -lockedUntil -availableAt")
+      .populate("problem", "title difficulty pattern")
       .sort({ createdAt: -1 })
       .limit(50);
 
@@ -194,6 +178,7 @@ export const getSubmissionByID = asyncHandler(
     }
 
     const submission = await Submission.findById(req.params.id)
+      .select("-idempotencyKey -requestHash -lockToken -lockedUntil -availableAt")
       .populate("problem", "title difficulty pattern");
 
     if (!submission) {
@@ -213,5 +198,55 @@ export const getSubmissionByID = asyncHandler(
       data: submission,
     });
 
+  }
+);
+
+export const cancelSubmission = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    if (!req.user) return next(new AppError("Unauthorized", 401));
+
+    const submission = await Submission.findById(req.params.id);
+    if (!submission) return next(new AppError("Submission not found", 404));
+    if (req.user.role !== "admin" && submission.user.toString() !== req.user.userId) {
+      return next(new AppError("Submission not found", 404));
+    }
+
+    if (submission.jobState !== "queued" && submission.jobState !== "running") {
+      return res.status(200).json({
+        success: true,
+        message: "Submission has already finished",
+        data: {
+          submissionId: submission._id,
+          status: submission.status,
+          jobState: submission.jobState,
+        },
+      });
+    }
+
+    const cancelled = await Submission.findOneAndUpdate(
+      { _id: submission._id, jobState: { $in: ["queued", "running"] } },
+      {
+        $set: {
+          jobState: "cancelled",
+          status: "cancelled",
+          errorMessage: "Submission cancelled",
+          completedAt: new Date(),
+        },
+        $unset: { lockToken: 1, lockedUntil: 1 },
+      },
+      { new: true }
+    );
+    const current = cancelled || (await Submission.findById(submission._id));
+    if (!current) return next(new AppError("Submission not found", 404));
+
+    res.status(200).json({
+      success: true,
+      message: cancelled ? "Submission cancelled" : "Submission finished before cancellation",
+      data: {
+        submissionId: current._id,
+        status: current.status,
+        jobState: current.jobState,
+      },
+    });
   }
 );

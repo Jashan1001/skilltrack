@@ -6,6 +6,7 @@
   "scripts": {
     "dev:client": "npm --prefix client run dev",
     "dev:server": "npm --prefix server run dev",
+    "dev:worker": "npm --prefix server run dev:worker",
     "dev:engine": "npm --prefix execution-engine run dev",
     "build:client": "npm --prefix client run build",
     "build:server": "npm --prefix server run build",

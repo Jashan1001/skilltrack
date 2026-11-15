@@ -4,10 +4,12 @@ import axios from "../api/axios";
 import Editor from "@monaco-editor/react";
 import { useTheme } from "../context/themeContext";
 import { CalendarDays, Clock3, FileCode2 } from "lucide-react";
+import toast from "react-hot-toast";
 
 interface SubmissionDetail {
   _id: string;
   status: string;
+  jobState: "queued" | "running" | "completed" | "failed" | "cancelled";
   runtime: number;
   score: number;
   language: "javascript" | "python" | "cpp";
@@ -36,18 +38,56 @@ const SubmissionDetailPage = () => {
   const { theme } = useTheme();
   const [submission, setSubmission] = useState<SubmissionDetail | null>(null);
   const [loading, setLoading] = useState(true);
+  const [cancelling, setCancelling] = useState(false);
+
+  const handleCancel = async () => {
+    if (!submission || cancelling) return;
+    setCancelling(true);
+    try {
+      const response = await axios.post(`/submissions/${submission._id}/cancel`);
+      setSubmission((current) => current ? {
+        ...current,
+        status: response.data.data.status,
+        jobState: response.data.data.jobState,
+        errorMessage: response.data.data.jobState === "cancelled" ? "Submission cancelled" : current.errorMessage,
+      } : current);
+    } catch {
+      toast.error("Could not cancel this submission. Refresh its status and try again.");
+    } finally {
+      setCancelling(false);
+    }
+  };
 
   useEffect(() => {
-    const fetch = async () => {
+    let cancelled = false;
+    let timer = 0;
+    let pollDelay = 2_000;
+    const fetchSubmission = async () => {
       try {
         const res = await axios.get(`/submissions/${id}`);
-        setSubmission(res.data.data);
+        if (cancelled) return;
+        const next = res.data.data as SubmissionDetail;
+        setSubmission(next);
+        if (next.jobState === "queued" || next.jobState === "running") {
+          pollDelay = Math.min(8_000, Math.round(pollDelay * 1.5));
+          timer = window.setTimeout(() => void fetchSubmission(), pollDelay);
+        }
+      } catch {
+        // A transient request failure should not turn an existing ID into a 404 screen.
+        if (!cancelled) {
+          pollDelay = Math.min(8_000, Math.round(pollDelay * 1.5));
+          timer = window.setTimeout(() => void fetchSubmission(), pollDelay);
+        }
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
-    fetch();
+    void fetchSubmission();
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
   }, [id]);
 
   if (loading) {
@@ -91,6 +131,13 @@ const SubmissionDetailPage = () => {
       ? "Python"
       : "JavaScript";
 
+  const displayStatus =
+    submission.jobState === "queued"
+      ? "queued"
+      : submission.jobState === "running"
+        ? "judging"
+        : submission.status.replace(/_/g, " ");
+
   return (
     <div className="space-y-8">
 
@@ -117,11 +164,26 @@ const SubmissionDetailPage = () => {
         </div>
       </div>
 
+      {(submission.jobState === "queued" || submission.jobState === "running") && (
+        <div className="rounded-lg border border-primary/20 bg-primary/5 px-4 py-3 text-sm text-foreground">
+          {submission.jobState === "queued"
+            ? "Your submission is waiting for an available judge. This page refreshes automatically."
+            : "A judge is evaluating your solution. This page refreshes automatically."}
+          <button
+            onClick={() => void handleCancel()}
+            disabled={cancelling}
+            className="ml-3 text-primary hover:underline disabled:opacity-50"
+          >
+            {cancelling ? "Cancelling..." : "Cancel"}
+          </button>
+        </div>
+      )}
+
       <div className="grid md:grid-cols-4 gap-4">
         <div className="bg-card border border-border rounded-xl p-4 space-y-1">
           <p className="text-xs text-muted-foreground">Verdict</p>
           <span className={`inline-flex capitalize text-xs font-medium px-2 py-1 rounded-full border ${verdictClass}`}>
-            {submission.status.replace(/_/g, " ")}
+            {displayStatus}
           </span>
         </div>
 

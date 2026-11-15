@@ -1,4 +1,4 @@
-# SkillTrack flagship roadmap
+# SkillTrack project roadmap
 
 ## Product direction
 
@@ -22,6 +22,8 @@ Make SkillTrack a guided pattern mastery platform: learners know what to study n
 - Pin execution images, record judge versions, and keep private test data out of learner responses and logs.
 - Add per-user quotas, cancellation, retries for infrastructure failures, and queue/worker health metrics.
 
+**Implemented in the current slice:** submissions are stored before acknowledgment, deduplicated by an idempotency key, claimed by a separate MongoDB-backed worker with expiring leases, retried after judge infrastructure failures, cancellable between test cases, and polled by the client. The API health response reports worker heartbeat and queue depth.
+
 **Acceptance:** submissions survive API restarts, duplicate requests do not create duplicate results, one user's workload cannot starve the queue, and infrastructure failures are distinguishable from wrong answers.
 
 ## Phase 3: Learning loop
@@ -34,7 +36,7 @@ Make SkillTrack a guided pattern mastery platform: learners know what to study n
 
 **Acceptance:** a learner can start from a goal, follow a generated weekly plan, see why a topic was selected, and measure retained mastery over time.
 
-## Phase 4: Flagship collaboration and proof of skill
+## Phase 4: Community, collaboration and proof of skill
 
 - Add time-boxed contests and cohort/classroom assignments.
 - Give mentors and admins cohort progress and problem-quality analytics.
@@ -55,4 +57,4 @@ Make SkillTrack a guided pattern mastery platform: learners know what to study n
 
 ## Current implementation limits
 
-The first foundation slice still uses JWTs in browser local storage, an in-process execution queue, and synchronous API calls for scoring. These are suitable only as an interim local/small deployment design. Phase 2 replaces the queue and request lifecycle before public scale.
+Submission jobs now persist in MongoDB and are processed by separate workers. The queue uses MongoDB polling and leases rather than a dedicated broker, cancellation stops further test cases but does not interrupt a currently running container, and the per-user and global admission checks are application-level counts that can race under concurrent requests. Sample and custom runs still use synchronous API requests. JWTs remain in browser local storage, and judge images are version-tagged rather than pinned by digest. These limits should be addressed before public scale.

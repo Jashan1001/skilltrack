@@ -5,6 +5,7 @@ import axios from "../api/axios";
 interface Submission {
   _id: string;
   status: string;
+  jobState: "queued" | "running" | "completed" | "failed" | "cancelled";
   runtime: number;
   createdAt: string;
   problem: {
@@ -26,13 +27,29 @@ const SubmissionHistoryPage: React.FC = () => {
   const [search, setSearch] = useState("");
 
   useEffect(() => {
-    const fetch = async () => {
-      const res = await axios.get("/submissions/me");
-      setSubmissions(res.data?.data?.submissions || []);
-      setLoading(false);
+    let cancelled = false;
+    let timer = 0;
+    const fetchSubmissions = async () => {
+      try {
+        const res = await axios.get("/submissions/me");
+        if (cancelled) return;
+        const next = res.data?.data?.submissions || [];
+        setSubmissions(next);
+        if (next.some((submission: Submission) => submission.jobState === "queued" || submission.jobState === "running")) {
+          timer = window.setTimeout(() => void fetchSubmissions(), 5_000);
+        }
+      } catch {
+        if (!cancelled) timer = window.setTimeout(() => void fetchSubmissions(), 8_000);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
     };
 
-    fetch();
+    void fetchSubmissions();
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
   }, []);
 
   /* ========================= */
@@ -45,13 +62,16 @@ const SubmissionHistoryPage: React.FC = () => {
   );
 
   const accepted = validSubs.filter(
-    (s) => s.status.toLowerCase() === "accepted"
+    (s) => s.jobState === "completed" && s.status.toLowerCase() === "accepted"
   );
+  const completedCount = validSubs.filter(
+    (s) => s.jobState === "completed"
+  ).length;
 
   const accuracy =
-    validSubs.length === 0
+    completedCount === 0
       ? 0
-      : Math.round((accepted.length / validSubs.length) * 100);
+      : Math.round((accepted.length / completedCount) * 100);
 
   const avgRuntime =
     accepted.length === 0
@@ -78,7 +98,9 @@ const SubmissionHistoryPage: React.FC = () => {
     return validSubs.filter((s) => {
       const statusMatch =
         statusFilter === "all" ||
-        s.status.toLowerCase() === statusFilter;
+        (s.jobState === "queued" || s.jobState === "running"
+          ? s.jobState
+          : s.status.toLowerCase()) === statusFilter;
 
       const diffMatch =
         difficultyFilter === "all" ||
@@ -144,6 +166,9 @@ const SubmissionHistoryPage: React.FC = () => {
             <option value="wrong_answer">Wrong</option>
             <option value="time_limit_exceeded">TLE</option>
             <option value="runtime_error">Runtime Error</option>
+            <option value="queued">Queued</option>
+            <option value="running">Judging</option>
+            <option value="cancelled">Cancelled</option>
           </select>
 
           <select
@@ -211,7 +236,9 @@ const SubmissionHistoryPage: React.FC = () => {
                   <td className="px-6 py-4">
                     <span
                       className={`capitalize text-xs font-medium px-2 py-0.5 rounded-full border
-                        ${sub.status === "accepted"
+                        ${(sub.jobState === "queued" || sub.jobState === "running")
+                          ? "bg-muted text-muted-foreground border-border"
+                          : sub.status === "accepted"
                           ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20"
                           : sub.status === "wrong_answer"
                           ? "bg-rose-500/10 text-rose-500 border-rose-500/20"
@@ -222,7 +249,11 @@ const SubmissionHistoryPage: React.FC = () => {
                           : "bg-muted text-muted-foreground border-border"
                         }`}
                     >
-                      {sub.status.replace(/_/g, " ")}
+                      {sub.jobState === "queued"
+                        ? "queued"
+                        : sub.jobState === "running"
+                          ? "judging"
+                          : sub.status.replace(/_/g, " ")}
                     </span>
                   </td>
 

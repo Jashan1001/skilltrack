@@ -35,11 +35,31 @@ interface TestCaseEvaluation {
   status: Verdict;
 }
 
+export interface EvaluationTestCase {
+  input: string;
+  expectedOutput: string;
+}
+
+export class JudgeInfrastructureError extends Error {
+  constructor(message = "Execution service is temporarily unavailable") {
+    super(message);
+    this.name = "JudgeInfrastructureError";
+  }
+}
+
+export class JudgeCancelledError extends Error {
+  constructor() {
+    super("Submission no longer owns an active judge claim");
+    this.name = "JudgeCancelledError";
+  }
+}
+
 export const evaluateTestCases = async (
-  testCases: any[],
+  testCases: EvaluationTestCase[],
   code: string,
   language: string,
-  evaluationType: "strict" | "partial"
+  evaluationType: "strict" | "partial",
+  shouldCancel?: () => Promise<boolean>
 ) => {
   const EXECUTOR_URL = process.env.EXECUTION_ENGINE_URL as string;
 
@@ -49,6 +69,7 @@ export const evaluateTestCases = async (
   // Keep one submission from flooding the execution queue with parallel containers.
   const results: TestCaseEvaluation[] = [];
   for (const [i, testCase] of testCases.entries()) {
+    if (await shouldCancel?.()) throw new JudgeCancelledError();
     const startTime = Date.now();
 
     try {
@@ -81,6 +102,19 @@ export const evaluateTestCases = async (
         status,
       });
     } catch (error: any) {
+      const statusCode = axios.isAxiosError(error)
+        ? error.response?.status
+        : undefined;
+
+      // Infrastructure failures must be retried by the durable worker, not
+      // recorded as a learner runtime error or wrong answer.
+      if (
+        axios.isAxiosError(error) &&
+        (!error.response || statusCode === 408 || statusCode === 425 || statusCode === 429 || (statusCode ?? 0) >= 500)
+      ) {
+        throw new JudgeInfrastructureError();
+      }
+
       console.error(`Test case ${i + 1} execution error:`, error?.message);
 
       results.push({

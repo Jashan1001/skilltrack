@@ -8,9 +8,10 @@ SkillTrack is a pattern based DSA practice platform. It combines a guided curric
 | --- | --- | ---: | --- |
 | Web client | `client/` | 5173 | React, TypeScript, Vite |
 | API | `server/` | 5000 | Express, TypeScript, MongoDB |
+| Judge worker | `server/` | — | Claims durable submissions and evaluates private test cases |
 | Execution engine | `execution-engine/` | 5001 | Authenticated Docker execution for JavaScript, Python, and C++ |
 
-The API sends one test case at a time to the execution engine. Each execution uses a bounded queue and a short lived container with no network, a read only source mount, a non-root user, and resource limits.
+The API stores each submission before returning `202 Accepted`. A separate worker claims jobs from MongoDB using expiring leases, evaluates test cases one at a time, and retries temporary judge failures. Idempotency keys prevent duplicate jobs on request retries; learners can cancel queued submissions or stop a running submission before its next test case. The API health response includes worker heartbeat and queue depth. Each execution uses a bounded queue and a short lived container with no network, a read only source mount, a non-root user, and resource limits.
 
 ## Requirements
 
@@ -44,6 +45,7 @@ Start MongoDB, then run each command in its own terminal from the repository roo
 ```bash
 npm run dev:engine
 npm run dev:server
+npm run dev:worker
 npm run dev:client
 ```
 
@@ -62,7 +64,7 @@ npm run build
 npm run lint
 ```
 
-`npm run build` builds the client, API, and execution engine. `npm run lint` runs the client ESLint configuration.
+`npm run build` builds the client, API and worker, and execution engine. `npm run lint` runs the client ESLint configuration.
 
 ## Security notes
 
@@ -76,6 +78,7 @@ npm run lint
 - Twelve DSA patterns and a sequenced official roadmap
 - Problem statements, examples, hints, editorials, public and private test cases
 - Code runs and scored submissions in three languages
+- Durable queued submissions with automatic status updates and infrastructure retries
 - User dashboard, streaks, activity heatmap, bookmarks, profiles, and leaderboards
 - Admin problem management and analytics
 - Password reset and Google/GitHub sign in

@@ -12,6 +12,7 @@ interface Problem {
 interface Submission {
   _id: string;
   status: string;
+  jobState: "queued" | "running" | "completed" | "failed" | "cancelled";
   createdAt: string;
   problem: {
     _id: string;
@@ -79,6 +80,21 @@ const DashboardPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    let cancelled = false;
+    let timer = 0;
+    const pollSubmissions = async () => {
+      try {
+        const response = await axios.get("/submissions/me");
+        if (cancelled) return;
+        const next = response.data.data.submissions || [];
+        setSubmissions(next);
+        if (next.some((submission: Submission) => submission.jobState === "queued" || submission.jobState === "running")) {
+          timer = window.setTimeout(() => void pollSubmissions(), 5_000);
+        }
+      } catch {
+        if (!cancelled) timer = window.setTimeout(() => void pollSubmissions(), 8_000);
+      }
+    };
     const fetchAll = async () => {
       const [progressRes, problemsRes, submissionRes] = await Promise.all([
         axios.get("/users/progress"),
@@ -87,10 +103,18 @@ const DashboardPage: React.FC = () => {
       ]);
       setProgress(progressRes.data.data);
       setProblems(problemsRes.data.data.problems);
-      setSubmissions(submissionRes.data.data.submissions || []);
+      const nextSubmissions = submissionRes.data.data.submissions || [];
+      setSubmissions(nextSubmissions);
       setLoading(false);
+      if (nextSubmissions.some((submission: Submission) => submission.jobState === "queued" || submission.jobState === "running")) {
+        timer = window.setTimeout(() => void pollSubmissions(), 5_000);
+      }
     };
-    fetchAll();
+    void fetchAll();
+    return () => {
+      cancelled = true;
+      window.clearTimeout(timer);
+    };
   }, []);
 
   const patternStats = useMemo(() => {
@@ -307,12 +331,18 @@ const recentActivity = submissions.filter((s) => s.problem).slice(0, 5);
                     </span>
                     <span
                       className={`text-[11px] font-medium px-2.5 py-0.5 rounded-full border
-                        ${sub.status === "accepted"
+                        ${(sub.jobState === "queued" || sub.jobState === "running")
+                          ? "text-muted-foreground bg-muted border-border"
+                          : sub.status === "accepted"
                           ? "text-accent-green bg-green-500/10 border-green-500/20"
                           : "text-accent-red bg-red-500/10 border-red-500/20"
                         }`}
                     >
-                      {sub.status === "accepted" ? "Accepted" : "Wrong Answer"}
+                      {sub.jobState === "queued"
+                        ? "Queued"
+                        : sub.jobState === "running"
+                          ? "Judging"
+                          : sub.status.replace(/_/g, " ")}
                     </span>
                   </div>
                 </div>
