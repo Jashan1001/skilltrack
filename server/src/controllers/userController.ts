@@ -124,6 +124,7 @@ export const getPublicProfile = asyncHandler(
     });
 
     const recentSubmissions = await Submission.find({ user: userId })
+      .select("status runtime createdAt problem")
       .populate("problem", "title difficulty")
       .sort({ createdAt: -1 })
       .limit(10);

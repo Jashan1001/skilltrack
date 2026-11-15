@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { isAxiosError } from "axios";
 import { useNavigate, useSearchParams, Link } from "react-router-dom";
 import axios from "../api/axios";
 import toast from "react-hot-toast";
@@ -31,9 +32,10 @@ const ResetPasswordPage: React.FC = () => {
       await axios.post("/auth/reset-password", { token, email, password });
       toast.success("Password reset! You can now log in.");
       navigate("/login");
-    } catch (err: any) {
+    } catch (err: unknown) {
       toast.error(
-        err?.response?.data?.message || "Reset link is invalid or expired."
+        (isAxiosError(err) && err.response?.data?.message) ||
+          "Reset link is invalid or expired."
       );
     } finally {
       setLoading(false);

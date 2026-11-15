@@ -1,4 +1,5 @@
 import {
+  useCallback,
   createContext,
   useContext,
   useEffect,
@@ -22,6 +23,7 @@ interface AuthContextType {
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
+  completeOAuthLogin: (token: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -94,6 +96,24 @@ export const AuthProvider = ({
     await axios.post("/auth/register", { name, email, password });
   };
 
+  const completeOAuthLogin = useCallback(async (tokenFromServer: string) => {
+    setLoading(true);
+    localStorage.setItem("token", tokenFromServer);
+
+    try {
+      const meRes = await axios.get("/auth/me");
+      setUser(meRes.data.data);
+      setToken(tokenFromServer);
+    } catch (error) {
+      localStorage.removeItem("token");
+      setToken(null);
+      setUser(null);
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   const logout = () => {
     localStorage.removeItem("token");
     setToken(null);
@@ -102,13 +122,14 @@ export const AuthProvider = ({
 
   return (
     <AuthContext.Provider
-      value={{ user, token, loading, login, register, logout }}
+      value={{ user, token, loading, login, register, completeOAuthLogin, logout }}
     >
       {children}
     </AuthContext.Provider>
   );
 };
 
+// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
   const context = useContext(AuthContext);
 

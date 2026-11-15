@@ -1,76 +1,29 @@
 # SkillTrack Execution Engine
 
-The execution engine is responsible for running untrusted user-submitted code in a secure, isolated environment using Docker containers.
+Private service that runs JavaScript, Python, and C++ submissions in short lived Docker containers.
 
-It is designed to ensure **safe execution, consistent results, and strict resource control**.
+## Local development
 
----
+Copy `execution-engine/.env.example` to `.env`. Set `INTERNAL_SECRET` to the same random value used by the API. Docker must be running and available to the service process.
 
-## ⚙️ Role in System
-
-The execution engine operates as an independent service:
-
-- Receives execution requests from the backend  
-- Runs code inside isolated containers  
-- Evaluates against test cases  
-- Returns output, errors, and runtime  
-
----
-
-## 🔄 Execution Flow
-
-1. Server sends code execution request  
-2. Engine prepares execution environment  
-3. A Docker container is created  
-4. Code is compiled/executed inside container  
-5. Test cases are run sequentially or in parallel  
-6. Output, errors, and runtime are captured  
-7. Container is destroyed after execution  
-8. Results are sent back to the server  
-
----
-
-## 🐳 Why Docker?
-
-- Isolates untrusted code from host system  
-- Prevents access to sensitive resources  
-- Ensures consistent runtime environment  
-- Enables controlled execution limits  
-
----
-
-## 🧱 Supported Languages
-
-- JavaScript  
-- Python  
-- C++  
-
-Each language uses a separate execution pipeline.
-
----
-
-## 🔐 Security Model
-
-- **Container isolation** → no direct host access  
-- **No network access** inside containers  
-- **Execution timeouts** to prevent infinite loops  
-- **Memory limits** to prevent abuse  
-- **Ephemeral containers** (destroyed after each run)  
-
----
-
-## ⚙️ Evaluation Strategy
-
-- Public test cases → shown to users  
-- Private test cases → used for final evaluation  
-- Strict and partial evaluation supported  
-- Runtime measurement included  
-
----
-
-## 🚀 Run Execution Engine
+From the repository root:
 
 ```bash
-npm install
-npm run dev
+npm run dev:engine
 ```
+
+## Execution controls
+
+- The service requires an internal request token and limits request body size.
+- An in-process queue limits active executions and rejects excess backlog with HTTP 503.
+- Containers have no network, a read only source mount, a non-root user, no Linux capabilities, no-new-privileges, a read only root filesystem, and memory, CPU, and process limits.
+- C++ compilation and execution happen in the same restricted container; execution is time limited.
+- Standard output and error are capped. Timed out containers are removed by name.
+
+Keep this Docker-controlling service on a private network. These controls reduce risk but do not replace a dedicated, hardened judge environment for public scale.
+
+## Scripts
+
+- `npm run dev` starts the TypeScript service with reload.
+- `npm run build` compiles to the ignored `dist/` directory.
+- `npm start` runs the compiled service.

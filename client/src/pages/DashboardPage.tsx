@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from "react";
 import axios from "../api/axios";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/authContext";
-import { Skeleton, SkeletonCard } from "../components/Skeleton";
 
 interface Problem {
   _id: string;

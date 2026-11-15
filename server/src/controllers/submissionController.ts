@@ -38,6 +38,14 @@ export const submitSolution = asyncHandler(
       return next(new AppError("Problem not found", 404));
     }
 
+    if (
+      problem.visibility === "private" &&
+      problem.createdBy.toString() !== req.user.userId &&
+      req.user.role !== "admin"
+    ) {
+      return next(new AppError("Problem not found", 404));
+    }
+
     /* ============================= */
     /* EXECUTE TEST CASES */
     /* ============================= */
@@ -181,10 +189,22 @@ export const getMySubmissions = asyncHandler(
 export const getSubmissionByID = asyncHandler(
   async (req: Request, res: Response) => {
 
+    if (!req.user) {
+      throw new AppError("Unauthorized", 401);
+    }
+
     const submission = await Submission.findById(req.params.id)
       .populate("problem", "title difficulty pattern");
 
     if (!submission) {
+      throw new AppError("Submission not found", 404);
+    }
+
+    // Submission source code is private to its author and administrators.
+    if (
+      req.user.role !== "admin" &&
+      submission.user.toString() !== req.user.userId
+    ) {
       throw new AppError("Submission not found", 404);
     }
 

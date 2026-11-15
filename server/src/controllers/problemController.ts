@@ -117,8 +117,22 @@ export const getAllProblems = asyncHandler(
       type = "official", // default view = roadmap
     } = req.query;
 
-    const pageNumber = parseInt(page as string);
-    const limitNumber = parseInt(limit as string);
+    if (type !== "official" && type !== "my") {
+      throw new AppError("Unsupported problem list type", 400);
+    }
+
+    const pageNumber = Number(page);
+    const limitNumber = Number(limit);
+
+    if (
+      !Number.isInteger(pageNumber) ||
+      pageNumber < 1 ||
+      !Number.isInteger(limitNumber) ||
+      limitNumber < 1 ||
+      limitNumber > 100
+    ) {
+      throw new AppError("Page must be positive and limit must be between 1 and 100", 400);
+    }
 
     const filter: any = {};
 
@@ -186,9 +200,13 @@ export const getProblemById = asyncHandler(
     }
 
     /* ===== Visibility Protection ===== */
+    const creatorId = String(
+      (problem.createdBy as any)?._id ?? problem.createdBy
+    );
+
     if (
       problem.visibility === "private" &&
-      req.user.userId !== problem.createdBy.toString() &&
+      req.user.userId !== creatorId &&
       req.user.role !== "admin"
     ) {
       return next(new AppError("Access denied", 403));

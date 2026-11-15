@@ -7,6 +7,7 @@ import { asyncHandler } from "../utils/asyncHandler";
 import { AppError } from "../utils/AppError";
 import crypto from "crypto";
 import { sendEmail } from "../utils/sendEmail";
+import OAuthTicket from "../models/OAuthTicket";
 /* ============================= */
 /* HELPERS                      */
 /* ============================= */
@@ -14,10 +15,94 @@ import { sendEmail } from "../utils/sendEmail";
 const signToken = (userId: string, role: string) =>
   jwt.sign({ userId, role }, process.env.JWT_SECRET!, { expiresIn: "7d" });
 
-const sendTokenRedirect = (res: Response, token: string) => {
-  const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
-  res.redirect(`${clientUrl}/oauth/callback?token=${token}`);
+const OAUTH_STATE_COOKIE = "skilltrack_oauth_state";
+const OAUTH_COOKIE_OPTIONS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production",
+  sameSite: "lax" as const,
+  path: "/api/auth",
 };
+
+const startOAuthFlow = (res: Response) => {
+  const state = crypto.randomBytes(32).toString("hex");
+  res.cookie(OAUTH_STATE_COOKIE, state, {
+    ...OAUTH_COOKIE_OPTIONS,
+    maxAge: 10 * 60 * 1000,
+  });
+  return state;
+};
+
+const readCookie = (req: Request, name: string) => {
+  const cookie = req.headers.cookie
+    ?.split(";")
+    .map((part) => part.trim())
+    .find((part) => part.startsWith(`${name}=`));
+
+  if (!cookie) return undefined;
+  try {
+    return decodeURIComponent(cookie.slice(name.length + 1));
+  } catch {
+    return undefined;
+  }
+};
+
+const validateOAuthState = (req: Request, res: Response, state: unknown) => {
+  const cookieState = readCookie(req, OAUTH_STATE_COOKIE);
+  res.clearCookie(OAUTH_STATE_COOKIE, OAUTH_COOKIE_OPTIONS);
+
+  if (
+    typeof state !== "string" ||
+    !cookieState ||
+    cookieState.length !== state.length
+  ) {
+    return false;
+  }
+
+  return crypto.timingSafeEqual(Buffer.from(cookieState), Buffer.from(state));
+};
+
+const sendOAuthTicketRedirect = async (res: Response, userId: string) => {
+  const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
+  const ticket = crypto.randomBytes(32).toString("base64url");
+
+  await OAuthTicket.create({
+    tokenHash: crypto.createHash("sha256").update(ticket).digest("hex"),
+    user: userId,
+    expiresAt: new Date(Date.now() + 60 * 1000),
+  });
+
+  res.setHeader("Cache-Control", "no-store");
+  res.setHeader("Referrer-Policy", "no-referrer");
+  res.redirect(`${clientUrl}/oauth/callback?code=${encodeURIComponent(ticket)}`);
+};
+
+export const exchangeOAuthTicket = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const tokenHash = crypto
+      .createHash("sha256")
+      .update(req.body.code)
+      .digest("hex");
+
+    const ticket = await OAuthTicket.findOneAndDelete({
+      tokenHash,
+      expiresAt: { $gt: new Date() },
+    });
+
+    if (!ticket) {
+      return next(new AppError("OAuth code is invalid or expired", 401));
+    }
+
+    const user = await User.findById(ticket.user);
+    if (!user) {
+      return next(new AppError("User not found", 401));
+    }
+
+    res.status(200).json({
+      success: true,
+      token: signToken(String(user._id), user.role),
+    });
+  }
+);
 
 /* ============================= */
 /* REGISTER                     */
@@ -117,6 +202,7 @@ export const getMe = asyncHandler(
 /* ============================= */
 
 export const googleRedirect = (req: Request, res: Response) => {
+  const state = startOAuthFlow(res);
   const params = new URLSearchParams({
     client_id: process.env.GOOGLE_CLIENT_ID!,
     redirect_uri: process.env.GOOGLE_CALLBACK_URL!,
@@ -124,6 +210,7 @@ export const googleRedirect = (req: Request, res: Response) => {
     scope: "openid email profile",
     access_type: "offline",
     prompt: "select_account",
+    state,
   });
 
   res.redirect(
@@ -133,7 +220,11 @@ export const googleRedirect = (req: Request, res: Response) => {
 
 export const googleCallback = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { code } = req.query;
+    const { code, state } = req.query;
+
+    if (!validateOAuthState(req, res, state)) {
+      return next(new AppError("Invalid OAuth state", 401));
+    }
 
     if (!code) {
       return next(new AppError("No code provided", 400));
@@ -160,7 +251,11 @@ export const googleCallback = asyncHandler(
       { headers: { Authorization: `Bearer ${access_token}` } }
     );
 
-    const { id, email, name, picture } = userInfoRes.data;
+    const { id, email, name, picture, verified_email: emailVerified } = userInfoRes.data;
+
+    if (!email || emailVerified !== true) {
+      return next(new AppError("A verified Google email is required", 401));
+    }
 
     // Find or create user
     let user = await User.findOne({
@@ -182,8 +277,7 @@ export const googleCallback = asyncHandler(
       await user.save();
     }
 
-    const token = signToken(String(user._id), user.role);
-    sendTokenRedirect(res, token);
+    await sendOAuthTicketRedirect(res, String(user._id));
   }
 );
 
@@ -192,10 +286,12 @@ export const googleCallback = asyncHandler(
 /* ============================= */
 
 export const githubRedirect = (req: Request, res: Response) => {
+  const state = startOAuthFlow(res);
   const params = new URLSearchParams({
     client_id: process.env.GITHUB_CLIENT_ID!,
     redirect_uri: process.env.GITHUB_CALLBACK_URL!,
     scope: "user:email",
+    state,
   });
 
   res.redirect(
@@ -205,7 +301,11 @@ export const githubRedirect = (req: Request, res: Response) => {
 
 export const githubCallback = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
-    const { code } = req.query;
+    const { code, state } = req.query;
+
+    if (!validateOAuthState(req, res, state)) {
+      return next(new AppError("Invalid OAuth state", 401));
+    }
 
     if (!code) {
       return next(new AppError("No code provided", 400));
@@ -268,8 +368,7 @@ export const githubCallback = asyncHandler(
       await user.save();
     }
 
-    const token = signToken(String(user._id), user.role);
-    sendTokenRedirect(res, token);
+    await sendOAuthTicketRedirect(res, String(user._id));
   }
 );
 

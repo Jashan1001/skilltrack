@@ -48,7 +48,7 @@ const ProblemsPage: React.FC = () => {
 
         setSolvedIds(new Set(solvedIdsFromProgress));
 
-        const ids = bookmarkRes.data.data.map((p: any) => p._id);
+        const ids = bookmarkRes.data.data.map((p: { _id: string }) => p._id);
         setBookmarkedIds(new Set(ids));
       } catch (err) {
         console.error(err);
@@ -129,7 +129,7 @@ const ProblemsPage: React.FC = () => {
 
   /* ================= Structured Sorting ================= */
 
-  const masterOrder = [
+  const masterOrder = useMemo(() => [
     "Sliding Window",
     "Two Pointers",
     "Binary Search",
@@ -142,7 +142,7 @@ const ProblemsPage: React.FC = () => {
     "Backtracking",
     "Dynamic Programming",
     "Bit Manipulation",
-  ];
+  ], []);
 
   const sorted = useMemo(() => {
     const base =
@@ -159,7 +159,7 @@ const ProblemsPage: React.FC = () => {
 
       return (a.orderInPattern || 0) - (b.orderInPattern || 0);
     });
-  }, [filtered, activeTab, bookmarkedIds]);
+  }, [filtered, activeTab, bookmarkedIds, masterOrder]);
 
   if (loading) {
     return (

@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Editor from "@monaco-editor/react";
 import axios from "../api/axios";
@@ -39,6 +39,45 @@ interface Problem {
   publicTestCases: TestCase[];
   editorial?: string;
 }
+
+interface RunTestResult {
+  testCase: number;
+  passed: boolean;
+  expected: string;
+  output: string;
+  status: string;
+  runtime: number;
+}
+
+interface RunResult {
+  mode: "samples" | "custom";
+  verdict?: string;
+  status?: string;
+  stdout?: string;
+  stderr?: string;
+  passed?: number;
+  total?: number;
+  runtime: number;
+  detailedResults?: RunTestResult[];
+}
+
+interface SubmitResult {
+  verdict: string;
+  score: number;
+  passed: number;
+  total: number;
+  runtime: number;
+}
+
+type ResultTab = "console" | "testcases" | "custom" | "result" | "editorial";
+
+const resultTabs: Array<{ label: string; value: ResultTab }> = [
+  { label: "Console", value: "console" },
+  { label: "Testcases", value: "testcases" },
+  { label: "Custom", value: "custom" },
+  { label: "Result", value: "result" },
+  { label: "Editorial", value: "editorial" },
+];
 
 const templates: Record<string, string> = {
   javascript: `function solve() {
@@ -91,15 +130,14 @@ const ProblemDetailPage = () => {
   const [running,setRunning] = useState(false);
   const [submitting,setSubmitting] = useState(false);
 
-  const [runResult,setRunResult] = useState<any>(null);
-  const [submitResult,setSubmitResult] = useState<any>(null);
+  const [runResult,setRunResult] = useState<RunResult | null>(null);
+  const [submitResult,setSubmitResult] = useState<SubmitResult | null>(null);
 
   const [showHints,setShowHints] = useState(false);
   const [showTags,setShowTags] = useState(false);
   const [hasAttempted, setHasAttempted] = useState(false);
 
-  const [activeTab, setActiveTab] =
-    useState<"console" | "testcases" | "custom" | "result" | "editorial">("console");
+  const [activeTab, setActiveTab] = useState<ResultTab>("console");
 
   /* FETCH PROBLEM */
 
@@ -127,7 +165,7 @@ const ProblemDetailPage = () => {
       setCodes(parsed.codes);
       setLanguage(parsed.language);
     }
-  },[problemId]);
+  },[storageKey]);
 
   /* AUTOSAVE */
 
@@ -140,7 +178,7 @@ const ProblemDetailPage = () => {
     },800);
 
     return ()=>clearTimeout(timer);
-  },[codes,language]);
+  },[storageKey,codes,language]);
 
   /* CLEAR STALE RUN RESULT */
 
@@ -156,31 +194,9 @@ const ProblemDetailPage = () => {
     }
   },[runResult,submitResult]);
 
-  /* KEYBOARD SHORTCUTS */
-
-  useEffect(()=>{
-    const handleKey = (e:KeyboardEvent)=>{
-
-      if(e.ctrlKey && e.key==="Enter"){
-        e.preventDefault();
-        handleRun();
-      }
-
-      if(e.ctrlKey && e.shiftKey && e.key==="Enter"){
-        e.preventDefault();
-        handleSubmit();
-      }
-
-    };
-
-    window.addEventListener("keydown",handleKey);
-    return ()=>window.removeEventListener("keydown",handleKey);
-
-  },[code]);
-
   /* RUN */
 
-  const handleRun = async () => {
+  const handleRun = useCallback(async (useCustomInput = false) => {
     if (!code.trim() || running) return;
 
     setRunning(true);
@@ -191,21 +207,22 @@ const ProblemDetailPage = () => {
         problemId,
         code,
         language,
-        customInput,
+        mode: useCustomInput ? "custom" : "samples",
+        customInput: useCustomInput ? customInput : "",
       });
 
       setRunResult(res.data.data);
-      setActiveTab("testcases");
+      setActiveTab(useCustomInput ? "console" : "testcases");
     } catch {
       toast.error("Failed to run code. Please try again.");
     } finally {
       setRunning(false);
     }
-  };
+  }, [code, running, problemId, language, customInput]);
 
   /* SUBMIT */
 
-  const handleSubmit = async () => {
+  const handleSubmit = useCallback(async () => {
     if (!code.trim() || submitting) return;
 
     setSubmitting(true);
@@ -234,7 +251,23 @@ const ProblemDetailPage = () => {
       setHasAttempted(true);
       setSubmitting(false);
     }
-  };
+  }, [code, submitting, problemId, language]);
+
+  /* KEYBOARD SHORTCUTS */
+  useEffect(() => {
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.ctrlKey && event.shiftKey && event.key === "Enter") {
+        event.preventDefault();
+        void handleSubmit();
+      } else if (event.ctrlKey && event.key === "Enter") {
+        event.preventDefault();
+        void handleRun();
+      }
+    };
+
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, [handleRun, handleSubmit]);
 
   if(loading)
     return(
@@ -542,7 +575,7 @@ focus:outline-none focus:ring-2 focus:ring-primary"
 <div className="flex gap-2">
 
 <button
-onClick={handleRun}
+onClick={()=>void handleRun()}
 disabled={running}
 className="flex items-center gap-1 text-emerald-500 border border-emerald-500 px-3 py-1 rounded"
 >
@@ -590,17 +623,17 @@ scrollBeyondLastLine:false
 
 <div className="flex border-b border-border bg-muted text-sm">
 
-{["Console","Testcases","Custom","Result","Editorial"].map((tab)=>(
+{resultTabs.map(({ label, value })=>(
 <button
-key={tab}
-onClick={()=>setActiveTab(tab.toLowerCase() as any)}
+key={value}
+onClick={()=>setActiveTab(value)}
 className={`px-4 py-2 ${
-activeTab === tab.toLowerCase()
+activeTab === value
 ? "text-emerald-500 border-b-2 border-emerald-500"
 : "text-muted-foreground"
 }`}
 >
-{tab}
+{label}
 </button>
 ))}
 
@@ -611,7 +644,9 @@ activeTab === tab.toLowerCase()
 {activeTab==="console" && (
 <pre className="font-mono whitespace-pre-wrap text-muted-foreground">
 {runResult
-? runResult.detailedResults.map((r:any)=>`TC${r.testCase}: ${r.output}`).join("\n")
+? runResult.mode === "custom"
+  ? `Status: ${runResult.status}\nRuntime: ${runResult.runtime} ms\n\n${[runResult.stdout, runResult.stderr].filter(Boolean).join("\n") || "Program completed with no output."}`
+  : (runResult.detailedResults ?? []).map((r)=>`TC${r.testCase}: ${r.output}`).join("\n")
 : "Run your code to see output"}
 </pre>
 )}
@@ -620,7 +655,7 @@ activeTab === tab.toLowerCase()
 
 <div className="space-y-4">
 
-{runResult.detailedResults.map((r:any)=>(
+{(runResult.detailedResults ?? []).map((r)=>(
 
 <div
 key={r.testCase}
@@ -665,6 +700,10 @@ Your Output
 
 ))}
 
+{runResult.mode === "custom" && (
+  <p className="text-muted-foreground">Custom input runs do not compare against an expected answer.</p>
+)}
+
 </div>
 
 )}
@@ -681,7 +720,7 @@ className="w-full h-32 p-3 rounded border border-border bg-muted font-mono"
 />
 
 <button
-onClick={handleRun}
+onClick={()=>void handleRun(true)}
 className="px-4 py-2 bg-primary text-primary-foreground rounded"
 >
 Run Custom Input

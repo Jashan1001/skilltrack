@@ -1,5 +1,19 @@
-node_modules
-.env
-client/.env
-server/.env
-.env.*
+# Installed packages and generated build output
+**/node_modules/
+**/dist/
+**/dist-ssr/
+**/.vite/
+**/*.tsbuildinfo
+
+# Local configuration and secrets
+**/.env
+**/.env.*
+!**/.env.example
+
+# Logs, coverage, and editor files
+**/*.log
+**/coverage/
+.vscode/
+.idea/
+.DS_Store
+client/test-out.css

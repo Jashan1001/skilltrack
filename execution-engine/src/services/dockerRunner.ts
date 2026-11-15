@@ -16,248 +16,252 @@ export interface ExecutionResult {
   executionTime: number;
 }
 
-const MAX_OUTPUT = 1024 * 1024; // 1MB
-const TIME_LIMIT = 3000; // 3 seconds
+const MAX_OUTPUT_BYTES = 64 * 1024;
+const MAX_CODE_BYTES = 80 * 1024;
+const MAX_INPUT_BYTES = 10 * 1024;
+const RUN_TIME_LIMIT_SECONDS = 3;
+const COMPILE_TIME_LIMIT_SECONDS = 10;
+const OUTER_TIMEOUT_MS = 60_000;
+type LanguageConfig = {
+  filename: string;
+  image: string;
+  command: string[];
+  timeoutMs: number;
+  memory: string;
+  cpus: string;
+  compileFailureCode?: number;
+};
 
-export const runCode = (
+const getLanguageConfig = (language: string): LanguageConfig | null => {
+  switch (language) {
+    case "javascript":
+      return {
+        filename: "code.js",
+        image: "node:20-alpine",
+        command: [
+          "sh",
+          "-c",
+          `timeout -s KILL ${RUN_TIME_LIMIT_SECONDS} node /app/code.js; status=$?; if [ $status -eq 124 ] || [ $status -eq 137 ]; then echo SKILLTRACK_RUNTIME_TIMEOUT >&2; exit 102; fi; exit $status`,
+        ],
+        timeoutMs: OUTER_TIMEOUT_MS,
+        memory: "128m",
+        cpus: "0.5",
+      };
+    case "python":
+      return {
+        filename: "code.py",
+        image: "python:3.11-alpine",
+        command: [
+          "sh",
+          "-c",
+          `timeout -s KILL ${RUN_TIME_LIMIT_SECONDS} python3 /app/code.py; status=$?; if [ $status -eq 124 ] || [ $status -eq 137 ]; then echo SKILLTRACK_RUNTIME_TIMEOUT >&2; exit 102; fi; exit $status`,
+        ],
+        timeoutMs: OUTER_TIMEOUT_MS,
+        memory: "128m",
+        cpus: "0.5",
+      };
+    case "cpp":
+      return {
+        filename: "code.cpp",
+        image: "gcc:13-bookworm",
+        command: [
+          "sh",
+          "-c",
+          `timeout -s KILL ${COMPILE_TIME_LIMIT_SECONDS} g++ /app/code.cpp -O2 -std=c++17 -o /tmp/main; status=$?; if [ $status -eq 124 ] || [ $status -eq 137 ]; then echo SKILLTRACK_COMPILE_TIMEOUT >&2; exit 101; fi; if [ $status -ne 0 ]; then exit 100; fi; timeout -s KILL ${RUN_TIME_LIMIT_SECONDS} /tmp/main; status=$?; if [ $status -eq 124 ] || [ $status -eq 137 ]; then echo SKILLTRACK_RUNTIME_TIMEOUT >&2; exit 102; fi; exit $status`,
+        ],
+        timeoutMs: OUTER_TIMEOUT_MS,
+        memory: "512m",
+        cpus: "1",
+        compileFailureCode: 100,
+      };
+    default:
+      return null;
+  }
+};
+
+const result = (
+  status: ExecutionResult["status"],
+  stdout = "",
+  stderr = "",
+  executionTime = 0
+): ExecutionResult => ({ status, stdout, stderr, executionTime });
+
+const removeContainer = (containerName: string): Promise<void> =>
+  new Promise((resolve) => {
+    const cleanup = spawn("docker", ["rm", "-f", containerName], {
+      stdio: "ignore",
+    });
+    const timeout = setTimeout(() => {
+      cleanup.kill("SIGKILL");
+      resolve();
+    }, 5_000);
+    cleanup.once("error", () => {
+      clearTimeout(timeout);
+      resolve();
+    });
+    cleanup.once("close", () => {
+      clearTimeout(timeout);
+      resolve();
+    });
+  });
+
+const runInContainer = (
+  config: LanguageConfig,
+  jobDir: string,
+  containerName: string,
+  input: string
+): Promise<ExecutionResult> =>
+  new Promise((resolve) => {
+    const sourceDirectory = path.resolve(jobDir).replace(/\\/g, "/");
+    const dockerArgs = [
+      "run",
+      "--rm",
+      "--name",
+      containerName,
+      "--network=none",
+      `--memory=${config.memory}`,
+      `--memory-swap=${config.memory}`,
+      `--cpus=${config.cpus}`,
+      "--pids-limit=64",
+      "--read-only",
+      "--stop-timeout=1",
+      "--cap-drop=ALL",
+      "--security-opt=no-new-privileges:true",
+      "--user=65534:65534",
+      "--tmpfs",
+      "/tmp:rw,nosuid,size=64m",
+      "--mount",
+      `type=bind,source=${sourceDirectory},target=/app,readonly`,
+      "-w",
+      "/app",
+      "-i",
+      config.image,
+      ...config.command,
+    ];
+
+    const child = spawn("docker", dockerArgs, { stdio: ["pipe", "pipe", "pipe"] });
+    let stdout = "";
+    let stderr = "";
+    let stdoutBytes = 0;
+    let stderrBytes = 0;
+    let settled = false;
+    let outputExceeded = false;
+    let timedOut = false;
+    const startedAt = Date.now();
+
+    const finish = (value: ExecutionResult) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timeout);
+      resolve(value);
+    };
+
+    const stopAndFinish = async (value: ExecutionResult) => {
+      if (settled) return;
+      child.kill("SIGKILL");
+      await removeContainer(containerName);
+      finish(value);
+    };
+
+    const timeout = setTimeout(() => {
+      timedOut = true;
+      void stopAndFinish(
+        result("time_limit_exceeded", "", "Execution timed out", Date.now() - startedAt)
+      );
+    }, config.timeoutMs);
+
+    child.stdout.on("data", (chunk: Buffer) => {
+      if (settled || outputExceeded) return;
+      stdoutBytes += chunk.length;
+      if (stdoutBytes > MAX_OUTPUT_BYTES) {
+        outputExceeded = true;
+        void stopAndFinish(
+          result("runtime_error", "", "Output exceeded the 64 KB limit", Date.now() - startedAt)
+        );
+        return;
+      }
+      stdout += chunk.toString("utf8");
+    });
+
+    child.stderr.on("data", (chunk: Buffer) => {
+      if (settled || outputExceeded) return;
+      stderrBytes += chunk.length;
+      if (stderrBytes > MAX_OUTPUT_BYTES) {
+        outputExceeded = true;
+        void stopAndFinish(
+          result("runtime_error", "", "Error output exceeded the 64 KB limit", Date.now() - startedAt)
+        );
+        return;
+      }
+      stderr += chunk.toString("utf8");
+    });
+
+    child.once("error", () => {
+      void stopAndFinish(result("internal_error", "", "Docker execution failed"));
+    });
+
+    child.once("close", (code) => {
+      if (settled || timedOut || outputExceeded) return;
+      const normalizedStdout = stdout.replace(/\r\n/g, "\n").trim();
+      const normalizedStderr = stderr.replace(/\r\n/g, "\n").trim();
+      const executionTime = Date.now() - startedAt;
+
+      if (code === 0) {
+        finish(result("accepted", normalizedStdout, normalizedStderr, executionTime));
+      } else if (
+        (code === 101 && normalizedStderr.includes("SKILLTRACK_COMPILE_TIMEOUT")) ||
+        (code === 102 && normalizedStderr.includes("SKILLTRACK_RUNTIME_TIMEOUT"))
+      ) {
+        finish(result("time_limit_exceeded", normalizedStdout, "Execution timed out", executionTime));
+      } else if (config.compileFailureCode === code) {
+        finish(result("runtime_error", "", normalizedStderr || "Compilation failed", executionTime));
+      } else if (code === null) {
+        finish(result("internal_error", "", "Docker execution was interrupted", executionTime));
+      } else {
+        finish(result("runtime_error", normalizedStdout, normalizedStderr || "Program exited with an error", executionTime));
+      }
+    });
+
+    child.stdin.on("error", () => {
+      // A program may exit before consuming all input; the close event owns the result.
+    });
+    child.stdin.end(input);
+  });
+
+const execute = async (
   language: string,
   code: string,
   input: string
 ): Promise<ExecutionResult> => {
-  return new Promise((resolveOuter) => {
-    enqueue(async () => {
-      const jobId = uuidv4();
-      const jobDir = path.join(__dirname, "..", "..", "jobs", jobId);
+  const config = getLanguageConfig(language);
+  if (!config) return result("internal_error", "", "Unsupported language");
 
-      fs.mkdirSync(jobDir, { recursive: true });
+  const jobId = uuidv4();
+  const jobDir = path.join(__dirname, "..", "..", "jobs", jobId);
+  const containerName = `skilltrack-${jobId}`;
 
-      const cleanup = () => {
-        try {
-          fs.rmSync(jobDir, { recursive: true, force: true });
-        } catch {}
-      };
+  try {
+    fs.mkdirSync(jobDir, { recursive: true, mode: 0o755 });
+    fs.writeFileSync(path.join(jobDir, config.filename), code, { mode: 0o644 });
+    return await runInContainer(config, jobDir, containerName, input);
+  } catch {
+    return result("internal_error", "", "Execution setup failed");
+  } finally {
+    try {
+      fs.rmSync(jobDir, { recursive: true, force: true });
+    } catch {
+      // A later cleanup pass can remove a directory if the host briefly holds a file.
+    }
+  }
+};
 
-      const resolveOnce = (result: ExecutionResult) => {
-        cleanup();
-        resolveOuter(result);
-      };
+export const runCode = (language: string, code: string, input: string) => {
+  if (Buffer.byteLength(code, "utf8") > MAX_CODE_BYTES) {
+    return Promise.resolve(result("internal_error", "", "Code exceeds the execution limit"));
+  }
+  if (Buffer.byteLength(input, "utf8") > MAX_INPUT_BYTES) {
+    return Promise.resolve(result("internal_error", "", "Input exceeds the execution limit"));
+  }
 
-      let filename = "";
-      let compileImage = "";
-      let runImage = "";
-
-      /* =============================== */
-      /* LANGUAGE CONFIG                 */
-      /* =============================== */
-
-      if (language === "javascript") {
-        filename = "code.js";
-        compileImage = "node:20-alpine";
-        runImage = "node:20-alpine";
-      } else if (language === "python") {
-        filename = "code.py";
-        compileImage = "python:3.11-alpine";
-        runImage = "python:3.11-alpine";
-      } else if (language === "cpp") {
-        filename = "code.cpp";
-        compileImage = "gcc:13";
-        runImage = "gcc:13-bookworm";
-      } else {
-        resolveOnce({
-          status: "internal_error",
-          stdout: "",
-          stderr: "Unsupported language",
-          executionTime: 0,
-        });
-        return;
-      }
-
-      const filePath = path.join(jobDir, filename);
-      fs.writeFileSync(filePath, code);
-
-      /* =============================== */
-      /* C++ COMPILE STEP                */
-      /* =============================== */
-
-      const compileCpp = (): Promise<boolean> => {
-        return new Promise((resolveCompile) => {
-          const compileArgs = [
-            "run",
-            "--rm",
-            "-v",
-            `${jobDir.replace(/\\/g, "/")}:/app`,
-            "-w",
-            "/app",
-            compileImage,
-            "g++",
-            filename,
-            "-O2",
-            "-std=c++17",
-            // "-static", // can cause issues in some environments, so omitted for now
-            "-o",
-            "main",
-          ];
-
-          const compile = spawn("docker", compileArgs);
-
-          let compileError = "";
-
-          compile.stderr.on("data", (data) => {
-            compileError += data.toString();
-          });
-
-          compile.on("close", (code) => {
-            if (code !== 0) {
-              resolveOnce({
-                status: "runtime_error",
-                stdout: "",
-                stderr: compileError.trim() || "Compilation failed",
-                executionTime: 0,
-              });
-              resolveCompile(false);
-            } else {
-              resolveCompile(true);
-            }
-          });
-
-          compile.on("error", () => {
-            resolveOnce({
-              status: "internal_error",
-              stdout: "",
-              stderr: "Compiler execution failed",
-              executionTime: 0,
-            });
-            resolveCompile(false);
-          });
-        });
-      };
-
-      /* =============================== */
-      /* RUN PROGRAM                     */
-      /* =============================== */
-
-      const runProgram = (command: string[]) => {
-        const dockerArgs = [
-          "run",
-          "--rm",
-          "--memory=128m",
-          "--cpus=0.5",
-          "--pids-limit=64",
-          "--network=none",
-          "-i",
-          "-v",
-          `${jobDir.replace(/\\/g, "/")}:/app`,
-          "-w",
-          "/app",
-          runImage,
-          ...command,
-        ];
-
-        const child = spawn("docker", dockerArgs);
-
-        let stdout = "";
-        let stderr = "";
-        let resolved = false;
-
-        const startTime = Date.now();
-
-        const timeout = setTimeout(() => {
-          child.kill("SIGKILL");
-
-          if (!resolved) {
-            resolved = true;
-
-            resolveOnce({
-              status: "time_limit_exceeded",
-              stdout: "",
-              stderr: "Execution timed out",
-              executionTime: Date.now() - startTime,
-            });
-          }
-        }, TIME_LIMIT);
-
-        /* STDIN */
-        if (input) {
-          child.stdin.write(input.endsWith("\n") ? input : input + "\n");
-        }
-
-        child.stdin.end();
-
-        /* STDOUT */
-        child.stdout.on("data", (data) => {
-          stdout += data.toString();
-
-          if (stdout.length > MAX_OUTPUT) {
-            stdout = stdout.slice(0, MAX_OUTPUT);
-            child.kill("SIGKILL");
-          }
-        });
-
-        /* STDERR */
-        child.stderr.on("data", (data) => {
-          stderr += data.toString();
-        });
-
-        child.on("close", (code) => {
-          clearTimeout(timeout);
-
-          stdout = stdout.replace(/\r\n/g, "\n").trim();
-          stderr = stderr.replace(/\r\n/g, "\n").trim();
-
-          if (!resolved) {
-            resolved = true;
-
-            if (code !== 0 && stderr.length > 0) {
-              resolveOnce({
-                status: "runtime_error",
-                stdout,
-                stderr,
-                executionTime: Date.now() - startTime,
-              });
-            } else {
-              resolveOnce({
-                status: "accepted",
-                stdout,
-                stderr,
-                executionTime: Date.now() - startTime,
-              });
-            }
-          }
-        });
-
-        child.on("error", () => {
-          clearTimeout(timeout);
-
-          if (!resolved) {
-            resolved = true;
-
-            resolveOnce({
-              status: "internal_error",
-              stdout: "",
-              stderr: "Execution failed",
-              executionTime: Date.now() - startTime,
-            });
-          }
-        });
-      };
-
-      /* =============================== */
-      /* EXECUTION FLOW                  */
-      /* =============================== */
-
-      if (language === "cpp") {
-        const compiled = await compileCpp();
-        if (!compiled) return;
-
-        runProgram(["./main"]);
-      } else {
-        const cmd =
-          language === "javascript"
-            ? ["node", filename]
-            : ["python3", filename];
-
-        runProgram(cmd);
-      }
-    });
-  });
+  return enqueue(() => execute(language, code, input));
 };

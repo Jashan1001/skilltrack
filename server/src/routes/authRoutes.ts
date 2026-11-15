@@ -7,12 +7,13 @@ import {
   googleCallback,
   githubRedirect,
   githubCallback,
+  exchangeOAuthTicket,
   forgotPassword,
   resetPassword,
 } from "../controllers/authController";
 import { protect } from "../middleware/authMiddleware";
 import { validate } from "../middleware/validate";
-import { registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema } from "../validators/schemas";
+import { registerSchema, loginSchema, forgotPasswordSchema, resetPasswordSchema, oauthExchangeSchema } from "../validators/schemas";
 
 const router = Router();
 
@@ -25,6 +26,7 @@ router.get("/google/callback", googleCallback);
 
 router.get("/github", githubRedirect);
 router.get("/github/callback", githubCallback);
+router.post("/oauth/exchange", validate(oauthExchangeSchema), exchangeOAuthTicket);
 
 router.post("/forgot-password", validate(forgotPasswordSchema), forgotPassword);
 router.post("/reset-password", validate(resetPasswordSchema), resetPassword);

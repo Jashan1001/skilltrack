@@ -1,203 +1,81 @@
-
 # SkillTrack
 
-SkillTrack is a pattern-based DSA interview platform built around one core challenge:
+SkillTrack is a pattern based DSA practice platform. It combines a guided curriculum, problem authoring, submissions, progress tracking, leaderboards, and an isolated code execution service.
 
-> How do you safely execute untrusted user code while keeping the system scalable, reliable, and secure?
+## Services
 
-It combines structured learning with a real execution engine using a multi-service architecture.
+| Service | Directory | Local port | Purpose |
+| --- | --- | ---: | --- |
+| Web client | `client/` | 5173 | React, TypeScript, Vite |
+| API | `server/` | 5000 | Express, TypeScript, MongoDB |
+| Execution engine | `execution-engine/` | 5001 | Authenticated Docker execution for JavaScript, Python, and C++ |
 
----
+The API sends one test case at a time to the execution engine. Each execution uses a bounded queue and a short lived container with no network, a read only source mount, a non-root user, and resource limits.
 
-## ⚙️ System Architecture
+## Requirements
 
-SkillTrack is built as three independent services:
+- Node.js 22.13 or newer
+- npm
+- MongoDB
+- Docker Engine or Docker Desktop running, with permission for the execution engine to start containers
 
-```plaintext
-SkillTrack/
-│
-├── client/             # React frontend (UI layer)
-├── server/             # API, authentication, database
-└── execution-engine/   # Docker-based code execution sandbox
-```
-### Why this design?
+## Local setup
 
-- Isolates untrusted code execution from the main backend  
-- Prevents crashes or exploits from affecting core services  
-- Enables independent scaling of execution workloads  
-
----
-
-## 🔄 Execution Flow
-
-1. User writes code in the frontend  
-2. Code is sent to the backend API  
-3. Backend forwards execution request to the execution engine  
-4. Execution engine:
-   - Spins up a Docker container  
-   - Executes code against test cases  
-   - Captures output, errors, and runtime  
-5. Results are returned to backend → frontend  
-
----
-
-## 🎯 Core Philosophy
-
-SkillTrack moves beyond random problem-solving by focusing on:
-
-- Structured DSA curriculum (12 patterns)  
-- Ordered progression system  
-- Hybrid learning (guided + free exploration)  
-- Real execution environment  
-- Production-level system design  
-
----
-
-## 🧠 Key Design Decisions
-
-### Docker-based Isolation
-- Each submission runs inside a container  
-- Prevents access to host system  
-- Ensures consistent runtime environment  
-
-### Multi-Language Support
-- JavaScript, Python, C++  
-- Separate execution pipelines per language  
-
-### Public vs Private Test Cases
-- Public → visible for debugging  
-- Private → used for final evaluation  
-
-### 3-Service Architecture
-- Clear separation of concerns  
-- Improves fault isolation  
-- Enables scalability  
-
----
-
-## 🔥 Features
-
-### Structured Curriculum
-- 80+ curated DSA problems  
-- Pattern-based roadmap  
-- Master sheet view  
-
-### Authentication & Roles
-- Student / Recruiter / Admin  
-- JWT-based authentication  
-- Role-based access control  
-
-### Code Execution
-- Docker-isolated containers  
-- Strict & partial evaluation  
-- Hidden test cases  
-- Runtime measurement  
-
-### Progress Tracking
-- Unique solved problem detection  
-- Pattern-based completion tracking  
-- Leaderboard with optimized aggregation  
-
----
-
-## 🧱 Tech Stack
-
-**Frontend**
-- React, TypeScript, Tailwind CSS, React Router  
-
-**Backend**
-- Node.js, Express, MongoDB  
-- JWT Authentication, RBAC  
-
-**Execution Engine**
-- Docker containers  
-- Multi-language execution (JS, Python, C++)  
-
----
-
-## ⚙️ Setup Instructions
-
-### Clone
+Install each service's locked dependencies once:
 
 ```bash
-git clone https://github.com/Jashan1001/skilltrack.git
-cd skilltrack
+cd client && npm ci
+cd ../server && npm ci
+cd ../execution-engine && npm ci
 ```
----
 
-### Server
+Copy each `.env.example` to `.env` and fill in the values. Use the same long random `INTERNAL_SECRET` in the API and execution engine. OAuth providers and SMTP settings are optional for local development; configure them to use those features.
+
+Pull the execution images before the first run so the first submission does not wait for a registry download:
 
 ```bash
-cd server
-npm install
-npm run dev
+docker pull node:20-alpine
+docker pull python:3.11-alpine
+docker pull gcc:13-bookworm
 ```
 
-Create `.env`:
-
-PORT=
-MONGO_URI=
-JWT_SECRET=
-
----
-
-### Client
+Start MongoDB, then run each command in its own terminal from the repository root:
 
 ```bash
-cd client
-npm install
-npm run dev
-```
----
-
-### Execution Engine
-
-```bash
-cd execution-engine
-npm install
-npm start
+npm run dev:engine
+npm run dev:server
+npm run dev:client
 ```
 
-> Ensure Docker is installed and running.
+The frontend expects `VITE_API_URL=http://localhost:5000/api`. The API calls the engine at `http://localhost:5001` by default. OAuth provider callback URLs should point to `http://localhost:5000/api/auth/google/callback` and `http://localhost:5000/api/auth/github/callback`.
 
----
-
-## 🌱 Seeding Structured Curriculum
-
-Server includes seed scripts for:
-
-* Patterns
-* Master track problems
-* Ordered progression
-
-Run:
+Seed the curated problem set after MongoDB is available:
 
 ```bash
 npm run seed
 ```
----
 
-## 🔐 Security Considerations
+## Build and lint
 
-* Docker isolation for untrusted code execution
-* JWT-based authentication with protected routes
-* Role-based access control
-* Hidden private test cases to prevent hardcoding
+```bash
+npm run build
+npm run lint
+```
 
----
+`npm run build` builds the client, API, and execution engine. `npm run lint` runs the client ESLint configuration.
 
-## 📈 Vision
+## Security notes
 
-SkillTrack focuses on structured mastery over random practice by combining:
+- Never commit `.env` files, OAuth secrets, SMTP credentials, JWT secrets, or the internal execution secret.
+- The execution engine is a privileged service because it controls Docker. Keep it on a private network and do not expose it directly to the public internet.
+- OAuth uses a short lived, single use exchange code; the API JWT is returned only from the authenticated exchange endpoint.
+- API authorization checks are enforced server side. Hiding a page in the client is not an access control boundary.
 
-* Guided learning paths
-* Real execution environment
-* Production-level architecture
+## Current product areas
 
----
-
-## 👤 Author
-
-Jashan
-GitHub: [https://github.com/Jashan1001](https://github.com/Jashan1001)
-
+- Twelve DSA patterns and a sequenced official roadmap
+- Problem statements, examples, hints, editorials, public and private test cases
+- Code runs and scored submissions in three languages
+- User dashboard, streaks, activity heatmap, bookmarks, profiles, and leaderboards
+- Admin problem management and analytics
+- Password reset and Google/GitHub sign in

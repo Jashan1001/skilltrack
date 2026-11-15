@@ -74,7 +74,7 @@ app.use(
 /* Body Parser                  */
 /* ============================= */
 
-app.use(express.json({ limit: "50kb" }));
+app.use(express.json({ limit: "250kb" }));
 
 /* ============================= */
 /* Routes                       */
@@ -137,6 +137,24 @@ export { app };
 
 const startServer = async () => {
   try {
+    const required = ["MONGO_URI", "JWT_SECRET", "EXECUTION_ENGINE_URL", "INTERNAL_SECRET"];
+    const missing = required.filter((key) => !process.env[key]);
+    if (missing.length > 0) {
+      throw new Error(`Missing required environment variables: ${missing.join(", ")}`);
+    }
+
+    if ((process.env.JWT_SECRET || "").length < 32) {
+      throw new Error("JWT_SECRET must be at least 32 characters long");
+    }
+    if ((process.env.INTERNAL_SECRET || "").length < 32) {
+      throw new Error("INTERNAL_SECRET must be at least 32 characters long");
+    }
+
+    const executionUrl = new URL(process.env.EXECUTION_ENGINE_URL as string);
+    if (executionUrl.protocol !== "http:" && executionUrl.protocol !== "https:") {
+      throw new Error("EXECUTION_ENGINE_URL must use HTTP or HTTPS");
+    }
+
     await mongoose.connect(process.env.MONGO_URI as string);
     console.log("MongoDB connected");
 
