@@ -25,6 +25,7 @@ const OAuthCallbackPage = lazy(() => import("./pages/OAuthCallbackPage"));
 const AdminAnalyticsPage = lazy(() => import("./pages/AdminAnalyticsPage"));
 const ForgotPasswordPage = lazy(() => import("./pages/ForgotPasswordPage"));
 const ResetPasswordPage = lazy(() => import("./pages/ResetPasswordPage"));
+const VerifyEmailPage = lazy(() => import("./pages/VerifyEmailPage"));
 function App() {
   return (
     <ThemeProvider>
@@ -45,6 +46,7 @@ function App() {
         <Route path="/oauth/callback" element={<OAuthCallbackPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/verify-email" element={<VerifyEmailPage />} />
 
         {/* AUTHENTICATED ROUTES */}
         <Route element={<ProtectedRoute />}>
@@ -121,3 +123,4 @@ function App() {
 }
 
 export default App;
+

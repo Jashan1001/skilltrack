@@ -14,10 +14,10 @@ export const registerSchema = z.object({
 
   email: z
     .string()
+    .trim()
     .min(1, "Email is required")
     .email("Invalid email format")
-    .toLowerCase()
-    .trim(),
+    .toLowerCase(),
 
   password: z
     .string()
@@ -34,14 +34,22 @@ export const registerSchema = z.object({
 export const loginSchema = z.object({
   email: z
     .string()
+    .trim()
     .min(1, "Email is required")
     .email("Invalid email format")
-    .toLowerCase()
-    .trim(),
+    .toLowerCase(),
 
   password: z
     .string()
     .min(1, "Password is required"),
+});
+
+export const verifyEmailSchema = z.object({
+  token: z.string().regex(/^[A-Za-z0-9_-]{43}$/, "Invalid verification token"),
+});
+
+export const resendVerificationSchema = z.object({
+  email: z.string().trim().email("Invalid email format").toLowerCase(),
 });
 
 /* ============================= */
@@ -169,12 +177,12 @@ export const runSchema = codeSubmissionBase.extend({
     .default(""),
 });
 export const forgotPasswordSchema = z.object({
-  email: z.string().email("Invalid email format").toLowerCase().trim(),
+  email: z.string().trim().email("Invalid email format").toLowerCase(),
 });
 
 export const resetPasswordSchema = z.object({
   token: z.string().min(1),
-  email: z.string().email().toLowerCase().trim(),
+  email: z.string().trim().email().toLowerCase(),
   password: z
     .string()
     .min(6, "Password must be at least 6 characters")
@@ -184,3 +192,4 @@ export const resetPasswordSchema = z.object({
 export const oauthExchangeSchema = z.object({
   code: z.string().regex(/^[A-Za-z0-9_-]{43}$/, "Invalid OAuth code"),
 });
+

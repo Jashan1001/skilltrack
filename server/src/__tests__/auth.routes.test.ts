@@ -19,6 +19,10 @@ import { MongoMemoryServer } from "mongodb-memory-server";
 // In server/src/index.ts: export the app before mongoose.connect()
 //   export { app };  ← add this line before the mongoose.connect() block
 import { app } from "../index";
+import User from "../models/User";
+import { sendEmail } from "../utils/sendEmail";
+
+jest.mock("../utils/sendEmail", () => ({ sendEmail: jest.fn().mockResolvedValue(undefined) }));
 
 let mongoServer: MongoMemoryServer;
 
@@ -38,6 +42,7 @@ afterAll(async () => {
 });
 
 afterEach(async () => {
+  jest.mocked(sendEmail).mockClear();
   // Clear all collections between tests
   const collections = mongoose.connection.collections;
   for (const key in collections) {
@@ -61,7 +66,8 @@ describe("POST /api/auth/register", () => {
 
     expect(res.status).toBe(201);
     expect(res.body.success).toBe(true);
-    expect(res.body.message).toBe("User registered successfully");
+    expect(res.body.message).toMatch(/verify your email/i);
+    expect(res.body.verificationEmailSent).toBe(true);
   });
 
   it("returns 400 if email already exists", async () => {
@@ -116,6 +122,22 @@ describe("POST /api/auth/login", () => {
       email: "test@example.com",
       password: "password123",
     });
+    await User.updateOne({ email: "test@example.com" }, { $set: { emailVerified: true } });
+  });
+
+  it("blocks a correct password until the email is verified", async () => {
+    await request(app).post("/api/auth/register").send({
+      name: "Unverified User",
+      email: "unverified@example.com",
+      password: "password123",
+    });
+    const res = await request(app).post("/api/auth/login").send({
+      email: "unverified@example.com",
+      password: "password123",
+    });
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe("EMAIL_NOT_VERIFIED");
+    expect(res.body.token).toBeUndefined();
   });
 
   it("returns token on valid credentials", async () => {
@@ -154,6 +176,49 @@ describe("POST /api/auth/login", () => {
   });
 });
 
+describe("email ownership verification", () => {
+  it("accepts a single-use token from the verification email", async () => {
+    await request(app).post("/api/auth/register").send({
+      name: "Verify User",
+      email: "verify@example.com",
+      password: "password123",
+    });
+    const mail = jest.mocked(sendEmail).mock.calls[0]?.[0];
+    const tokenMatch = mail?.html.match(/verify-email#token=([A-Za-z0-9_-]{43})/);
+    expect(tokenMatch).toBeDefined();
+    const token = tokenMatch![1];
+
+    const verified = await request(app).post("/api/auth/verify-email").send({ token });
+    expect(verified.status).toBe(200);
+    expect((await User.findOne({ email: "verify@example.com" }))?.emailVerified).toBe(true);
+
+    const login = await request(app).post("/api/auth/login").send({
+      email: "verify@example.com",
+      password: "password123",
+    });
+    expect(login.status).toBe(200);
+    expect(login.body.token).toBeDefined();
+
+    const reused = await request(app).post("/api/auth/verify-email").send({ token });
+    expect(reused.status).toBe(400);
+  });
+
+  it("returns the same resend response for unknown and existing addresses", async () => {
+    await request(app).post("/api/auth/register").send({
+      name: "Verify User",
+      email: "verify@example.com",
+      password: "password123",
+    });
+    const [known, unknown] = await Promise.all([
+      request(app).post("/api/auth/verify-email/resend").send({ email: "verify@example.com" }),
+      request(app).post("/api/auth/verify-email/resend").send({ email: "nobody@example.com" }),
+    ]);
+    expect(known.status).toBe(200);
+    expect(unknown.status).toBe(200);
+    expect(known.body).toEqual(unknown.body);
+  });
+});
+
 // ─── GET /api/auth/me ─────────────────────────────────────────────────────────
 
 describe("GET /api/auth/me", () => {
@@ -165,6 +230,7 @@ describe("GET /api/auth/me", () => {
       email: "test@example.com",
       password: "password123",
     });
+    await User.updateOne({ email: "test@example.com" }, { $set: { emailVerified: true } });
 
     const res = await request(app)
       .post("/api/auth/login")
@@ -226,3 +292,4 @@ describe("POST /api/auth/forgot-password", () => {
     expect(res.status).toBe(400);
   });
 });
+

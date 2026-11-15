@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import Editor from "@monaco-editor/react";
 import axios from "../api/axios";
-import { Play, Send, ArrowLeft, Trophy } from "lucide-react";
+import { Play, Send, ArrowLeft, ExternalLink, Trophy } from "lucide-react";
 import { motion } from "framer-motion";
 import { useTheme } from "../context/themeContext";
 import ReactMarkdown from "react-markdown";
@@ -362,12 +362,18 @@ const ProblemDetailPage = () => {
 
   if(loading)
     return(
-      <div className="flex items-center justify-center h-full text-muted-foreground">
-        Loading problem...
+      <div className="flex h-full min-h-64 items-center justify-center text-sm text-muted-foreground" role="status">
+        Loading problem…
       </div>
     );
 
-  if(!problem) return null;
+  if(!problem) return (
+    <section className="flex min-h-80 flex-col items-center justify-center rounded-2xl border border-border bg-card px-6 text-center">
+      <h1 className="text-lg font-semibold text-foreground">This problem isn’t available</h1>
+      <p className="mt-2 max-w-md text-sm leading-6 text-muted-foreground">It may have been removed, or your connection dropped while loading it.</p>
+      <button onClick={() => navigate("/problems")} className="mt-5 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90">Back to problems</button>
+    </section>
+  );
 
   const difficultyStyle =
     problem.difficulty === "easy"
@@ -425,6 +431,15 @@ className="flex items-center gap-1 hover:text-foreground"
 >
 <Trophy size={16}/> Leaderboard
 </button>
+
+<a
+href={`https://leetcode.com/problemset/?search=${encodeURIComponent(problem.title)}`}
+target="_blank"
+rel="noreferrer"
+className="flex items-center gap-1 hover:text-foreground"
+>
+<ExternalLink size={15}/> Search LeetCode
+</a>
 
 </div>
 
@@ -921,3 +936,4 @@ Runtime: {submitResult.runtime} ms
 };
 
 export default ProblemDetailPage;
+

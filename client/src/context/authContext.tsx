@@ -22,7 +22,7 @@ interface AuthContextType {
   token: string | null;
   loading: boolean;
   login: (email: string, password: string) => Promise<void>;
-  register: (name: string, email: string, password: string) => Promise<void>;
+  register: (name: string, email: string, password: string) => Promise<{ verificationEmailSent: boolean }>;
   completeOAuthLogin: (token: string) => Promise<void>;
   logout: () => void;
 }
@@ -93,7 +93,8 @@ export const AuthProvider = ({
     email: string,
     password: string
   ) => {
-    await axios.post("/auth/register", { name, email, password });
+    const response = await axios.post("/auth/register", { name, email, password });
+    return { verificationEmailSent: Boolean(response.data.verificationEmailSent) };
   };
 
   const completeOAuthLogin = useCallback(async (tokenFromServer: string) => {
@@ -139,3 +140,4 @@ export const useAuth = () => {
 
   return context;
 };
+

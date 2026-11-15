@@ -30,7 +30,7 @@ cd ../server && npm ci
 cd ../execution-engine && npm ci
 ```
 
-Copy each `.env.example` to `.env` and fill in the values. Use the same long random `INTERNAL_SECRET` in the API and execution engine. OAuth providers and SMTP settings are optional for local development; configure them to use those features.
+Copy each `.env.example` to `.env` and fill in the values. Use the same long random `INTERNAL_SECRET` in the API and execution engine. OAuth providers are optional. Configure SMTP in the API to deliver password account verification and password reset messages; without SMTP, password registrations cannot sign in.
 
 Pull the execution images before the first run so the first submission does not wait for a registry download:
 
@@ -80,5 +80,7 @@ npm run lint
 - Code runs and scored submissions in three languages
 - Durable queued submissions with automatic status updates and infrastructure retries
 - User dashboard, streaks, activity heatmap, bookmarks, profiles, and leaderboards
+- Single-use email verification for password accounts; verified provider emails for OAuth sign-in
 - Admin problem management and analytics
 - Password reset and Google/GitHub sign in
+

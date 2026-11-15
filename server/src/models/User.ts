@@ -3,6 +3,9 @@ import mongoose, { Schema, Document } from "mongoose";
 export interface IUser extends Document {
   name: string;
   email: string;
+  emailVerified: boolean;
+  emailVerificationTokenHash?: string;
+  emailVerificationExpires?: Date;
   password?: string;
   role: "student" | "recruiter" | "admin";
   googleId?: string;
@@ -35,6 +38,9 @@ const UserSchema: Schema<IUser> = new Schema(
       lowercase: true,
       trim: true,
     },
+    emailVerified: { type: Boolean, default: false },
+    emailVerificationTokenHash: { type: String, select: false },
+    emailVerificationExpires: { type: Date, select: false },
     password: {
       type: String,
       required: false, // optional — OAuth users have no password
@@ -85,3 +91,4 @@ const UserSchema: Schema<IUser> = new Schema(
 );
 
 export default mongoose.model<IUser>("User", UserSchema);
+

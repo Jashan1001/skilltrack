@@ -8,6 +8,7 @@ import { AppError } from "../utils/AppError";
 import crypto from "crypto";
 import { sendEmail } from "../utils/sendEmail";
 import OAuthTicket from "../models/OAuthTicket";
+import type { IUser } from "../models/User";
 /* ============================= */
 /* HELPERS                      */
 /* ============================= */
@@ -76,6 +77,30 @@ const sendOAuthTicketRedirect = async (res: Response, userId: string) => {
   res.redirect(`${clientUrl}/oauth/callback?code=${encodeURIComponent(ticket)}`);
 };
 
+const sendVerificationEmail = async (user: IUser) => {
+  const token = crypto.randomBytes(32).toString("base64url");
+  user.emailVerificationTokenHash = crypto.createHash("sha256").update(token).digest("hex");
+  user.emailVerificationExpires = new Date(Date.now() + 30 * 60 * 1000);
+  await user.save();
+
+  const clientUrl = process.env.CLIENT_URL || "http://localhost:5173";
+  // Keep the bearer token in the URL fragment; browsers never send fragments
+  // to the web server or include them in Referer headers.
+  const verificationUrl = `${clientUrl}/verify-email#token=${encodeURIComponent(token)}`;
+  try {
+    await sendEmail({
+      to: user.email,
+      subject: "Verify your SkillTrack email",
+      html: `<div style="font-family:Arial,sans-serif;max-width:480px;margin:0 auto"><h2>Verify your email</h2><p>Confirm this email address to activate your SkillTrack account. This link expires in 30 minutes.</p><a href="${verificationUrl}" style="display:inline-block;background:#4F46E5;color:#fff;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600">Verify email</a><p style="color:#6B7280;font-size:12px">If you did not create this account, you can ignore this message.</p></div>`,
+    });
+  } catch (error) {
+    user.emailVerificationTokenHash = undefined;
+    user.emailVerificationExpires = undefined;
+    await user.save();
+    throw error;
+  }
+};
+
 export const exchangeOAuthTicket = asyncHandler(
   async (req: Request, res: Response, next: NextFunction) => {
     const tokenHash = crypto
@@ -119,17 +144,70 @@ export const register = asyncHandler(
 
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    await User.create({
+    const user = await User.create({
       name,
       email,
       password: hashedPassword,
       role,
     });
 
+    let verificationEmailSent = true;
+    try {
+      await sendVerificationEmail(user);
+    } catch (error) {
+      verificationEmailSent = false;
+      console.error("Verification email could not be sent", {
+        errorType: error instanceof Error ? error.name : "UnknownError",
+      });
+    }
+
     res.status(201).json({
       success: true,
-      message: "User registered successfully",
+      message: "Account created. Verify your email before signing in.",
+      verificationEmailSent,
     });
+  }
+);
+
+export const verifyEmail = asyncHandler(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const tokenHash = crypto.createHash("sha256").update(req.body.token).digest("hex");
+    const user = await User.findOneAndUpdate({
+      emailVerificationTokenHash: tokenHash,
+      emailVerificationExpires: { $gt: new Date() },
+    }, {
+      $set: { emailVerified: true },
+      $unset: { emailVerificationTokenHash: 1, emailVerificationExpires: 1 },
+    }, { new: true });
+
+    if (!user) return next(new AppError("Verification link is invalid or expired.", 400));
+
+    res.status(200).json({ success: true, message: "Email verified. You can now sign in." });
+  }
+);
+
+export const resendVerificationEmail = asyncHandler(
+  async (req: Request, res: Response) => {
+    const genericResponse = {
+      success: true,
+      message: "If that address needs verification, a new link has been sent.",
+    };
+    const user = await User.findOne({ email: req.body.email });
+
+    // Keep the response identical for unknown, verified, and OAuth-only accounts.
+    if (!user || user.emailVerified || !user.password) {
+      return res.status(200).json(genericResponse);
+    }
+
+    try {
+      await sendVerificationEmail(user);
+    } catch (error) {
+      console.error("Verification email resend failed", {
+        errorType: error instanceof Error ? error.name : "UnknownError",
+      });
+    }
+
+    return res.status(200).json(genericResponse);
   }
 );
 
@@ -160,6 +238,14 @@ export const login = asyncHandler(
       return next(new AppError("Invalid credentials", 401));
     }
 
+    if (!user.emailVerified) {
+      return res.status(403).json({
+        success: false,
+        code: "EMAIL_NOT_VERIFIED",
+        message: "Verify your email before signing in.",
+      });
+    }
+
     const token = signToken(String(user._id), user.role);
 
     res.status(200).json({ success: true, token });
@@ -188,6 +274,7 @@ export const getMe = asyncHandler(
         userId: user._id,
         name: user.name,
         email: user.email,
+        emailVerified: user.emailVerified,
         role: user.role,
         avatarUrl: user.avatarUrl,
         currentStreak: user.currentStreak,
@@ -251,7 +338,8 @@ export const googleCallback = asyncHandler(
       { headers: { Authorization: `Bearer ${access_token}` } }
     );
 
-    const { id, email, name, picture, verified_email: emailVerified } = userInfoRes.data;
+    const { id, name, picture, verified_email: emailVerified } = userInfoRes.data;
+    const email = typeof userInfoRes.data.email === "string" ? userInfoRes.data.email.toLowerCase() : "";
 
     if (!email || emailVerified !== true) {
       return next(new AppError("A verified Google email is required", 401));
@@ -266,13 +354,15 @@ export const googleCallback = asyncHandler(
       user = await User.create({
         name,
         email,
+        emailVerified: true,
         googleId: id,
         avatarUrl: picture,
         role: "student",
       });
-    } else if (!user.googleId) {
-      // Existing email account — link Google to it
-      user.googleId = id;
+    } else {
+      // Google confirms ownership of this address, including for legacy accounts.
+      if (!user.googleId) user.googleId = id;
+      user.emailVerified = true;
       if (!user.avatarUrl) user.avatarUrl = picture;
       await user.save();
     }
@@ -337,7 +427,7 @@ export const githubCallback = asyncHandler(
 
     const primaryEmail = emailsRes.data.find(
       (e: any) => e.primary && e.verified
-    )?.email;
+    )?.email?.toLowerCase();
 
     if (!primaryEmail) {
       return next(
@@ -358,12 +448,14 @@ export const githubCallback = asyncHandler(
       user = await User.create({
         name: name || login,
         email: primaryEmail,
+        emailVerified: true,
         githubId: String(id),
         avatarUrl: avatar_url,
         role: "student",
       });
-    } else if (!user.githubId) {
-      user.githubId = String(id);
+    } else {
+      if (!user.githubId) user.githubId = String(id);
+      user.emailVerified = true;
       if (!user.avatarUrl) user.avatarUrl = avatar_url;
       await user.save();
     }
@@ -480,3 +572,4 @@ export const resetPassword = asyncHandler(
     });
   }
 );
+

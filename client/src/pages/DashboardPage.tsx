@@ -3,6 +3,8 @@ import axios from "../api/axios";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../context/authContext";
 import LearningPlanCard from "../components/LearningPlanCard";
+import { Skeleton } from "../components/Skeleton";
+import { Activity, RotateCw } from "lucide-react";
 
 interface Problem {
   _id: string;
@@ -79,6 +81,8 @@ const DashboardPage: React.FC = () => {
   const [problems, setProblems] = useState<Problem[]>([]);
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+  const [reloadCount, setReloadCount] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -97,18 +101,25 @@ const DashboardPage: React.FC = () => {
       }
     };
     const fetchAll = async () => {
-      const [progressRes, problemsRes, submissionRes] = await Promise.all([
-        axios.get("/users/progress"),
-        axios.get("/problems/official-all"),
-        axios.get("/submissions/me"),
-      ]);
-      setProgress(progressRes.data.data);
-      setProblems(problemsRes.data.data.problems);
-      const nextSubmissions = submissionRes.data.data.submissions || [];
-      setSubmissions(nextSubmissions);
-      setLoading(false);
-      if (nextSubmissions.some((submission: Submission) => submission.jobState === "queued" || submission.jobState === "running")) {
-        timer = window.setTimeout(() => void pollSubmissions(), 5_000);
+      try {
+        const [progressRes, problemsRes, submissionRes] = await Promise.all([
+          axios.get("/users/progress"),
+          axios.get("/problems/official-all"),
+          axios.get("/submissions/me"),
+        ]);
+        if (cancelled) return;
+        setProgress(progressRes.data.data);
+        setProblems(problemsRes.data.data.problems);
+        const nextSubmissions = submissionRes.data.data.submissions || [];
+        setSubmissions(nextSubmissions);
+        if (nextSubmissions.some((submission: Submission) => submission.jobState === "queued" || submission.jobState === "running")) {
+          timer = window.setTimeout(() => void pollSubmissions(), 5_000);
+        }
+      } catch (error) {
+        console.error("Dashboard data could not be loaded", error);
+        if (!cancelled) setLoadError(true);
+      } finally {
+        if (!cancelled) setLoading(false);
       }
     };
     void fetchAll();
@@ -116,7 +127,7 @@ const DashboardPage: React.FC = () => {
       cancelled = true;
       window.clearTimeout(timer);
     };
-  }, []);
+  }, [reloadCount]);
 
   const patternStats = useMemo(() => {
     if (!progress) return [];
@@ -157,10 +168,23 @@ const difficultyCount = useMemo(() => {
 }, [problems, progress]);
 
 // ── Loading skeleton ──────────────────────────────────────────────────────
+if (loadError)
+  return (
+    <section className="rounded-2xl border border-border bg-card px-6 py-16 text-center">
+      <Activity size={24} className="mx-auto mb-3 text-muted-foreground" />
+      <h1 className="text-lg font-semibold text-foreground">Your dashboard couldn’t load</h1>
+      <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-muted-foreground">We couldn’t reach your progress data. Try again in a moment.</p>
+      <button onClick={() => { setLoadError(false); setLoading(true); setReloadCount((count) => count + 1); }} className="mt-5 inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-medium text-primary-foreground hover:opacity-90"><RotateCw size={15} /> Try again</button>
+    </section>
+  );
+
 if (loading || !progress)
   return (
-    <div className="space-y-8 animate-pulse">
-      ...
+    <div className="space-y-7" aria-label="Loading dashboard" aria-busy="true">
+      <div className="space-y-2"><Skeleton className="h-8 w-56" /><Skeleton className="h-4 w-72" /></div>
+      <div className="grid grid-cols-3 gap-3">{[0, 1, 2].map((item) => <Skeleton key={item} className="h-24 rounded-xl" />)}</div>
+      <Skeleton className="h-52 rounded-2xl" />
+      <div className="grid gap-4 lg:grid-cols-2"><Skeleton className="h-72 rounded-2xl" /><Skeleton className="h-72 rounded-2xl" /></div>
     </div>
   );
 
@@ -424,3 +448,4 @@ const recentActivity = submissions.filter((s) => s.problem).slice(0, 5);
 };
 
 export default DashboardPage;
+

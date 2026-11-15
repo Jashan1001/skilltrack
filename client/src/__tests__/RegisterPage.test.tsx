@@ -23,6 +23,9 @@ import { MemoryRouter } from "react-router-dom";
 import RegisterPage from "../pages/RegisterPage";
 
 const mockRegister = vi.fn();
+const { mockResendVerification } = vi.hoisted(() => ({ mockResendVerification: vi.fn() }));
+
+vi.mock("../api/axios", () => ({ default: { post: mockResendVerification } }));
 
 // Mock the auth context
 vi.mock("../context/authContext", () => ({
@@ -52,7 +55,9 @@ const renderRegister = () =>
 describe("RegisterPage", () => {
   beforeEach(() => {
     mockRegister.mockReset();
-    mockRegister.mockResolvedValue(undefined);
+    mockRegister.mockResolvedValue({ verificationEmailSent: true });
+    mockResendVerification.mockReset();
+    mockResendVerification.mockResolvedValue({ data: { message: "If that address needs verification, a new link has been sent." } });
   });
 
   // ─── Form renders ────────────────────────────────────────────────────────
@@ -145,4 +150,20 @@ describe("RegisterPage", () => {
     });
     expect(mockRegister).not.toHaveBeenCalled();
   });
+
+  it("asks the learner to verify their email after account creation", async () => {
+    const user = userEvent.setup();
+    renderRegister();
+    await user.type(screen.getByPlaceholderText("Full Name"), "Test User");
+    await user.type(screen.getByPlaceholderText("Email"), "test@example.com");
+    await user.type(screen.getByPlaceholderText("Password"), "password123");
+    await user.type(screen.getByPlaceholderText("Confirm Password"), "password123");
+    await user.click(screen.getByRole("button", { name: /sign up/i }));
+
+    expect(await screen.findByRole("heading", { name: "Check your inbox" })).toBeInTheDocument();
+    expect(screen.getByText("test@example.com")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: /resend verification email/i }));
+    expect(mockResendVerification).toHaveBeenCalledWith("/auth/verify-email/resend", { email: "test@example.com" });
+  });
 });
+

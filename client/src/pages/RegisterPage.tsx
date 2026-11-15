@@ -1,12 +1,12 @@
 import { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useAuth } from "../context/authContext";
 import Header from "../components/Header";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, MailCheck } from "lucide-react";
+import axios from "../api/axios";
 
 const RegisterPage: React.FC = () => {
   const { register } = useAuth();
-  const navigate = useNavigate();
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -16,6 +16,10 @@ const RegisterPage: React.FC = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [registeredEmail, setRegisteredEmail] = useState("");
+  const [verificationSent, setVerificationSent] = useState(false);
+  const [resending, setResending] = useState(false);
+  const [resendMessage, setResendMessage] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -28,14 +32,46 @@ const RegisterPage: React.FC = () => {
     try {
       setLoading(true);
       setError("");
-      await register(name, email, password);
-      navigate("/login");
+      const result = await register(name, email, password);
+      setVerificationSent(result.verificationEmailSent);
+      setRegisteredEmail(email.trim().toLowerCase());
     } catch {
       setError("Registration failed. Try again.");
     } finally {
       setLoading(false);
     }
   };
+
+  const resendVerification = async () => {
+    setResending(true);
+    setResendMessage("");
+    try {
+      const response = await axios.post("/auth/verify-email/resend", { email: registeredEmail });
+      setResendMessage(response.data.message);
+    } catch {
+      setResendMessage("Could not request another link. Please try again shortly.");
+    } finally {
+      setResending(false);
+    }
+  };
+
+  if (registeredEmail) {
+    return (
+      <div className="min-h-screen bg-background text-foreground flex flex-col">
+        <Header showAuthButtons={false} />
+        <main className="flex flex-1 items-center justify-center px-5 py-12">
+          <section className="w-full max-w-md rounded-2xl border border-border bg-card p-8 text-center shadow-sm">
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary"><MailCheck size={22} aria-hidden="true" /></div>
+            <h1 className="mt-5 text-xl font-semibold">Check your inbox</h1>
+            <p className="mt-2 text-sm leading-6 text-muted-foreground">{verificationSent ? <>We sent a verification link to <span className="font-medium text-foreground">{registeredEmail}</span>. Verify the address before signing in.</> : <>Your account was created, but we could not send the verification email. Please try again below in a moment.</>}</p>
+            <button type="button" onClick={() => void resendVerification()} disabled={resending} className="mt-6 w-full rounded-lg border border-border px-4 py-3 text-sm font-semibold text-foreground transition hover:bg-muted disabled:opacity-60">{resending ? "Sending…" : "Resend verification email"}</button>
+            {resendMessage && <p role="status" className="mt-3 text-sm text-muted-foreground">{resendMessage}</p>}
+            <p className="mt-6 text-sm text-muted-foreground">Already verified? <Link to="/login" className="font-medium text-primary hover:underline">Sign in</Link></p>
+          </section>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground flex flex-col">
@@ -198,3 +234,4 @@ const RegisterPage: React.FC = () => {
 };
 
 export default RegisterPage;
+

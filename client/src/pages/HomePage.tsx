@@ -148,32 +148,46 @@ const HomePage: React.FC = () => {
             </div>
           </div>
 
-          <div className="rounded-2xl border border-border bg-card p-5 shadow-[0_20px_50px_-32px_rgba(2,6,23,0.8)]">
-            <p className="mb-4 text-xs font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-              Weekly performance
-            </p>
-            <div className="grid grid-cols-3 gap-2">
-              {[
-                { label: "Solved", value: "24" },
-                { label: "Accuracy", value: "91%" },
-                { label: "Streak", value: "16d" },
-              ].map((metric) => (
-                <div key={metric.label} className="rounded-xl border border-border bg-background px-3 py-3">
-                  <p className="text-lg font-semibold text-foreground">{metric.value}</p>
-                  <p className="text-xs text-muted-foreground">{metric.label}</p>
+          <div className="relative overflow-hidden rounded-2xl border border-border bg-card p-6 shadow-[0_24px_70px_-40px_rgba(2,6,23,0.7)] sm:p-7">
+            <div className="pointer-events-none absolute -right-16 -top-16 h-48 w-48 rounded-full bg-primary/10 blur-3xl" />
+            <div className="relative">
+              <div className="flex items-start justify-between gap-3">
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-[0.18em] text-primary">The learning path</p>
+                  <h2 className="mt-2 text-xl font-semibold tracking-tight text-foreground">One pattern at a time.</h2>
+                  <p className="mt-1 text-sm text-muted-foreground">A clear route from first attempt to confident recall.</p>
                 </div>
-              ))}
-            </div>
+                <div className="rounded-xl border border-border bg-background px-3 py-2 text-center">
+                  <p className="text-xl font-semibold tabular-nums text-foreground">{PATTERNS.length}</p>
+                  <p className="text-[10px] uppercase tracking-wide text-muted-foreground">patterns</p>
+                </div>
+              </div>
 
-            <div className="mt-4 rounded-xl border border-border bg-background p-4">
-              <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
-                <span>Pattern confidence</span>
-                <span>72%</span>
+              <div className="mt-7 space-y-0">
+                {[
+                  { number: "01", title: "Learn the idea", detail: "Short pattern guides and worked examples", icon: BookOpenText },
+                  { number: "02", title: "Solve with feedback", detail: "Run code against examples, then submit", icon: TerminalSquare },
+                  { number: "03", title: "Review your progress", detail: "See solved problems and topic-level growth", icon: ChartColumn },
+                ].map((step, index) => (
+                  <div key={step.number} className="flex gap-4">
+                    <div className="flex flex-col items-center">
+                      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-primary/20 bg-primary/10 text-primary"><step.icon size={16} /></span>
+                      {index < 2 && <span className="my-1 h-8 w-px bg-border" />}
+                    </div>
+                    <div className="pb-5">
+                      <div className="flex items-baseline gap-2"><span className="font-mono text-[10px] text-muted-foreground">{step.number}</span><h3 className="text-sm font-semibold text-foreground">{step.title}</h3></div>
+                      <p className="mt-1 text-xs leading-5 text-muted-foreground">{step.detail}</p>
+                    </div>
+                  </div>
+                ))}
               </div>
-              <div className="h-2 overflow-hidden rounded-full bg-muted">
-                <div className="h-full w-[72%] rounded-full bg-primary" />
+
+              <div className="flex flex-wrap gap-2 border-t border-border pt-4">
+                {["JavaScript", "Python", "C++"].map((language) => (
+                  <span key={language} className="rounded-full border border-border bg-background px-2.5 py-1 text-[11px] font-medium text-muted-foreground">{language}</span>
+                ))}
+                <span className="ml-auto self-center text-[11px] text-muted-foreground">Built-in code runner</span>
               </div>
-              <p className="mt-2 text-xs text-muted-foreground">Up 11% from last week</p>
             </div>
           </div>
         </div>
@@ -318,3 +332,4 @@ const HomePage: React.FC = () => {
 };
 
 export default HomePage;
+
